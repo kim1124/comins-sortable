@@ -1,26 +1,25 @@
 # Comins Sortable AGENTS.md
 
-## Ownership
+## Scope
 
 - This repository is one independent Comins npm frontend module.
-- Read this file and any closer `AGENTS.md` before changing code, documentation, tests, or release configuration.
-- Apply the shared baseline in the Comins governance repository. Keep module-specific rules here.
-- Do not use KMSF workspace commands, source synchronization, or release flows unless the maintainer explicitly requests migration-history work.
+- Read this file and any closer `AGENTS.md`; adopt Comins Contract v1.1 and read the governance source explicitly for policy, security, release, or public API work.
+- Do not use KMSF workspace commands, source synchronization, or release flows without a migration-history request; keep `AGENTS.override.md` uncommitted and temporary.
+- Use `gpt-5.6-sol` with `xhigh` reasoning as the default for all Comins work.
+- For vulnerability investigation, runtime memory leaks, retention, out-of-memory failures, or security work, use `gpt-5.6-sol` with at least `xhigh`.
+- For instruction planning, Plan mode, or authoring or updating an implementation plan, use `gpt-5.6-sol` with at least `max`.
 
 ## Change Boundaries
 
-- Preserve the documented public API, types, and package-local conventions unless the requested change explicitly expands them.
-- Keep CSS classes and custom properties namespaced to this module. Do not apply global CSS resets.
-- Keep external interaction engines behind module-owned adapters.
+- Preserve documented APIs, types, and package-local conventions unless the request explicitly expands them.
+- Namespace CSS and custom properties, avoid global resets, and keep external engines behind module-owned adapters.
 - Do not publish, tag, create a GitHub Release, or push a remote branch without an explicit maintainer command.
 
 ## Verification
 
-- Define and run this repository's baseline verification command for meaningful changes.
-- Run focused browser verification for browser-visible interaction, layout, rendering, or keyboard behavior changes.
+- Define and run the baseline verification command for meaningful changes, plus focused browser verification for interaction, layout, rendering, or keyboard behavior.
 - Classify failures as product behavior, test contract, or execution environment before changing code or repeating broad gates.
 
 ## Reporting
 
-- For meaningful code, documentation, configuration, or test changes, update the repository's established report location with changed files, commands actually run, results, and residual risks.
-- Do not create a worklog for inspection-only tasks unless the maintainer requests a durable report.
+- For behavior, public API, configuration, security, release, or test-contract changes, update the established report with changed files, commands, results, and residual risks; do not create one for inspection-only work without a maintainer request.
