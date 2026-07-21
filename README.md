@@ -8,6 +8,6 @@ This repository currently establishes project ownership, security reporting, and
 
 ## Governance
 
-- Shared operating policy: [Comins Contract v1.1](https://github.com/kim1124/comins-governance/blob/main/COMINS_CONTRACT.md)
+- Shared operating policy: [Comins Contract v1.2](https://github.com/kim1124/comins-governance/blob/main/COMINS_CONTRACT.md)
 - License: [MIT](./LICENSE)
 - Security reports: [SECURITY.md](./SECURITY.md)
