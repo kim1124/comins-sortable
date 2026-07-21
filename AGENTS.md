@@ -3,7 +3,7 @@
 ## Scope
 
 - This repository is one independent Comins npm frontend module.
-- Read this file and any closer `AGENTS.md`; adopt Comins Contract v1.1 and read the governance source explicitly for policy, security, release, or public API work.
+- Read this file and any closer `AGENTS.md`; adopt Comins Contract v1.2 and read the governance source explicitly for policy, security, release, or public API work.
 - Do not use KMSF workspace commands, source synchronization, or release flows without a migration-history request; keep `AGENTS.override.md` uncommitted and temporary.
 - Use `gpt-5.6-sol` with `xhigh` reasoning as the default for all Comins work.
 - For vulnerability investigation, runtime memory leaks, retention, out-of-memory failures, or security work, use `gpt-5.6-sol` with at least `xhigh`.
@@ -14,6 +14,13 @@
 - Preserve documented APIs, types, and package-local conventions unless the request explicitly expands them.
 - Namespace CSS and custom properties, avoid global resets, and keep external engines behind module-owned adapters.
 - Do not publish, tag, create a GitHub Release, or push a remote branch without an explicit maintainer command.
+
+## Sensitive Data
+
+- Never track personal names, personal email addresses, local account paths, credentials, tokens, secrets, or value-derived fingerprints.
+- Use only an approved public handle, GitHub noreply identity, service identity, explicit placeholder, or repository-relative path.
+- Run the required Gitleaks hook and security CI; redact scanner output and fail closed when a required gate is unavailable.
+- Handle legacy history or provider metadata through a separate audit without enforcement baselines or finding suppressions.
 
 ## Verification
 

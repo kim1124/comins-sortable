@@ -14,6 +14,12 @@ Keep Private Vulnerability Reporting active and enable GitHub's available depend
 
 After bootstrap, register the exact repository, publish workflow filename, and `npm` environment as the trusted publisher. Allow only `npm stage publish`, disallow token publishing, and require maintainer 2FA approval for every staged version.
 
+Before any first release, create one artifact with `npm pack --json --ignore-scripts`, validate its exact file list, scan the extracted contents, and publish that same verified artifact. Do not add package or publish automation before the package boundary is approved.
+
 ## Disclosure
 
 The maintainer will assess the report, prepare a remediation when applicable, and decide whether to publish a GitHub security advisory or request a CVE after the remediation is available.
+
+## Credential and PII Incidents
+
+Treat a credential/PII incident as a release blocker. Stop the affected release, rotate any exposed credential, preserve non-public evidence, and coordinate remediation without public disclosure of the sensitive value.
