@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const checker = join(root, 'scripts', 'check-public-identities.mjs');
+const licenseChecker = join(root, 'scripts', 'check-licenses.mjs');
 const failure = 'public-identity-check: failed\n';
 const email = (local, domain) => [local, '@', domain].join('');
 const safeName = 'comins-ci';
@@ -50,16 +51,41 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts Contract v1.2 without inventing a package boundary', () => {
+test('adopts Contract v1.3 without inventing a package boundary', () => {
   const agents = read('AGENTS.md');
+  const readme = read('README.md');
   const security = read('SECURITY.md');
+  const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /Contract v1\.2/);
+  assert.match(agents, /Contract v1\.3/);
+  assert.match(readme, /Contract v1\.3/);
+  assert.match(agents, /security, licensing, module rules/);
   assert.match(agents, /Never track personal names, personal email addresses/);
   assert.match(agents, /Gitleaks/);
   assert.match(agents, /fail closed/i);
+  assert.match(
+    agents,
+    /node scripts\/check-licenses\.mjs && node --test test\/\*\.node\.mjs/,
+  );
   assert.match(security, /credential\/PII incident/i);
   assert.match(security, /npm pack --json --ignore-scripts/);
+  assert.match(verify, /node scripts\/check-licenses\.mjs/);
+  assert.deepEqual(JSON.parse(read('LICENSE_SCOPE.json')), {
+    schemaVersion: 1,
+    packageBoundary: false,
+    trackedMaterial: {
+      dependencies: [],
+      copiedOrGeneratedCode: [],
+      assets: [],
+    },
+  });
+  const licenseResult = spawnSync(process.execPath, [licenseChecker], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  assert.equal(licenseResult.status, 0, licenseResult.stderr);
+  assert.equal(licenseResult.stdout, '');
+  assert.equal(licenseResult.stderr, '');
   assert.equal(existsSync(join(root, 'package.json')), false);
   assert.equal(existsSync(join(root, '.github/workflows/publish.yml')), false);
 });
