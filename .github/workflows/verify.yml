@@ -78,6 +78,8 @@ jobs:
             printf '%s\n' 'sensitive-data-check: failed' >&2
             exit 1
           fi
+      - name: Check tracked third-party material
+        run: node scripts/check-licenses.mjs
       - name: Run security contract tests
         run: node --test test/*.node.mjs
       - name: Check reviewed diff
