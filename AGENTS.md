@@ -1,47 +1,43 @@
-<!-- comins-reference:managed-start contract=v1.3 -->
+<!-- comins-reference:managed-start contract=v1.4 -->
 # Comins Module AGENTS.md
 
 ## Scope
 
-- Treat this as an independent Comins Git boundary. Read closer `AGENTS.md`; load [Governance](https://github.com/kim1124/comins-governance) for API, security, license, or release policy.
+- Treat this as an independent Comins Git boundary. Read closer `AGENTS.md`;
+  consult [Governance](https://github.com/kim1124/comins-governance) for common
+  scope, security, license, and release policy.
 - Keep KMSF historical; never commit `AGENTS.override.md`.
-
-## Work Routing
-
-- **Inspection or research:** evidence only; no edits, reports, or product gates.
-- **Documentation, guidance, or configuration:** edit directly; run matching reference, instruction, parse, and diff checks.
-- **Clear local behavior:** define acceptance/reproduction, add a regression test first when it materially improves confidence, implement, then run focused and baseline checks once.
-- **Complex or high-risk:** close decisions, plan if needed, test incrementally, then run the applicable broad gate once.
-- **Security, release, external, or destructive:** follow Governance and obtain approval.
 
 ## Required Order
 
-- Follow Contract order: repository/instructions, Contract/scope/authority, security, licensing, module rules, implementation, verification, Git/PR, exact-artifact release, closure/reporting. Mark only untriggered gates N/A; otherwise fail closed.
+- Resolve the Git root and applicable instructions first. Then follow Contract
+  v1.4: license compliance; security and sensitive data; Comins common rules;
+  module rules; smallest change and affected checks; Git, pull request, and CI;
+  release checks only when publishing.
 
-## Change Boundaries
+## Work Routing
 
-- Preserve public APIs/types/conventions unless authorized; namespace CSS, avoid global resets, and isolate external engines behind adapters.
-- Remote writes, publishing, tags, and Releases require explicit approval.
+- **Inspection or research:** report evidence only.
+- **Documentation or configuration:** edit directly and run matching checks.
+- **Product behavior:** define acceptance, make the smallest change, and run the
+  module's affected checks.
+- **High-risk or ambiguous work:** close decisions and plan only when needed.
 
-## Sensitive Data
+## Common Boundaries
 
-- Adopt Contract v1.3 and `SENSITIVE_DATA_STANDARD.md`. Never track personal names, personal email addresses, local account paths, credentials, tokens, secrets, or value-derived fingerprints except canonical-source third-party legal text only when legally required; omit personal contact details when a project URL suffices.
-- Otherwise use only an approved public handle, GitHub noreply identity, service identity, explicit placeholder, or repository-relative path; run required Gitleaks/security CI and, when a package boundary exists, the exact package-artifact gate.
-- Redact detector output, fail closed when unavailable, and audit legacy exposure separately.
-
-## Open Source Licensing
-
-- Adopt Contract v1.3 and Governance `OSS_LICENSE_POLICY.md`; classify dependencies, copied/generated code, and assets by exact version and use surface.
-- Run affected license gates; fail closed on incomplete or unapproved evidence and include required notices/texts in artifacts.
+- Preserve public APIs and types unless authorized. Keep CSS and external-engine
+  behavior module-scoped.
+- Apply Governance `OSS_LICENSE_POLICY.md` and `SENSITIVE_DATA_STANDARD.md`; the
+  module owns its checker commands and CI implementation.
+- Remote writes, publishing, tags, Releases, policy exceptions, and destructive
+  operations require explicit approval.
 
 ## Verification
 
-- Match checks to change type; report omissions and classify failures as product, test-contract, or environment before retrying.
-
-## Reporting
-
-- Report meaningful behavior/API/config/security/release/test-contract changes when customary.
-- For a public release only, post-publication closure requires Governance evidence, default-branch reconciliation, and remaining branches/worktrees; deletion needs separate approval.
+- Run only checks required by the affected surface. A required failed or
+  unavailable gate blocks that workflow; do not substitute unrelated gates.
+- Report meaningful changes, executed checks, omissions, and unresolved
+  blockers. Release closure applies only to an actual public release.
 <!-- comins-reference:managed-end -->
 
 ## Module Guidance
