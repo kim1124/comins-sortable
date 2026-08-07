@@ -1,0 +1,71 @@
+{
+  "name": "comins-sortable",
+  "version": "0.0.0-development",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kim1124/comins-sortable.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kim1124/comins-sortable/issues"
+  },
+  "homepage": "https://github.com/kim1124/comins-sortable#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "exports": {
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build-package.mjs",
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "lint": "npm run typecheck",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/run-unit-tests.mjs",
+    "test:run": "node scripts/run-unit-tests.mjs",
+    "test:policy": "node --test test/*.node.mjs",
+    "test:types": "tsc -p test/types/tsconfig.json --noEmit",
+    "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types"
+  },
+  "peerDependencies": {
+    "react": ">=18.2 <20",
+    "react-dom": ">=18.2 <20",
+    "svelte": ">=5 <6",
+    "vue": ">=3.5 <4"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "esbuild": "^0.28.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "svelte": "^5.56.8",
+    "tsx": "^4.23.10",
+    "typescript": "^7.0.2",
+    "vue": "^3.5.41"
+  }
+}

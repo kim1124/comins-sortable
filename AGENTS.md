@@ -50,7 +50,6 @@
   optional React, React DOM, Vue, and Svelte peers; and exact ESM exports `.`,
   `./core`, `./react`, `./vue`, `./svelte`, and `./styles.css`. Publishing,
   release versions, tags, and Releases remain separately maintainer-gated.
-- Until the package boundary is implemented, validate with
-  `node scripts/check-licenses.mjs && node --test test/*.node.mjs`. After the
-  boundary exists, use only the package-defined module gates and do not invent
-  publish gates.
+- The implemented private package boundary must validate with `npm run verify`.
+  Browser and artifact gates apply only when their corresponding implementation
+  tasks add them; do not invent publish gates.

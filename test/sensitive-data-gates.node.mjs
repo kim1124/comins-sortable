@@ -51,7 +51,7 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts Contract v1.4 without inventing a package boundary', () => {
+test('adopts the approved private package boundary under Contract v1.4', () => {
   const agents = read('AGENTS.md');
   const readme = read('README.md');
   const security = read('SECURITY.md');
@@ -65,18 +65,25 @@ test('adopts Contract v1.4 without inventing a package boundary', () => {
   );
   assert.match(agents, /`OSS_LICENSE_POLICY\.md` and `SENSITIVE_DATA_STANDARD\.md`/);
   assert.match(agents, /module owns its checker commands and CI implementation/);
-  assert.match(
-    agents,
-    /node scripts\/check-licenses\.mjs && node --test test\/\*\.node\.mjs/,
-  );
+  assert.match(agents, /validate with `npm run verify`/);
+  assert.match(agents, /Vanilla JavaScript,\n  React, Vue, and Svelte/);
   assert.match(security, /credential\/PII incident/i);
   assert.match(security, /npm pack --json --ignore-scripts/);
-  assert.match(verify, /node scripts\/check-licenses\.mjs/);
+  assert.match(readme, /private development package boundary/);
+  assert.match(readme, /Vanilla JavaScript, React, Vue, and Svelte/);
+  assert.match(verify, /npm ci --ignore-scripts/);
+  assert.match(verify, /npm run verify/);
   assert.deepEqual(JSON.parse(read('LICENSE_SCOPE.json')), {
-    schemaVersion: 1,
-    packageBoundary: false,
+    schemaVersion: 2,
+    packageBoundary: true,
+    runtimeDependencies: [],
+    peerDependencies: {
+      react: '>=18.2 <20',
+      'react-dom': '>=18.2 <20',
+      svelte: '>=5 <6',
+      vue: '>=3.5 <4',
+    },
     trackedMaterial: {
-      dependencies: [],
       copiedOrGeneratedCode: [],
       assets: [],
     },
@@ -88,7 +95,10 @@ test('adopts Contract v1.4 without inventing a package boundary', () => {
   assert.equal(licenseResult.status, 0, licenseResult.stderr);
   assert.equal(licenseResult.stdout, '');
   assert.equal(licenseResult.stderr, '');
-  assert.equal(existsSync(join(root, 'package.json')), false);
+  const manifest = JSON.parse(read('package.json'));
+  assert.equal(manifest.private, true);
+  assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
+  assert.equal(existsSync(join(root, 'package-lock.json')), true);
   assert.equal(existsSync(join(root, '.github/workflows/publish.yml')), false);
 });
 
