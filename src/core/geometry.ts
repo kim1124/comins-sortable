@@ -19,13 +19,90 @@ export interface ItemGeometry {
   rect: RectSnapshot;
 }
 
+export interface GeometryTarget {
+  key: string;
+  element: Element;
+}
+
 export interface AreaGeometry {
   areaId: string;
   group: string;
   direction: Exclude<SortableDirection, 'auto'>;
   disabled: boolean;
   accept(context: DragContext): boolean;
+  depth: number;
   rect: RectSnapshot;
+}
+
+interface GeometryCacheEntry {
+  rect: RectSnapshot;
+  dirty: boolean;
+}
+
+export class GeometryCache {
+  private readonly entries = new Map<string, GeometryCacheEntry>();
+
+  refreshAtActivation(targets: readonly GeometryTarget[]): void {
+    this.refresh(targets);
+  }
+
+  refreshAtAreaEntry(target: GeometryTarget): void {
+    this.refresh([target]);
+  }
+
+  refreshDirty(targets: readonly GeometryTarget[]): void {
+    for (const target of targets) {
+      if (this.entries.get(target.key)?.dirty === true) {
+        this.refresh([target]);
+      }
+    }
+  }
+
+  snapshot(key: string): RectSnapshot | undefined {
+    return this.entries.get(key)?.rect;
+  }
+
+  isDirty(key: string): boolean {
+    return this.entries.get(key)?.dirty ?? false;
+  }
+
+  invalidateForScroll(keys: readonly string[]): void {
+    this.markDirty(keys);
+  }
+
+  invalidateForResize(keys: readonly string[]): void {
+    this.markDirty(keys);
+  }
+
+  invalidateForFrameworkUpdate(keys: readonly string[]): void {
+    this.markDirty(keys);
+  }
+
+  invalidateForPlaceholderMove(keys: readonly string[]): void {
+    this.markDirty(keys);
+  }
+
+  clear(): void {
+    this.entries.clear();
+  }
+
+  private refresh(targets: readonly GeometryTarget[]): void {
+    for (const target of targets) {
+      this.entries.set(target.key, {
+        rect: snapshotRect(target.element),
+        dirty: false,
+      });
+    }
+  }
+
+  private markDirty(keys: readonly string[]): void {
+    for (const key of keys) {
+      const entry = this.entries.get(key);
+      if (entry !== undefined) {
+        entry.dirty = true;
+      }
+    }
+  }
 }
 
 export function snapshotRect(element: Element): RectSnapshot {

@@ -25,6 +25,9 @@ export class AreaRegistry {
     if (this.areas.has(area.areaId)) {
       throw new SortableError('DUPLICATE_AREA_ID');
     }
+    if (this.elements.has(area.element)) {
+      throw new SortableError('INVALID_ELEMENT');
+    }
 
     const document = area.element.ownerDocument;
     if (document === null || (this.ownerDocument !== null && document !== this.ownerDocument)) {
@@ -42,7 +45,7 @@ export class AreaRegistry {
         return;
       }
       registered = false;
-      this.unregister(area.areaId);
+      this.unregisterRegistered(area);
     };
   }
 
@@ -52,7 +55,15 @@ export class AreaRegistry {
       return;
     }
 
-    this.areas.delete(areaId);
+    this.unregisterRegistered(area);
+  }
+
+  private unregisterRegistered(area: RegisteredArea): void {
+    if (this.areas.get(area.areaId) !== area) {
+      return;
+    }
+
+    this.areas.delete(area.areaId);
     this.elements.delete(area.element);
     if (this.areas.size === 0) {
       this.ownerDocument = null;

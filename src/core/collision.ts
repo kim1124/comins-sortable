@@ -1,4 +1,4 @@
-import type { DragContext, SortableDirection } from './model.js';
+import type { DragContext, SortableDirection, SortableId } from './model.js';
 import type { AreaGeometry, ItemGeometry, Point } from './geometry.js';
 
 export function insertionIndex(input: {
@@ -29,6 +29,19 @@ export function insertionIndex(input: {
   return low;
 }
 
+export function insertionIndexExcludingSource(input: {
+  pointer: Point;
+  direction: Exclude<SortableDirection, 'auto'>;
+  sourceId: SortableId;
+  items: readonly ItemGeometry[];
+}): number {
+  return insertionIndex({
+    pointer: input.pointer,
+    direction: input.direction,
+    items: input.items.filter((item) => item.id !== input.sourceId),
+  });
+}
+
 export function findAreaAtPoint(input: {
   point: Point;
   directHits: readonly AreaGeometry[];
@@ -37,7 +50,12 @@ export function findAreaAtPoint(input: {
   sourceGroup: string;
   context: DragContext;
 }): AreaGeometry | undefined {
-  const direct = input.directHits.find((area) => accepts(area, input));
+  let direct: AreaGeometry | undefined;
+  for (const area of input.directHits) {
+    if (accepts(area, input) && (direct === undefined || area.depth > direct.depth)) {
+      direct = area;
+    }
+  }
   if (direct !== undefined) {
     return direct;
   }

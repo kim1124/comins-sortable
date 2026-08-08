@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { findAreaAtPoint, insertionIndex } from '../../../src/core/collision.js';
+import {
+  findAreaAtPoint,
+  insertionIndex,
+  insertionIndexExcludingSource,
+} from '../../../src/core/collision.js';
 import { dragContext, rectArea, rectItem } from '../helpers/core-fixtures.js';
 
 test('collision uses source-excluded midpoints for same-area reorder', () => {
@@ -9,6 +13,21 @@ test('collision uses source-excluded midpoints for same-area reorder', () => {
     pointer: { x: 0, y: 35 },
     direction: 'vertical',
     items: [
+      rectItem('b', 0, 20, 100, 20),
+      rectItem('c', 0, 40, 100, 20),
+    ],
+  });
+
+  assert.equal(index, 1);
+});
+
+test('same-area helper removes the source from an original ordered item list', () => {
+  const index = insertionIndexExcludingSource({
+    pointer: { x: 0, y: 35 },
+    direction: 'vertical',
+    sourceId: 'a',
+    items: [
+      rectItem('a', 0, 0, 100, 20),
       rectItem('b', 0, 20, 100, 20),
       rectItem('c', 0, 40, 100, 20),
     ],
@@ -80,8 +99,8 @@ test('empty horizontal areas expand their zero-width axis only and reject zero-a
   }), undefined);
 });
 
-test('direct hits select the inner accepted area and skip disabled group and reject filters', () => {
-  const inner = rectArea('inner', 0, 0, 100, 100);
+test('direct hits select the deepest accepted area even when outer arrives first', () => {
+  const inner = rectArea('inner', 0, 0, 100, 100, { depth: 2 });
 
   assert.equal(findAreaAtPoint({
     point: { x: 10, y: 10 },
@@ -89,8 +108,8 @@ test('direct hits select the inner accepted area and skip disabled group and rej
       rectArea('disabled', 0, 0, 100, 100, { disabled: true }),
       rectArea('other-group', 0, 0, 100, 100, { group: 'other' }),
       rectArea('rejected', 0, 0, 100, 100, { accepted: false }),
+      rectArea('outer', 0, 0, 100, 100, { depth: 1 }),
       inner,
-      rectArea('outer', 0, 0, 100, 100),
     ],
     emptyAreas: [],
     emptyInsertThreshold: 8,

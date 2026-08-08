@@ -103,6 +103,7 @@ export function rectArea(
     group?: string;
     disabled?: boolean;
     accepted?: boolean;
+    depth?: number;
   } = {},
 ): AreaGeometry {
   return {
@@ -111,6 +112,7 @@ export function rectArea(
     direction: options.direction ?? 'vertical',
     disabled: options.disabled ?? false,
     accept: () => options.accepted ?? true,
+    depth: options.depth ?? 0,
     rect: rect(left, top, width, height),
   };
 }

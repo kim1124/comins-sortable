@@ -58,6 +58,32 @@ test('registry unregister is idempotent and clears area lookup', () => {
   assert.equal(registry.getByElement(entry.element), undefined);
 });
 
+test('an old disposer cannot unregister a replacement with the same area ID', () => {
+  const registry = new AreaRegistry();
+  const oldDispose = registry.register(area('todo', 'tasks', ['a']));
+
+  registry.unregister('todo');
+  const replacement = area('todo', 'tasks', ['b']);
+  registry.register(replacement);
+  oldDispose();
+
+  assert.equal(registry.size, 1);
+  assert.equal(registry.get('todo'), replacement);
+});
+
+test('registry rejects duplicate element registration before map lookup can diverge', () => {
+  const registry = new AreaRegistry();
+  const first = area('todo', 'tasks', ['a']);
+  const sameElement = { ...first, areaId: 'done' };
+  registry.register(first);
+
+  assert.throws(
+    () => registry.register(sameElement),
+    hasCode('INVALID_ELEMENT'),
+  );
+  assert.equal(registry.getByElement(first.element), first);
+});
+
 test('registry rescans direct items and rejects missing IDs', () => {
   const registry = new AreaRegistry();
   registry.register(area('todo', 'tasks', ['a', 2]));
