@@ -1,4 +1,4 @@
-import { SortableError } from '../../src/core.js';
+import { reorder, SortableError, transfer } from '../../src/core.js';
 import type {
   AfterDragResult,
   DragContext,
@@ -63,5 +63,20 @@ const result: AfterDragResult = {
   change,
 };
 const error = new SortableError('INVALID_OPTION');
+const items: readonly Item[] = [{ id: 1, label: 'one' }];
+const reorderedItems: readonly Item[] = reorder(items, 0, 0);
+const transferredItems: {
+  sourceItems: readonly Item[];
+  destinationItems: readonly Item[];
+} = transfer(items, [], 0, 0);
 
-void [key, direction, insert, frameworkChange, result, error];
+void [
+  key,
+  direction,
+  insert,
+  frameworkChange,
+  result,
+  error,
+  reorderedItems,
+  transferredItems,
+];

@@ -1,5 +1,6 @@
 export { SortableError } from './core/errors.js';
 export type { SortableErrorCode } from './core/errors.js';
+export { reorder, transfer } from './core/operations.js';
 export type {
   AfterDragReason,
   AfterDragResult,
