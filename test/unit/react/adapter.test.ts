@@ -131,6 +131,26 @@ test('shared lifecycle skips an initial update and registers once across setup-c
   assert.deepEqual(calls, ['register', 'unregister', 'register']);
 });
 
+test('shared lifecycle owns and destroys a rootless controller only on ref unmount', () => {
+  const calls: string[] = [];
+  const controller = {
+    registerArea: () => () => calls.push('unregister'),
+    updateArea: () => calls.push('update'),
+    destroy: () => calls.push('destroy'),
+  };
+  const lifecycle = createReactAreaLifecycle({
+    createController: () => controller,
+    props: todoProps(),
+  });
+  const element = { children: [] } as unknown as HTMLDivElement;
+
+  lifecycle.setElement(element);
+  lifecycle.setElement(element);
+  lifecycle.setElement(null);
+
+  assert.deepEqual(calls, ['unregister', 'destroy']);
+});
+
 test('after-drag invokes the consumer once after rollback failures and preserves the first error', () => {
   const calls: string[] = [];
   const rollbackError = new Error('rollback failed');

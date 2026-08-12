@@ -1,5 +1,6 @@
 import {
   cloneElement,
+  useCallback,
   useContext,
   useMemo,
   useLayoutEffect,
@@ -38,21 +39,18 @@ export interface SortableAreaProps<T> {
 
 export function SortableArea<T>(props: SortableAreaProps<T>): ReactElement {
   const rootController = useContext(ReactSortableContext) as ReactSortableController<T> | null;
-  const privateController = useMemo(
-    () => rootController === null
-      ? createReactSortableController<T>({ getRootProps: () => ({}) })
-      : null,
-    [rootController],
-  );
-  const controller = rootController ?? privateController;
   const lifecycle = useMemo(() => createReactAreaLifecycle({
-    controller,
+    controller: rootController,
     createController: () => createReactSortableController<T>({ getRootProps: () => ({}) }),
     props,
-  }), [controller]);
+  }), [rootController]);
   useLayoutEffect(() => {
     lifecycle.update(props);
   }, [lifecycle, props]);
+  const setAreaElement = useCallback(
+    (element: HTMLDivElement | null) => lifecycle.setElement(element),
+    [lifecycle],
+  );
 
   const children = props.items.map((item, index) => {
     const rendered = props.children(item, index);
@@ -61,7 +59,7 @@ export function SortableArea<T>(props: SortableAreaProps<T>): ReactElement {
 
   return (
     <div
-      ref={(candidate) => lifecycle.setElement(candidate)}
+      ref={setAreaElement}
       data-comins-sortable-area={props.areaId}
     >
       {children}
