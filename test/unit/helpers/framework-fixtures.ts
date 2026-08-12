@@ -14,6 +14,12 @@ import {
   type VueSortableController,
 } from '../../../src/vue/context.js';
 import { createVueAreaLifecycle } from '../../../src/vue/lifecycle.js';
+import { createSvelteSortableScope } from '../../../src/svelte/scope.js';
+import {
+  createSvelteSortableAction,
+  sortable,
+  type SvelteSortableOptions,
+} from '../../../src/svelte/sortable.js';
 import type {
   ItemKey,
   SortableAreaOptions,
@@ -551,5 +557,93 @@ export function vueAdapterHarness<T extends Task>(): {
     destroyCount() { return destroys; },
     items(areaId) { return states.get(areaId) as readonly T[]; },
     area(areaId) { return areas.get(areaId) as VueAdapterAreaProps<T>; },
+  };
+}
+
+export function svelteActionHarness<T extends Task>(): {
+  readonly calls: string[];
+  readonly element: HTMLElement;
+  readonly scope: import('../../../src/svelte/scope.js').SvelteSortableScope<T>;
+  options(overrides?: Partial<SvelteSortableOptions<T>>): SvelteSortableOptions<T>;
+  action(options?: SvelteSortableOptions<T>): ReturnType<typeof sortable<T>>;
+  privateAction(options?: Omit<SvelteSortableOptions<T>, 'scope'>): ReturnType<typeof sortable<T>>;
+  trigger(change: SortableChange): void;
+  registrationCount(areaId: string): number;
+  updateCount(areaId: string): number;
+  area(areaId: string): SortableAreaOptions | undefined;
+  destroyCount(): number;
+  retainedCallbackCount(): number;
+} {
+  const calls: string[] = [];
+  const registrations = new Map<string, number>();
+  const updates = new Map<string, number>();
+  const areas = new Map<string, SortableAreaOptions>();
+  let destroys = 0;
+  let callbacks: SortableScopeOptions = {};
+  const core: SortableScope = {
+    registerArea(_element, areaOptions) {
+      registrations.set(areaOptions.areaId, (registrations.get(areaOptions.areaId) ?? 0) + 1);
+      areas.set(areaOptions.areaId, areaOptions);
+      let disposed = false;
+      return () => {
+        if (disposed) return;
+        disposed = true;
+        registrations.set(areaOptions.areaId, (registrations.get(areaOptions.areaId) ?? 1) - 1);
+        areas.delete(areaOptions.areaId);
+      };
+    },
+    updateArea(areaId, patch) {
+      updates.set(areaId, (updates.get(areaId) ?? 0) + 1);
+      const current = areas.get(areaId);
+      if (current !== undefined) areas.set(areaId, { ...current, ...patch });
+    },
+    cancel() {},
+    destroy() {
+      destroys += 1;
+      callbacks = {};
+    },
+  };
+  const scope = createSvelteSortableScope<T>(
+    { onChange: (change) => calls.push(`change:${change.operation}`) },
+    (nextCallbacks) => {
+      callbacks = nextCallbacks;
+      return core;
+    },
+  );
+  const element = renderedElement(0) as HTMLElement;
+  const options = (overrides: Partial<SvelteSortableOptions<T>> = {}): SvelteSortableOptions<T> => ({
+    scope,
+    areaId: 'todo',
+    group: 'tasks',
+    items: [{ id: 'a' }, { id: 'b' }] as unknown as readonly T[],
+    itemKey: 'id' as ItemKey<T>,
+    onItemsChange: (items) => calls.push(`set:${items.map((item) => item.id).join(',')}`),
+    ...overrides,
+  });
+
+  return {
+    calls,
+    element,
+    scope,
+    options,
+    action: (nextOptions = options()) => sortable(element, nextOptions),
+    privateAction: (nextOptions = (() => {
+      const { scope: _scope, ...privateOptions } = options();
+      return privateOptions;
+    })()) => createSvelteSortableAction(element, nextOptions, () => createSvelteSortableScope<T>(
+      {},
+      (nextCallbacks) => {
+        callbacks = nextCallbacks;
+        return core;
+      },
+    )),
+    trigger: (change) => callbacks.onChange?.(change),
+    registrationCount: (areaId) => registrations.get(areaId) ?? 0,
+    updateCount: (areaId) => updates.get(areaId) ?? 0,
+    area: (areaId) => areas.get(areaId),
+    destroyCount: () => destroys,
+    retainedCallbackCount: () => (
+      callbacks.onChange === undefined && callbacks.onAfterDrag === undefined ? 0 : 1
+    ),
   };
 }

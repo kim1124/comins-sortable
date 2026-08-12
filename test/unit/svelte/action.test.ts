@@ -1,0 +1,292 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { createSortableScope, sortable } from '../../../src/svelte.js';
+import { createSortableScopeInternal } from '../../../src/core/scope.js';
+import { handleAfterDrag, createSvelteSortableScope } from '../../../src/svelte/scope.js';
+import { svelteActionHarness } from '../helpers/framework-fixtures.js';
+import { fakeElement, fakePlatform, pointer } from '../helpers/core-fixtures.js';
+
+interface Task {
+  id: string;
+}
+
+const todo = (): readonly Task[] => [{ id: 'a' }, { id: 'b' }];
+
+function options(overrides: Partial<Parameters<typeof sortable<Task>>[1]> = {}) {
+  return {
+    areaId: 'todo',
+    group: 'tasks',
+    items: todo(),
+    itemKey: 'id' as const,
+    onItemsChange: () => undefined,
+    ...overrides,
+  };
+}
+
+test('action updates items and options without creating another registration', () => {
+  const harness = svelteActionHarness<Task>();
+  const action = harness.action();
+
+  action.update({
+    ...harness.options(),
+    items: [{ id: 'b' }, { id: 'a' }],
+    disabled: true,
+  });
+
+  assert.equal(harness.registrationCount('todo'), 1);
+  assert.equal(harness.updateCount('todo'), 1);
+  assert.equal(harness.area('todo')?.disabled, true);
+});
+
+test('action destroys an action-owned scope idempotently', () => {
+  const harness = svelteActionHarness<Task>();
+  const action = harness.privateAction();
+
+  action.destroy();
+  action.destroy();
+
+  assert.equal(harness.registrationCount('todo'), 0);
+  assert.equal(harness.destroyCount(), 1);
+  assert.equal(harness.retainedCallbackCount(), 0);
+});
+
+test('action update uses the latest item key and item callback without registration churn', () => {
+  const harness = svelteActionHarness<Task>();
+  const first = harness.action();
+  const calls: (readonly Task[])[] = [];
+  first.update(harness.options({
+    items: [{ id: 'b' }, { id: 'a' }],
+    itemKey: (item) => item.id,
+    onItemsChange: (items) => calls.push(items),
+  }));
+
+  harness.trigger({
+    operation: 'reorder', itemId: 'b',
+    source: { areaId: 'todo', index: 0 }, destination: { areaId: 'todo', index: 1 },
+    orders: [{ areaId: 'todo', itemIds: ['a', 'b'] }],
+  });
+
+  assert.deepEqual(calls, [[{ id: 'a' }, { id: 'b' }]]);
+  assert.equal(harness.registrationCount('todo'), 1);
+});
+
+test('a shared Scope applies transfer setters before one enhanced change callback', () => {
+  let coreCallbacks: import('../../../src/core.js').SortableScopeOptions = {};
+  const calls: string[] = [];
+  const scope = createSvelteSortableScope<Task>({
+    onChange: (change) => calls.push(`change:${change.updates.map((update) => update.areaId).join(',')}`),
+  }, (callbacks) => {
+    coreCallbacks = callbacks;
+    return {
+      registerArea: () => () => undefined,
+      updateArea: () => undefined,
+      cancel: () => undefined,
+      destroy: () => undefined,
+    };
+  });
+  const todoNode = fakeElement('UL');
+  const doneNode = fakeElement('UL');
+  const todoAction = sortable(todoNode as unknown as HTMLElement, options({
+    scope,
+    onItemsChange: (items) => calls.push(`todo:${items.map((item) => item.id).join(',')}`),
+  }));
+  const doneAction = sortable(doneNode as unknown as HTMLElement, options({
+    scope,
+    areaId: 'done',
+    items: [{ id: 'c' }],
+    onItemsChange: (items) => calls.push(`done:${items.map((item) => item.id).join(',')}`),
+  }));
+
+  coreCallbacks.onChange?.({
+    operation: 'transfer', itemId: 'b',
+    source: { areaId: 'todo', index: 1 }, destination: { areaId: 'done', index: 1 },
+    orders: [
+      { areaId: 'todo', itemIds: ['a'] },
+      { areaId: 'done', itemIds: ['c', 'b'] },
+    ],
+  });
+
+  assert.deepEqual(calls, ['todo:a', 'done:c,b', 'change:todo,done']);
+  todoAction.destroy();
+  doneAction.destroy();
+  scope.destroy();
+});
+
+test('shared scopes remain usable after one action is destroyed', () => {
+  const platform = fakePlatform();
+  const scope = createSortableScope<Task>();
+  const todoNode = fakeElement('UL', { ownerDocument: platform.document });
+  const doneNode = fakeElement('UL', { ownerDocument: platform.document });
+  const first = sortable(todoNode as unknown as HTMLElement, options({ scope }));
+  const second = sortable(doneNode as unknown as HTMLElement, options({
+    scope,
+    areaId: 'done',
+    items: [{ id: 'c' }],
+  }));
+
+  first.destroy();
+  second.destroy();
+  scope.destroy();
+});
+
+test('action replaces an area registration when its area ID or scope changes', () => {
+  const harness = svelteActionHarness<Task>();
+  const action = harness.action();
+  const nextScope = createSvelteSortableScope<Task>({}, () => ({
+    registerArea: () => () => undefined,
+    updateArea: () => undefined,
+    cancel: () => undefined,
+    destroy: () => undefined,
+  }));
+
+  action.update(harness.options({ areaId: 'done', scope: nextScope }));
+
+  assert.equal(harness.registrationCount('todo'), 0);
+  action.destroy();
+  nextScope.destroy();
+});
+
+test('a cancelled drag rolls back before the consumer callback and preserves rollback errors', () => {
+  const calls: string[] = [];
+  const rollbackError = new Error('rollback failed');
+  assert.throws(() => handleAfterDrag({
+    finish() {},
+    rollback() { throw rollbackError; },
+  }, {
+    onAfterDrag: () => calls.push('after'),
+  }, { status: 'cancelled', reason: 'escape' }), (error) => error === rollbackError);
+
+  assert.deepEqual(calls, ['after']);
+});
+
+test('Core rejects zero-child controlled bindings before any consumer callback', () => {
+  const platform = fakePlatform();
+  const errors: unknown[] = [];
+  let consumerCalls = 0;
+  const scope = createSvelteSortableScope<Task>({
+    onBeforeDragStart: () => { consumerCalls += 1; },
+    onChange: () => { consumerCalls += 1; },
+    onAfterDrag: () => { consumerCalls += 1; },
+    onError: (error) => errors.push(error),
+  }, (scopeOptions) => createSortableScopeInternal(scopeOptions, platform));
+  const sourceArea = fakeElement('UL', { ownerDocument: platform.document, selectors: [':scope > *'] });
+  const source = fakeElement('LI', { ownerDocument: platform.document, selectors: [':scope > *'] });
+  sourceArea.appendChild(source);
+  const emptyDestination = fakeElement('UL', { ownerDocument: platform.document, selectors: [':scope > *'] });
+  const sourceAction = sortable(sourceArea as unknown as HTMLElement, options({ scope, items: [{ id: 'a' }] }));
+  const destinationAction = sortable(emptyDestination as unknown as HTMLElement, options({
+    scope, areaId: 'done', items: [{ id: 'b' }],
+  }));
+  const down = pointer({ target: source, clientX: 1, clientY: 1 });
+  platform.setHits([source, sourceArea]);
+  sourceArea.dispatch('pointerdown', down);
+  platform.dispatchDocument('pointermove', pointer({ ...down, target: source, clientX: 5 }));
+  platform.flushFrame();
+
+  assert.equal((errors[0] as { code?: string }).code, 'INVALID_ELEMENT');
+  assert.equal(consumerCalls, 0);
+  sourceAction.destroy();
+  destinationAction.destroy();
+  scope.destroy();
+});
+
+test('an absent Svelte onError falls back to the Core platform reporter', () => {
+  const platform = fakePlatform();
+  const scope = createSvelteSortableScope<Task>({}, (scopeOptions) => (
+    createSortableScopeInternal(scopeOptions, platform)
+  ));
+  const sourceArea = fakeElement('UL', { ownerDocument: platform.document, selectors: [':scope > *'] });
+  const source = fakeElement('LI', { ownerDocument: platform.document, selectors: [':scope > *'] });
+  sourceArea.appendChild(source);
+  const emptyDestination = fakeElement('UL', { ownerDocument: platform.document, selectors: [':scope > *'] });
+  const sourceAction = sortable(sourceArea as unknown as HTMLElement, options({ scope, items: [{ id: 'a' }] }));
+  const destinationAction = sortable(emptyDestination as unknown as HTMLElement, options({
+    scope, areaId: 'done', items: [{ id: 'b' }],
+  }));
+  const down = pointer({ target: source, clientX: 1, clientY: 1 });
+  platform.setHits([source, sourceArea]);
+  sourceArea.dispatch('pointerdown', down);
+  platform.dispatchDocument('pointermove', pointer({ ...down, target: source, clientX: 5 }));
+  platform.flushFrame();
+
+  assert.equal((platform.reports[0] as { code?: string }).code, 'INVALID_ELEMENT');
+  sourceAction.destroy();
+  destinationAction.destroy();
+  scope.destroy();
+});
+
+test('real Core reports a consumer after-drag error after the action rolls back state', () => {
+  const platform = fakePlatform();
+  const consumerError = new Error('consumer after-drag failed');
+  const errors: unknown[] = [];
+  const afterReasons: string[] = [];
+  let todoItems: readonly Task[] = [{ id: 'a' }, { id: 'b' }];
+  let doneItems: readonly Task[] = [{ id: 'c' }];
+  const scope = createSvelteSortableScope<Task>({
+    onAfterDrag: (result) => {
+      afterReasons.push(result.reason);
+      throw consumerError;
+    },
+    onError: (error) => errors.push(error),
+  }, (scopeOptions) => createSortableScopeInternal(scopeOptions, platform));
+  const sourceArea = sortableArea(platform, 0, ['a', 'b']);
+  const destinationArea = sortableArea(platform, 200, ['c']);
+  const sourceAction = sortable(sourceArea as unknown as HTMLElement, options({
+    scope,
+    items: todoItems,
+    onItemsChange: (items) => { todoItems = items; },
+  }));
+  const destinationAction = sortable(destinationArea as unknown as HTMLElement, options({
+    scope,
+    areaId: 'done',
+    items: doneItems,
+    onItemsChange: (items) => { doneItems = items; },
+  }));
+  const source = sourceArea.fixtureChildren[1] as Element;
+  const destination = destinationArea.fixtureChildren[0] as Element;
+  const down = pointer({ target: source, clientX: 10, clientY: 40 });
+  platform.setHits([source, sourceArea]);
+  sourceArea.dispatch('pointerdown', down);
+  platform.dispatchDocument('pointermove', pointer({ ...down, target: source, clientX: 14 }));
+  platform.flushFrame();
+  platform.setHits([destination, destinationArea]);
+  platform.dispatchDocument('pointermove', pointer({
+    ...down, target: destination, clientX: 210, clientY: 1,
+  }));
+  platform.flushFrame();
+  platform.dispatchDocument('pointerup', pointer({
+    ...down, target: destination, clientX: 210, clientY: 1,
+  }));
+  platform.flushFrame();
+
+  assert.deepEqual(todoItems, [{ id: 'a' }, { id: 'b' }]);
+  assert.deepEqual(doneItems, [{ id: 'c' }]);
+  assert.deepEqual(afterReasons, ['state-not-committed']);
+  assert.deepEqual(errors, [consumerError]);
+  sourceAction.destroy();
+  destinationAction.destroy();
+  scope.destroy();
+});
+
+function sortableArea(
+  platform: ReturnType<typeof fakePlatform>,
+  left: number,
+  itemIds: readonly string[],
+) {
+  const area = fakeElement('UL', {
+    ownerDocument: platform.document,
+    rect: { left, top: 0, right: left + 100, bottom: 100, width: 100, height: 100 },
+  });
+  itemIds.forEach((itemId, index) => {
+    area.appendChild(fakeElement('LI', {
+      ownerDocument: platform.document,
+      attributes: { 'data-sortable-id': itemId },
+      rect: {
+        left, top: index * 30, right: left + 100, bottom: index * 30 + 20, width: 100, height: 20,
+      },
+      selectors: [':scope > *'],
+    }));
+  });
+  return area;
+}

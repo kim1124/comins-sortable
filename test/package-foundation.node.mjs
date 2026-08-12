@@ -51,6 +51,10 @@ test('declares the approved private package boundary', () => {
       types: './dist/vue.d.ts',
       import: './dist/vue.js',
     },
+    './svelte': {
+      types: './dist/svelte.d.ts',
+      import: './dist/svelte.js',
+    },
     './styles.css': './dist/styles.css',
   });
 });
