@@ -5,13 +5,8 @@ import type {
   SortableAreaUpdate,
   SortableChange,
 } from '../core/model.js';
-import type { FrameworkAreaBinding } from './bindings.js';
+import type { BindingSnapshot, FrameworkAreaBinding } from './bindings.js';
 import { BindingRegistry } from './bindings.js';
-
-interface Snapshot<T> {
-  binding: FrameworkAreaBinding<T>;
-  items: readonly T[];
-}
 
 export interface ControlledTransaction<T> {
   apply(change: SortableChange): FrameworkSortableChange<T>;
@@ -22,7 +17,7 @@ export interface ControlledTransaction<T> {
 }
 
 export class ControlledTransaction<T> implements ControlledTransaction<T> {
-  private originals: readonly Snapshot<T>[] | null = null;
+  private originals: readonly BindingSnapshot<T>[] | null = null;
 
   constructor(
     private readonly registry: BindingRegistry<T>,
@@ -39,8 +34,12 @@ export class ControlledTransaction<T> implements ControlledTransaction<T> {
     this.originals = snapshots;
 
     try {
-      for (const update of updates) {
-        this.requireBinding(update.areaId).setItems(update.items);
+      for (const [index, update] of updates.entries()) {
+        const snapshot = snapshots[index];
+        if (snapshot === undefined) {
+          throw new SortableError('INVALID_OPTION');
+        }
+        snapshot.binding.setItems(update.items);
       }
       this.onChange(enhancedChange);
       return enhancedChange;
@@ -106,16 +105,13 @@ export class ControlledTransaction<T> implements ControlledTransaction<T> {
     this.finish();
   }
 
-  private snapshots(change: SortableChange): readonly Snapshot<T>[] {
-    return change.orders.map((order) => {
-      const binding = this.requireBinding(order.areaId);
-      return { binding, items: binding.getItems() };
-    });
+  private snapshots(change: SortableChange): readonly BindingSnapshot<T>[] {
+    return this.registry.snapshot(change.orders.map((order) => order.areaId));
   }
 
   private updates(
     change: SortableChange,
-    snapshots: readonly Snapshot<T>[],
+    snapshots: readonly BindingSnapshot<T>[],
   ): readonly SortableAreaUpdate<T>[] {
     const snapshotsByAreaId = new Map(
       snapshots.map((snapshot) => [snapshot.binding.areaId, snapshot]),

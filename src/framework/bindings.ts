@@ -10,31 +10,35 @@ export interface FrameworkAreaBinding<T> {
   getElement(): Element | null;
 }
 
+export interface BindingSnapshot<T> {
+  binding: FrameworkAreaBinding<T>;
+  items: readonly T[];
+}
+
+interface BindingRecord<T> {
+  token: symbol;
+  binding: FrameworkAreaBinding<T>;
+}
+
 export class BindingRegistry<T> {
-  private readonly bindings = new Map<string, FrameworkAreaBinding<T>>();
+  private readonly bindings = new Map<string, BindingRecord<T>>();
 
   get size(): number {
     return this.bindings.size;
   }
 
   register(binding: FrameworkAreaBinding<T>): () => void {
-    if (this.bindings.has(binding.areaId)) {
+    const areaId = binding.areaId;
+    if (this.bindings.has(areaId)) {
       throw new SortableError('DUPLICATE_AREA_ID');
     }
 
-    const bindingItemIds = this.itemIds(binding);
-    const groupItemIds = this.groupItemIds(binding.group);
-    for (const itemId of bindingItemIds) {
-      if (groupItemIds.has(itemId)) {
-        throw new SortableError('DUPLICATE_ITEM_ID');
-      }
-      groupItemIds.add(itemId);
-    }
-
-    this.bindings.set(binding.areaId, binding);
+    this.scanGroups(new Set([binding.group]), binding);
+    const token = Symbol(areaId);
+    this.bindings.set(areaId, { token, binding });
     return () => {
-      if (this.bindings.get(binding.areaId) === binding) {
-        this.bindings.delete(binding.areaId);
+      if (this.bindings.get(areaId)?.token === token) {
+        this.bindings.delete(areaId);
       }
     };
   }
@@ -44,29 +48,73 @@ export class BindingRegistry<T> {
   }
 
   get(areaId: string): FrameworkAreaBinding<T> | undefined {
-    return this.bindings.get(areaId);
+    return this.bindings.get(areaId)?.binding;
   }
 
-  private groupItemIds(group: string): Set<SortableId> {
-    const itemIds = new Set<SortableId>();
-    for (const binding of this.bindings.values()) {
-      if (binding.group !== group) {
-        continue;
+  snapshot(areaIds: readonly string[]): readonly BindingSnapshot<T>[] {
+    const records = areaIds.map((areaId) => this.requireRecord(areaId));
+    const itemsByBinding = this.scanGroups(
+      new Set(records.map((record) => record.binding.group)),
+    );
+    return records.map((record) => ({
+      binding: record.binding,
+      items: itemsByBinding.get(record.binding) as readonly T[],
+    }));
+  }
+
+  private scanGroups(
+    groups: ReadonlySet<string>,
+    candidate?: FrameworkAreaBinding<T>,
+  ): Map<FrameworkAreaBinding<T>, readonly T[]> {
+    const itemsByBinding = new Map<FrameworkAreaBinding<T>, readonly T[]>();
+    const bindings: FrameworkAreaBinding<T>[] = [];
+    const read = (binding: FrameworkAreaBinding<T>): void => {
+      const items = binding.getItems();
+      itemsByBinding.set(binding, items);
+      bindings.push(binding);
+    };
+
+    for (const record of this.bindings.values()) {
+      if (groups.has(record.binding.group)) {
+        read(record.binding);
       }
-      for (const itemId of this.itemIds(binding)) {
+    }
+    if (candidate !== undefined) {
+      read(candidate);
+    }
+
+    const itemIdsByGroup = new Map<string, Set<SortableId>>();
+    for (const binding of bindings) {
+      const items = itemsByBinding.get(binding) as readonly T[];
+      let itemIds = itemIdsByGroup.get(binding.group);
+      if (itemIds === undefined) {
+        itemIds = new Set<SortableId>();
+        itemIdsByGroup.set(binding.group, itemIds);
+      }
+      for (const item of items) {
+        const itemId = this.itemId(binding, item);
+        if (itemIds.has(itemId)) {
+          throw new SortableError('DUPLICATE_ITEM_ID');
+        }
         itemIds.add(itemId);
       }
     }
-    return itemIds;
+    return itemsByBinding;
   }
 
-  private itemIds(binding: FrameworkAreaBinding<T>): readonly SortableId[] {
-    return binding.getItems().map((item) => {
-      const itemId = binding.getItemId(item);
-      if (typeof itemId !== 'string' && typeof itemId !== 'number') {
-        throw new SortableError('MISSING_ITEM_ID');
-      }
-      return itemId;
-    });
+  private itemId(binding: FrameworkAreaBinding<T>, item: T): SortableId {
+    const itemId = binding.getItemId(item);
+    if (typeof itemId !== 'string' && typeof itemId !== 'number') {
+      throw new SortableError('MISSING_ITEM_ID');
+    }
+    return itemId;
+  }
+
+  private requireRecord(areaId: string): BindingRecord<T> {
+    const record = this.bindings.get(areaId);
+    if (record === undefined) {
+      throw new SortableError('INVALID_OPTION');
+    }
+    return record;
   }
 }

@@ -9,6 +9,7 @@ import {
   renderedArea,
   throwingControlledFixture,
 } from '../helpers/framework-fixtures.js';
+import { hasCode } from '../helpers/core-fixtures.js';
 
 function transferChange() {
   return {
@@ -87,6 +88,123 @@ test('root callback failure restores every affected original array', () => {
   assert.throws(() => fixture.transaction.apply(transferChange()), /root callback failed/);
   assert.deepEqual(fixture.todo, [{ id: 'a' }, { id: 'b' }]);
   assert.deepEqual(fixture.done, [{ id: 'c' }]);
+});
+
+test('apply rejects current duplicate group IDs before setters or root callback and reads affected arrays once', () => {
+  const registry = new BindingRegistry<{ id: string }>();
+  let todo: readonly { id: string }[] = [{ id: 'a' }, { id: 'b' }];
+  let done: readonly { id: string }[] = [{ id: 'c' }];
+  let todoReads = 0;
+  let doneReads = 0;
+  const calls: string[] = [];
+  registry.register({
+    ...renderedArea('todo', 'tasks', todo),
+    getItems: () => {
+      todoReads += 1;
+      return todo;
+    },
+    setItems: (items) => {
+      calls.push('todo:set');
+      todo = items;
+    },
+  });
+  registry.register({
+    ...renderedArea('done', 'tasks', done),
+    getItems: () => {
+      doneReads += 1;
+      return done;
+    },
+    setItems: (items) => {
+      calls.push('done:set');
+      done = items;
+    },
+  });
+  todo = [{ id: 'a' }, { id: 'a' }];
+  todoReads = 0;
+  doneReads = 0;
+  const transaction = new ControlledTransaction(registry, () => calls.push('root'));
+
+  assert.throws(() => transaction.apply(transferChange()), hasCode('DUPLICATE_ITEM_ID'));
+  assert.deepEqual(calls, []);
+  assert.equal(todoReads, 1);
+  assert.equal(doneReads, 1);
+  transaction.rollback();
+  assert.deepEqual(todo, [{ id: 'a' }, { id: 'a' }]);
+  assert.deepEqual(done, [{ id: 'c' }]);
+});
+
+test('apply and rollback keep snapshot bindings when a setter replaces another registered area', () => {
+  const registry = new BindingRegistry<{ id: string }>();
+  let todo = [{ id: 'a' }, { id: 'b' }];
+  let originalDone = [{ id: 'c' }];
+  let replacementDone = [{ id: 'replacement' }];
+  let replaceDone = true;
+  const oldDone = {
+    ...renderedArea('done', 'tasks', originalDone),
+    getItems: () => originalDone,
+    setItems: (items: readonly { id: string }[]) => {
+      originalDone = items as { id: string }[];
+    },
+  };
+  registry.register({
+    ...renderedArea('todo', 'tasks', todo),
+    getItems: () => todo,
+    setItems: (items) => {
+      todo = items as { id: string }[];
+      if (replaceDone) {
+        replaceDone = false;
+        registry.unregister('done');
+        registry.register({
+          ...renderedArea('done', 'tasks', replacementDone),
+          getItems: () => replacementDone,
+          setItems: (next) => {
+            replacementDone = next as { id: string }[];
+          },
+        });
+      }
+    },
+  });
+  registry.register(oldDone);
+  const transaction = new ControlledTransaction(registry, () => {
+    throw new Error('root callback failed');
+  });
+
+  assert.throws(() => transaction.apply(transferChange()), /root callback failed/);
+  assert.deepEqual(todo, [{ id: 'a' }, { id: 'b' }]);
+  assert.deepEqual(originalDone, [{ id: 'c' }]);
+  assert.deepEqual(replacementDone, [{ id: 'replacement' }]);
+});
+
+test('rollback continues after a restoration setter failure and preserves the apply error', () => {
+  const registry = new BindingRegistry<{ id: string }>();
+  let todo = [{ id: 'a' }, { id: 'b' }];
+  let done = [{ id: 'c' }];
+  let todoSetCalls = 0;
+  registry.register({
+    ...renderedArea('todo', 'tasks', todo),
+    getItems: () => todo,
+    setItems: (items) => {
+      todoSetCalls += 1;
+      todo = items as { id: string }[];
+      if (todoSetCalls === 2) {
+        throw new Error('todo rollback failed');
+      }
+    },
+  });
+  registry.register({
+    ...renderedArea('done', 'tasks', done),
+    getItems: () => done,
+    setItems: (items) => {
+      done = items as { id: string }[];
+    },
+  });
+  const transaction = new ControlledTransaction(registry, () => {
+    throw new Error('root callback failed');
+  });
+
+  assert.throws(() => transaction.apply(transferChange()), /root callback failed/);
+  assert.deepEqual(done, [{ id: 'c' }]);
+  assert.equal(todoSetCalls, 2);
 });
 
 test('finish and destroy discard retained originals so later rollback does not overwrite state', () => {
