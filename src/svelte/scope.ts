@@ -94,6 +94,7 @@ export function createSvelteSortableController<T>(
     },
   });
   let destroyed = false;
+  const registrations = new Set<() => void>();
 
   return {
     registerArea(element, binding, areaOptions) {
@@ -107,12 +108,15 @@ export function createSvelteSortableController<T>(
         throw error;
       }
       let disposed = false;
-      return () => {
+      const dispose = (): void => {
         if (disposed) return;
         disposed = true;
+        registrations.delete(dispose);
         unregisterScope?.();
         unregisterBinding();
       };
+      registrations.add(dispose);
+      return dispose;
     },
     updateArea(areaId, patch) {
       scope.updateArea(areaId, patch);
@@ -123,6 +127,7 @@ export function createSvelteSortableController<T>(
     destroy() {
       if (destroyed) return;
       destroyed = true;
+      for (const dispose of [...registrations]) dispose();
       scope.destroy();
       transaction.destroy();
     },

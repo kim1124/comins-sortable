@@ -4,6 +4,7 @@ import {
   type SvelteActionReturn,
   type SvelteSortableOptions,
 } from 'comins-sortable/svelte';
+import type { Action } from 'svelte/action';
 
 interface Task {
   id: string;
@@ -32,12 +33,17 @@ const options: SvelteSortableOptions<Task> = {
 const action: SvelteActionReturn<Task> = sortable(document.createElement('div'), options);
 action.update(options);
 action.destroy();
+const compatibleAction: Action<HTMLElement, SvelteSortableOptions<Task>> = sortable<Task>;
+void compatibleAction;
 
 // @ts-expect-error areaId is required
 sortable(document.createElement('div'), { items: tasks, itemKey: 'id', onItemsChange: () => undefined });
 
 // @ts-expect-error items are required
 sortable(document.createElement('div'), { areaId: 'todo', itemKey: 'id', onItemsChange: () => undefined });
+
+// @ts-expect-error itemKey is required
+sortable(document.createElement('div'), { areaId: 'todo', items: tasks, onItemsChange: () => undefined });
 
 // @ts-expect-error onItemsChange is required
 sortable(document.createElement('div'), { areaId: 'todo', items: tasks, itemKey: 'id' });

@@ -4,6 +4,10 @@ import test from 'node:test';
 import { createSortableScope, sortable } from '../../../src/svelte.js';
 import { createSortableScopeInternal } from '../../../src/core/scope.js';
 import { handleAfterDrag, createSvelteSortableScope } from '../../../src/svelte/scope.js';
+import {
+  createSvelteSortableAction,
+  inspectSvelteActionForTest,
+} from '../../../src/svelte/sortable.js';
 import { svelteActionHarness } from '../helpers/framework-fixtures.js';
 import { fakeElement, fakePlatform, pointer } from '../helpers/core-fixtures.js';
 
@@ -145,6 +149,132 @@ test('action replaces an area registration when its area ID or scope changes', (
   assert.equal(harness.registrationCount('todo'), 0);
   action.destroy();
   nextScope.destroy();
+});
+
+test('a failed same-scope area transition restores the previous working registration', () => {
+  const harness = svelteActionHarness<Task>();
+  const action = harness.action();
+  const duplicate = sortable(fakeElement('UL') as unknown as HTMLElement, harness.options({
+    areaId: 'done', items: [{ id: 'c' }],
+  }));
+
+  assert.throws(() => action.update(harness.options({ areaId: 'done' })), {
+    code: 'DUPLICATE_AREA_ID',
+  });
+  assert.equal(harness.registrationCount('todo'), 1);
+
+  action.update(harness.options({ disabled: true }));
+  assert.equal(harness.area('todo')?.disabled, true);
+  duplicate.destroy();
+  action.update(harness.options({ areaId: 'done' }));
+  assert.equal(harness.registrationCount('done'), 1);
+  action.destroy();
+});
+
+test('a Core registration failure restores the old area and later permits a valid transition', () => {
+  const registrations = new Set<string>();
+  let rejectDone = true;
+  const scope = createSvelteSortableScope<Task>({}, () => ({
+    registerArea(_element, areaOptions) {
+      if (areaOptions.areaId === 'done' && rejectDone) throw new Error('Core registration failed');
+      registrations.add(areaOptions.areaId);
+      return () => registrations.delete(areaOptions.areaId);
+    },
+    updateArea: () => undefined,
+    cancel: () => undefined,
+    destroy: () => registrations.clear(),
+  }));
+  const action = sortable(fakeElement('UL') as unknown as HTMLElement, options({ scope }));
+
+  assert.throws(() => action.update(options({ scope, areaId: 'done', items: [{ id: 'c' }] })), /Core registration failed/);
+  assert.deepEqual([...registrations], ['todo']);
+  rejectDone = false;
+  action.update(options({ scope, areaId: 'done', items: [{ id: 'c' }] }));
+  assert.deepEqual([...registrations], ['done']);
+  action.destroy();
+  scope.destroy();
+});
+
+test('a failed private Scope transition destroys only its new private candidate', () => {
+  const harness = svelteActionHarness<Task>();
+  let candidateDestroys = 0;
+  const action = createSvelteSortableAction(harness.element, harness.options(), () => (
+    createSvelteSortableScope<Task>({}, () => ({
+      registerArea: () => { throw new Error('candidate registration failed'); },
+      updateArea: () => undefined,
+      cancel: () => undefined,
+      destroy: () => { candidateDestroys += 1; },
+    }))
+  ));
+
+  assert.throws(() => action.update({
+    areaId: 'todo', group: 'tasks', items: todo(), itemKey: 'id', onItemsChange: () => undefined,
+  }), /candidate registration failed/);
+  assert.equal(candidateDestroys, 1);
+  assert.equal(harness.registrationCount('todo'), 1);
+  action.destroy();
+});
+
+test('initial private registration failure destroys its owned Scope candidate', () => {
+  let destroys = 0;
+  assert.throws(() => createSvelteSortableAction(
+    fakeElement('UL') as unknown as HTMLElement,
+    { areaId: 'todo', items: todo(), itemKey: 'id', onItemsChange: () => undefined },
+    () => createSvelteSortableScope<Task>({}, () => ({
+      registerArea: () => { throw new Error('initial registration failed'); },
+      updateArea: () => undefined,
+      cancel: () => undefined,
+      destroy: () => { destroys += 1; },
+    })),
+  ), /initial registration failed/);
+  assert.equal(destroys, 1);
+});
+
+test('a destroyed supplied Scope fails a transition without detaching the old action', () => {
+  const harness = svelteActionHarness<Task>();
+  const action = harness.action();
+  const destroyedScope = createSvelteSortableScope<Task>({}, () => ({
+    registerArea: () => () => undefined,
+    updateArea: () => undefined,
+    cancel: () => undefined,
+    destroy: () => undefined,
+  }));
+  destroyedScope.destroy();
+
+  assert.throws(() => action.update(harness.options({ scope: destroyedScope })), {
+    code: 'INVALID_OPTION',
+  });
+  assert.equal(harness.registrationCount('todo'), 1);
+  action.destroy();
+});
+
+test('destroy clears action references and later updates are no-ops', () => {
+  const harness = svelteActionHarness<Task>();
+  const action = harness.privateAction();
+
+  action.destroy();
+  action.update(harness.options());
+
+  assert.deepEqual(inspectSvelteActionForTest(action), {
+    hasNode: false, hasOptions: false, hasScope: false, hasCreateScope: false, hasRegistration: false,
+  });
+  assert.equal(harness.registrationCount('todo'), 0);
+});
+
+test('destroying a shared Scope drains all action registrations and stale action cleanup is safe', () => {
+  const harness = svelteActionHarness<Task>();
+  const first = harness.action();
+  const second = sortable(fakeElement('UL') as unknown as HTMLElement, harness.options({
+    areaId: 'done', items: [{ id: 'c' }],
+  }));
+
+  harness.scope.destroy();
+  first.destroy();
+  second.destroy();
+
+  assert.equal(harness.registrationCount('todo'), 0);
+  assert.equal(harness.registrationCount('done'), 0);
+  assert.equal(harness.retainedCallbackCount(), 0);
 });
 
 test('a cancelled drag rolls back before the consumer callback and preserves rollback errors', () => {

@@ -43,3 +43,28 @@ node --input-type=module --eval "await import('./dist/svelte.js')"
 ## Remaining risk
 
 - The sanitized harness uses the production Scope/action lifecycle with an injected Core surface, and structural/error activation uses the real Core fake platform. Real browser Svelte compilation and pointer E2E remain Task 11 scope.
+
+## Review fix round 1
+
+### RED evidence
+
+```sh
+node --import tsx --test test/unit/svelte/action.test.ts
+npm run test:types
+```
+
+- The review regressions were first fixed as tests. The initial focused run failed because the new deterministic action-inspection hook was absent from the production module.
+
+### GREEN changes
+
+- Area and Scope transitions are transactional: a same-Scope transition detaches only when necessary, restores the old registration after candidate failure, and preserves the original failure if restoration also fails.
+- A failed supplied/destroyed Scope transition leaves the old action attached. A newly created private Scope candidate is destroyed on transition or initial-registration failure.
+- Action state is now one nullable object. `destroy()` unregisters first, destroys an owned Scope, then clears node, options, Scope, Scope factory, and disposer references; later updates are no-ops.
+- The Svelte controller tracks every active registration disposer and drains them before Core Scope/transaction destruction, so destroying a shared Scope releases every action binding even when action objects remain alive.
+- Added missing `itemKey` type rejection and type-only Svelte `Action` compatibility coverage; no Svelte runtime import is emitted.
+
+### GREEN evidence
+
+- Focused Svelte suite: 17/17 passed.
+- Typecheck, build, type fixture, built import, and runtime Svelte-import scan passed.
+- `npm run verify` passed: policy 26/26 and full unit 156/156; pre-commit and diff check passed.
