@@ -195,6 +195,80 @@ test('a Core registration failure restores the old area and later permits a vali
   scope.destroy();
 });
 
+test('a cross-scope todo-to-todo transition preserves its Core area marker and restores absence on destroy', () => {
+  const platform = fakePlatform();
+  const node = fakeElement('UL', { ownerDocument: platform.document });
+  const firstScope = coreScope(platform);
+  const secondScope = coreScope(platform);
+  const action = sortable(node as unknown as HTMLElement, options({ scope: firstScope, items: [] }));
+
+  action.update(options({ scope: secondScope, items: [] }));
+  assert.equal(node.getAttribute('data-comins-sortable-area'), 'todo');
+
+  action.destroy();
+  assert.equal(node.hasAttribute('data-comins-sortable-area'), false);
+  firstScope.destroy();
+  secondScope.destroy();
+});
+
+test('a cross-scope todo-to-done transition keeps the new marker then restores the original attribute', () => {
+  const platform = fakePlatform();
+  const node = fakeElement('UL', {
+    ownerDocument: platform.document,
+    attributes: { 'data-comins-sortable-area': 'legacy-area' },
+  });
+  const firstScope = coreScope(platform);
+  const secondScope = coreScope(platform);
+  const action = sortable(node as unknown as HTMLElement, options({ scope: firstScope, items: [] }));
+
+  action.update(options({ scope: secondScope, areaId: 'done', items: [] }));
+  assert.equal(node.getAttribute('data-comins-sortable-area'), 'done');
+
+  action.destroy();
+  assert.equal(node.getAttribute('data-comins-sortable-area'), 'legacy-area');
+  firstScope.destroy();
+  secondScope.destroy();
+});
+
+test('a failed cross-scope candidate restores the old marker and later transition succeeds', () => {
+  const platform = fakePlatform();
+  const node = fakeElement('UL', { ownerDocument: platform.document });
+  const firstScope = coreScope(platform);
+  const validScope = coreScope(platform);
+  const failingScope = createSvelteSortableScope<Task>({}, () => ({
+    registerArea: () => { throw new Error('candidate Core registration failed'); },
+    updateArea: () => undefined,
+    cancel: () => undefined,
+    destroy: () => undefined,
+  }));
+  const action = sortable(node as unknown as HTMLElement, options({ scope: firstScope, items: [] }));
+
+  assert.throws(() => action.update(options({ scope: failingScope, areaId: 'done', items: [] })), /candidate Core registration failed/);
+  assert.equal(node.getAttribute('data-comins-sortable-area'), 'todo');
+  action.update(options({ scope: validScope, areaId: 'done', items: [] }));
+  assert.equal(node.getAttribute('data-comins-sortable-area'), 'done');
+
+  action.destroy();
+  assert.equal(node.hasAttribute('data-comins-sortable-area'), false);
+  firstScope.destroy();
+  failingScope.destroy();
+  validScope.destroy();
+});
+
+test('final action destroy restores an initial area marker exactly', () => {
+  const platform = fakePlatform();
+  const node = fakeElement('UL', {
+    ownerDocument: platform.document,
+    attributes: { 'data-comins-sortable-area': 'existing-area' },
+  });
+  const scope = coreScope(platform);
+  const action = sortable(node as unknown as HTMLElement, options({ scope, items: [] }));
+
+  action.destroy();
+  assert.equal(node.getAttribute('data-comins-sortable-area'), 'existing-area');
+  scope.destroy();
+});
+
 test('a failed private Scope transition destroys only its new private candidate', () => {
   const harness = svelteActionHarness<Task>();
   let candidateDestroys = 0;
@@ -419,4 +493,11 @@ function sortableArea(
     }));
   });
   return area;
+}
+
+function coreScope(platform: ReturnType<typeof fakePlatform>) {
+  return createSvelteSortableScope<Task>(
+    {},
+    (scopeOptions) => createSortableScopeInternal(scopeOptions, platform),
+  );
 }

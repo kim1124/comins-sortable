@@ -68,3 +68,25 @@ npm run test:types
 - Focused Svelte suite: 17/17 passed.
 - Typecheck, build, type fixture, built import, and runtime Svelte-import scan passed.
 - `npm run verify` passed: policy 26/26 and full unit 156/156; pre-commit and diff check passed.
+
+## Review fix round 2
+
+### RED evidence
+
+```sh
+node --import tsx --test test/unit/svelte/action.test.ts
+```
+
+- Real Core/fake-platform tests reproduced a cross-Scope marker loss: `todo` became absent after a `todo → todo` transition, `todo → done` reverted to the old marker, and a later valid transition after candidate failure also lost its marker.
+
+### GREEN changes
+
+- Cross-Scope transitions now create a private candidate if needed, detach the old Core registration, then register the candidate. Candidate failure restores the old registration/marker transactionally and preserves the original failure.
+- The old owned Scope is destroyed only after the candidate registration succeeds. Supplied candidates are never destroyed on failure; owned private candidates still are.
+- Added actual Core marker coverage for same-ID and changed-ID cross-Scope transitions, candidate failure/recovery, final destroy, and exact restoration of a pre-existing area attribute.
+
+### GREEN evidence
+
+- Focused Svelte suite: 21/21 passed.
+- Typecheck, build, type fixture, built import, and runtime Svelte-import scan passed.
+- `npm run verify` passed: policy 26/26 and full unit 160/160; pre-commit and diff check passed.

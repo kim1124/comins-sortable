@@ -162,9 +162,9 @@ function transition<T>(
     if (scopeChanged) {
       candidateScope = nextOptions.scope ?? createOwnedScope(state);
       createdCandidate = nextOptions.scope === undefined;
-      candidateRegistration = register(state, candidateScope, nextOptions);
       disposeRegistration(state);
       previousDetached = true;
+      candidateRegistration = register(state, candidateScope, nextOptions);
     } else {
       disposeRegistration(state);
       previousDetached = true;
