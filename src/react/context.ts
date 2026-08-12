@@ -47,7 +47,10 @@ export function createReactSortableController<T>(
   });
   const createScope = options.createScope ?? createSortableScope;
   const scope = createScope({
-    onBeforeDragStart: (context) => options.getRootProps().onBeforeDragStart?.(context),
+    onBeforeDragStart: (context) => {
+      bindings.validateElements();
+      return options.getRootProps().onBeforeDragStart?.(context);
+    },
     onDragStart: (context) => options.getRootProps().onDragStart?.(context),
     onDrag: (context) => options.getRootProps().onDrag?.(context),
     onInsertDragArea: (event) => options.getRootProps().onInsertDragArea?.(event),
@@ -94,15 +97,31 @@ export function createReactSortableController<T>(
   };
 }
 
-function handleAfterDrag<T>(
+export function handleAfterDrag<T>(
   transaction: ControlledTransaction<T>,
   rootProps: ReactSortableRootCallbacks<T>,
   result: AfterDragResult,
 ): void {
+  let firstError: unknown;
   if (result.status === 'dropped') {
-    transaction.finish();
+    try {
+      transaction.finish();
+    } catch (error) {
+      firstError = error;
+    }
   } else {
-    transaction.rollback();
+    try {
+      transaction.rollback();
+    } catch (error) {
+      firstError = error;
+    }
   }
-  rootProps.onAfterDrag?.(result);
+  try {
+    rootProps.onAfterDrag?.(result);
+  } catch (error) {
+    firstError ??= error;
+  }
+  if (firstError !== undefined) {
+    throw firstError;
+  }
 }

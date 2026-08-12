@@ -8,6 +8,7 @@ import {
   createReactSortableController,
   type ReactSortableController,
 } from '../../../src/react/context.js';
+import { createReactAreaLifecycle } from '../../../src/react/lifecycle.js';
 import type {
   ItemKey,
   SortableAreaOptions,
@@ -207,6 +208,7 @@ export function reactAdapterHarness<T extends Task>(): {
   const registrations = new Map<string, number>();
   const updates = new Map<string, number>();
   const states = new Map<string, readonly T[]>();
+  const lifecycles = new Map<string, { update(patch: Partial<SortableAreaOptions>): void }>();
   let callbacks: SortableScopeOptions = {};
   let controller: ReactSortableController<T> | null = null;
   let rootMounted = false;
@@ -256,35 +258,34 @@ export function reactAdapterHarness<T extends Task>(): {
         createScope,
       });
     const ownsController = !rootMounted;
-    let currentProps = props;
     states.set(props.areaId, props.items);
-    const binding = {
-      areaId: props.areaId,
-      get group() {
-        return currentProps.group ?? '';
-      },
-      getItems: () => states.get(props.areaId) as readonly T[],
-      getItemId: (item: T) => (
-        typeof currentProps.itemKey === 'function'
-          ? currentProps.itemKey(item)
-          : item[currentProps.itemKey]
-      ) as string,
-      setItems: (items: readonly T[]) => {
+    let lifecycle!: ReturnType<typeof createReactAreaLifecycle<T>>;
+    let currentProps: ReactAdapterAreaProps<T> = {
+      ...props,
+      onItemsChange: (items) => {
         states.set(props.areaId, items);
         calls.push(`set:${props.areaId}:${items.map((item) => item.id).join(',')}`);
-        currentProps.onItemsChange(items);
+        props.onItemsChange(items);
+        currentProps = { ...currentProps, items };
+        lifecycle.update(currentProps);
       },
-      getElement: () => renderedElement((states.get(props.areaId) ?? []).length),
     };
-    const unregister = activeController.registerArea(
-      binding.getElement() as Element,
-      binding,
-      toAreaOptions(props),
-    );
+    lifecycle = createReactAreaLifecycle({
+      controller: rootMounted ? activeController : null,
+      createController: rootMounted ? undefined : () => activeController,
+      props: currentProps,
+    });
+    lifecycle.setElement(renderedElement(props.items.length) as HTMLDivElement);
+    lifecycles.set(props.areaId, {
+      update(patch) {
+        currentProps = { ...currentProps, ...patch };
+        lifecycle.update(currentProps);
+      },
+    });
     return () => {
-      unregister();
+      lifecycle.dispose();
+      lifecycles.delete(props.areaId);
       if (ownsController) {
-        activeController.destroy();
         if (controller === activeController) {
           controller = null;
         }
@@ -335,7 +336,7 @@ export function reactAdapterHarness<T extends Task>(): {
     },
     mountArea,
     updateArea(areaId, patch) {
-      ensureController().updateArea(areaId, patch);
+      lifecycles.get(areaId)?.update(patch);
     },
     beginTransfer(itemId, sourceAreaId, sourceIndex, destinationAreaId, destinationIndex) {
       applyTransfer(itemId, sourceAreaId, sourceIndex, destinationAreaId, destinationIndex);

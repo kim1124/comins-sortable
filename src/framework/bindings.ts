@@ -62,6 +62,22 @@ export class BindingRegistry<T> {
     }));
   }
 
+  validateElements(): void {
+    for (const record of this.bindings.values()) {
+      const element = record.binding.getElement();
+      const items = record.binding.getItems();
+      if (element === null) {
+        throw new SortableError('INVALID_ELEMENT');
+      }
+      const directChildren = Array.from(element.children).filter(
+        (child) => !child.hasAttribute('data-comins-sortable-placeholder'),
+      );
+      if (directChildren.length !== items.length) {
+        throw new SortableError('INVALID_ELEMENT');
+      }
+    }
+  }
+
   private scanGroups(
     groups: ReadonlySet<string>,
     candidate?: FrameworkAreaBinding<T>,
