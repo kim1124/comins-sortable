@@ -1,4 +1,9 @@
-import { reorder, SortableError, transfer } from '../../src/core.js';
+import {
+  createSortableScope,
+  reorder,
+  SortableError,
+  transfer,
+} from '../../src/core.js';
 import type {
   AfterDragResult,
   DragContext,
@@ -7,11 +12,15 @@ import type {
   ItemKey,
   PointerSnapshot,
   SortableAreaUpdate,
+  SortableAreaOptions,
+  SortableAreaPatch,
   SortableChange,
   SortableDirection,
   SortableId,
   SortableLocation,
   SortableOrder,
+  SortableScope,
+  SortableScopeOptions,
 } from '../../src/core.js';
 
 interface Item {
@@ -69,6 +78,16 @@ const transferredItems: {
   sourceItems: readonly Item[];
   destinationItems: readonly Item[];
 } = transfer(items, [], 0, 0);
+const areaOptions: SortableAreaOptions = {
+  areaId: 'todo',
+  item: '[data-sortable-item]',
+  getItemId: (element) => element.getAttribute('data-id') ?? 0,
+};
+const areaPatch: SortableAreaPatch = { disabled: true };
+const scopeOptions: SortableScopeOptions = {
+  onChange: (sortableChange) => void sortableChange,
+};
+const scope: SortableScope = createSortableScope(scopeOptions);
 
 void [
   key,
@@ -79,4 +98,7 @@ void [
   error,
   reorderedItems,
   transferredItems,
+  areaOptions,
+  areaPatch,
+  scope,
 ];

@@ -32,6 +32,7 @@ export interface AreaGeometry {
   accept(context: DragContext): boolean;
   depth: number;
   rect: RectSnapshot;
+  emptyInsertThreshold?: number;
 }
 
 interface GeometryCacheEntry {

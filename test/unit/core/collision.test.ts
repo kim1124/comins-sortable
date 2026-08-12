@@ -99,6 +99,26 @@ test('empty horizontal areas expand their zero-width axis only and reject zero-a
   }), undefined);
 });
 
+test('empty-area fallback applies each area threshold independently', () => {
+  const narrow = {
+    ...rectArea('narrow', 0, 100, 100, 0),
+    emptyInsertThreshold: 2,
+  };
+  const wide = {
+    ...rectArea('wide', 200, 100, 100, 0),
+    emptyInsertThreshold: 12,
+  };
+
+  assert.equal(findAreaAtPoint({
+    point: { x: 250, y: 110 },
+    directHits: [],
+    emptyAreas: [narrow, wide],
+    emptyInsertThreshold: 0,
+    sourceGroup: 'tasks',
+    context: dragContext(),
+  })?.areaId, 'wide');
+});
+
 test('direct hits select the deepest accepted area even when outer arrives first', () => {
   const inner = rectArea('inner', 0, 0, 100, 100, { depth: 2 });
 

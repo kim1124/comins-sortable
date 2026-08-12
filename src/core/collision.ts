@@ -62,7 +62,11 @@ export function findAreaAtPoint(input: {
 
   return input.emptyAreas.find((area) => (
     accepts(area, input)
-    && containsEmptyArea(area, input.point, input.emptyInsertThreshold)
+    && containsEmptyArea(
+      area,
+      input.point,
+      area.emptyInsertThreshold ?? input.emptyInsertThreshold,
+    )
   ));
 }
 

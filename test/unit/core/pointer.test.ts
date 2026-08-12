@@ -39,15 +39,41 @@ test('pointer accepts only primary and left-button mouse input', () => {
   const { events, platform, sensor } = sensorFixture();
   const item = fakeElement('LI');
 
-  sensor.pointerDown(pointer({ isPrimary: false, target: item }));
+  assert.equal(sensor.pointerDown(pointer({ isPrimary: false, target: item })), false);
   sensor.pointerMove(pointer({ clientX: 10, target: item }));
   platform.flushFrame();
-  sensor.pointerDown(pointer({ button: 1, target: item }));
+  assert.equal(sensor.pointerDown(pointer({ button: 1, target: item })), false);
   sensor.pointerMove(pointer({ clientX: 10, target: item }));
   platform.flushFrame();
 
   assert.deepEqual(events, []);
   assert.equal(platform.listenerCount(), 0);
+});
+
+test('activation callback can reject a pending attempt without cancellation', () => {
+  const platform = fakePlatform();
+  const item = fakeElement('LI');
+  const events: string[] = [];
+  const sensor = createPointerSensor({
+    activationDistance: 4,
+    platform,
+    onActivate: () => {
+      events.push('activate');
+      return false;
+    },
+    onMove: () => events.push('move'),
+    onCancel: () => events.push('cancel'),
+    onRelease: () => events.push('release'),
+    onEnd: () => events.push('end'),
+  });
+
+  assert.equal(sensor.pointerDown(pointer({ target: item }), item), true);
+  sensor.pointerMove(pointer({ clientX: 4, target: item }));
+  platform.flushFrame();
+
+  assert.deepEqual(events, ['activate', 'end']);
+  assert.equal(platform.listenerCount(), 0);
+  assert.deepEqual(item.releasedPointers, [1]);
 });
 
 test('explicit handle takes precedence over the ignore selector', () => {
@@ -212,6 +238,19 @@ test('unmount and destroy cancel only an activated drag and are idempotent', () 
     assert.equal(platform.listenerCount(), 0);
     assert.equal(platform.frameCount(), 0);
   }
+});
+
+test('owner cancellation uses the supplied approved reason', () => {
+  const { events, platform, sensor } = sensorFixture();
+  const item = fakeElement('LI');
+  sensor.pointerDown(pointer({ target: item }), item);
+  sensor.pointerMove(pointer({ clientX: 4, target: item }));
+  platform.flushFrame();
+
+  sensor.cancel('disabled');
+
+  assert.deepEqual(events, ['activate', 'cancel:disabled']);
+  assert.equal(platform.listenerCount(), 0);
 });
 
 test('pending pointer attempts end silently on release, unmount, and destroy', () => {

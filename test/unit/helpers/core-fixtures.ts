@@ -13,18 +13,37 @@ import type {
 } from '../../../src/core/model.js';
 import type { AreaGeometry, ItemGeometry, RectSnapshot } from '../../../src/core/geometry.js';
 
-interface FakeElementOptions {
+export interface FakeElementOptions {
   ownerDocument?: object;
   parentElement?: Element | null;
   rect?: RectSnapshot;
   selectors?: readonly string[];
+  attributes?: Readonly<Record<string, string>>;
+  children?: readonly FakeElement[];
+  id?: string;
+  textContent?: string;
+  value?: string;
+  style?: Readonly<Record<string, string>>;
+  computedStyle?: Readonly<Record<string, string>>;
+  scrollTop?: number;
+  scrollLeft?: number;
+  scrollHeight?: number;
+  scrollWidth?: number;
+  clientHeight?: number;
+  clientWidth?: number;
 }
 
 export interface FakeElement extends Element {
-  readonly fixtureChildren: Element[];
+  readonly fixtureChildren: FakeElement[];
   readonly rect: RectSnapshot;
   readonly capturedPointers: number[];
   readonly releasedPointers: number[];
+  readonly classNames: Set<string>;
+  readonly computedStyle: Record<string, string>;
+  readonly scrolledBy: Array<{ left: number; top: number }>;
+  readonly style: CSSStyleDeclaration;
+  dispatch(type: string, event: object): void;
+  focus(): void;
 }
 
 const defaultDocument = {};
@@ -45,27 +64,102 @@ export function fakeElement(
   options: FakeElementOptions = {},
 ): FakeElement {
   const selectors = new Set(options.selectors ?? []);
+  const attributes = new Map(Object.entries(options.attributes ?? {}));
+  const classNames = new Set<string>();
   const capturedPointers: number[] = [];
   const releasedPointers: number[] = [];
+  const listeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
+  const styleValues: Record<string, string> = { ...options.style };
+  const style = new Proxy(styleValues, {
+    get(target, property) {
+      if (typeof property === 'string') {
+        return target[property] ?? '';
+      }
+      return Reflect.get(target, property);
+    },
+    set(target, property, value) {
+      if (typeof property === 'string') {
+        target[property] = String(value);
+        return true;
+      }
+      return Reflect.set(target, property, value);
+    },
+  });
   const element = {
     tagName,
     ownerDocument: options.ownerDocument ?? defaultDocument,
     parentElement: options.parentElement ?? null,
-    fixtureChildren: [] as Element[],
+    fixtureChildren: [] as FakeElement[],
     rect: options.rect ?? rect(0, 0, 0, 0),
+    id: options.id ?? '',
+    textContent: options.textContent ?? '',
+    value: options.value ?? '',
+    style,
+    classNames,
+    computedStyle: {
+      overflowX: 'visible',
+      overflowY: 'visible',
+      ...options.computedStyle,
+    },
+    scrollTop: options.scrollTop ?? 0,
+    scrollLeft: options.scrollLeft ?? 0,
+    scrollHeight: options.scrollHeight ?? options.clientHeight ?? 0,
+    scrollWidth: options.scrollWidth ?? options.clientWidth ?? 0,
+    clientHeight: options.clientHeight ?? 0,
+    clientWidth: options.clientWidth ?? 0,
+    scrolledBy: [] as Array<{ left: number; top: number }>,
     capturedPointers,
     releasedPointers,
+    get children() {
+      return this.fixtureChildren;
+    },
+    get parentNode() {
+      return this.parentElement;
+    },
+    get nextSibling() {
+      const parent = this.parentElement as FakeElement | null;
+      if (parent === null) {
+        return null;
+      }
+      const index = parent.fixtureChildren.indexOf(this as unknown as FakeElement);
+      return parent.fixtureChildren[index + 1] ?? null;
+    },
     getBoundingClientRect() {
       return this.rect;
     },
-    querySelectorAll() {
-      return this.fixtureChildren;
+    querySelectorAll(selector: string) {
+      const found: FakeElement[] = [];
+      const visit = (parent: typeof element) => {
+        for (const child of parent.fixtureChildren) {
+          if (child.matches(selector)) {
+            found.push(child);
+          }
+          visit(child as unknown as typeof element);
+        }
+      };
+      visit(this);
+      return found;
+    },
+    querySelector(selector: string) {
+      return this.querySelectorAll(selector)[0] ?? null;
     },
     matches(selector: string) {
+      if (selector.trim() === '[') {
+        throw new SyntaxError('invalid selector');
+      }
       return selector.split(',').some((part) => {
         const token = part.trim();
+        const attribute = /^\[([^=\]]+)(?:="([^"]*)")?\]$/.exec(token);
+        if (attribute !== null) {
+          const name = attribute[1] as string;
+          const expected = attribute[2];
+          return expected === undefined
+            ? attributes.has(name)
+            : attributes.get(name) === expected;
+        }
         return token === tagName.toLowerCase()
           || token === tagName.toUpperCase()
+          || (token.startsWith('.') && classNames.has(token.slice(1)))
           || selectors.has(token);
       });
     },
@@ -91,6 +185,118 @@ export function fakeElement(
       }
       return false;
     },
+    getAttribute(name: string) {
+      if (name === 'id') {
+        return this.id || null;
+      }
+      return attributes.get(name) ?? null;
+    },
+    hasAttribute(name: string) {
+      return name === 'id' ? this.id !== '' : attributes.has(name);
+    },
+    setAttribute(name: string, value: string) {
+      if (name === 'id') {
+        this.id = String(value);
+        return;
+      }
+      attributes.set(name, String(value));
+    },
+    removeAttribute(name: string) {
+      if (name === 'id') {
+        this.id = '';
+        return;
+      }
+      attributes.delete(name);
+    },
+    classList: {
+      add: (...tokens: string[]) => tokens.forEach((token) => classNames.add(token)),
+      remove: (...tokens: string[]) => tokens.forEach((token) => classNames.delete(token)),
+      contains: (token: string) => classNames.has(token),
+    },
+    appendChild(child: FakeElement) {
+      return this.insertBefore(child, null);
+    },
+    insertBefore(child: FakeElement, reference: FakeElement | null) {
+      const oldParent = child.parentElement as FakeElement | null;
+      if (oldParent !== null) {
+        const oldIndex = oldParent.fixtureChildren.indexOf(child);
+        if (oldIndex !== -1) {
+          oldParent.fixtureChildren.splice(oldIndex, 1);
+        }
+      }
+      (child as unknown as { parentElement: Element | null }).parentElement = (
+        this as unknown as Element
+      );
+      const index = reference === null
+        ? -1
+        : this.fixtureChildren.indexOf(reference);
+      if (index === -1) {
+        this.fixtureChildren.push(child);
+      } else {
+        this.fixtureChildren.splice(index, 0, child);
+      }
+      return child;
+    },
+    removeChild(child: FakeElement) {
+      const index = this.fixtureChildren.indexOf(child);
+      if (index !== -1) {
+        this.fixtureChildren.splice(index, 1);
+        (child as unknown as { parentElement: Element | null }).parentElement = null;
+      }
+      return child;
+    },
+    remove() {
+      const parent = this.parentElement as FakeElement | null;
+      parent?.removeChild(this as unknown as FakeElement);
+    },
+    addEventListener(
+      type: string,
+      callback: EventListenerOrEventListenerObject | null,
+      listenerOptions?: AddEventListenerOptions | boolean,
+    ) {
+      if (callback === null) {
+        return;
+      }
+      let records = listeners.get(type);
+      if (records === undefined) {
+        records = new Set();
+        listeners.set(type, records);
+      }
+      records.add(callback);
+      const signal = typeof listenerOptions === 'object'
+        ? listenerOptions.signal
+        : undefined;
+      signal?.addEventListener('abort', () => records?.delete(callback), { once: true });
+    },
+    removeEventListener(type: string, callback: EventListenerOrEventListenerObject | null) {
+      if (callback !== null) {
+        listeners.get(type)?.delete(callback);
+      }
+    },
+    dispatch(type: string, event: object) {
+      for (const callback of [...(listeners.get(type) ?? [])]) {
+        if (typeof callback === 'function') {
+          callback(event as Event);
+        } else {
+          callback.handleEvent(event as Event);
+        }
+      }
+    },
+    focus() {
+      const document = this.ownerDocument as unknown as { activeElement: Element | null };
+      try {
+        document.activeElement = this as unknown as Element;
+      } catch {
+        // Structural test documents expose a writable activeElement.
+      }
+    },
+    scrollBy(input: ScrollToOptions) {
+      const left = input.left ?? 0;
+      const top = input.top ?? 0;
+      this.scrollLeft += left;
+      this.scrollTop += top;
+      this.scrolledBy.push({ left, top });
+    },
     setPointerCapture(pointerId: number) {
       capturedPointers.push(pointerId);
     },
@@ -102,6 +308,10 @@ export function fakeElement(
       releasedPointers.push(pointerId);
     },
   };
+
+  for (const child of options.children ?? []) {
+    element.appendChild(child);
+  }
 
   return element as unknown as FakeElement;
 }
@@ -120,7 +330,10 @@ export function area(
   const ids = new Map<Element, SortableId | undefined>();
 
   for (const itemId of itemIds) {
-    const child = fakeElement('LI', { parentElement: element });
+    const child = fakeElement('LI', {
+      parentElement: element,
+      attributes: { 'data-sortable-item': '' },
+    });
     element.fixtureChildren.push(child);
     ids.set(child, itemId);
   }
@@ -263,12 +476,14 @@ class FakeEventTarget {
 
 export interface FakePlatform extends SortablePlatform {
   readonly reports: unknown[];
+  readonly windowScrolls: Array<{ left: number; top: number }>;
   flushFrame(): void;
   frameCount(): number;
   listenerCount(): number;
   dispatchDocument(type: string, event: object): void;
   dispatchWindow(type: string, event: object): void;
   setVisibility(value: DocumentVisibilityState): void;
+  setHits(elements: readonly Element[]): void;
 }
 
 export function fakePlatform(): FakePlatform {
@@ -276,26 +491,56 @@ export function fakePlatform(): FakePlatform {
   const windowTarget = new FakeEventTarget();
   const frames = new Map<number, FrameRequestCallback>();
   const reports: unknown[] = [];
+  const windowScrolls: Array<{ left: number; top: number }> = [];
   let frameId = 0;
   let visibilityState: DocumentVisibilityState = 'visible';
-  const document = {
+  let hits: readonly Element[] = [];
+  const documentRecord: Record<string, unknown> = {
     addEventListener: documentTarget.addEventListener.bind(documentTarget),
     removeEventListener: documentTarget.removeEventListener.bind(documentTarget),
-    elementsFromPoint: () => [],
+    elementsFromPoint: () => hits,
+    activeElement: null,
     get visibilityState() {
       return visibilityState;
     },
-  } as unknown as Document;
-  const window = {
+  };
+  const document = documentRecord as unknown as Document;
+  const windowRecord: Record<string, unknown> = {
     addEventListener: windowTarget.addEventListener.bind(windowTarget),
     removeEventListener: windowTarget.removeEventListener.bind(windowTarget),
-  } as unknown as Window;
+    innerWidth: 1024,
+    innerHeight: 768,
+    scrollX: 0,
+    scrollY: 0,
+    getComputedStyle: (element: FakeElement) => element.computedStyle,
+    scrollBy: (input: ScrollToOptions) => {
+      const left = input.left ?? 0;
+      const top = input.top ?? 0;
+      windowScrolls.push({ left, top });
+      windowRecord.scrollX = Number(windowRecord.scrollX) + left;
+      windowRecord.scrollY = Number(windowRecord.scrollY) + top;
+    },
+  };
+  const window = windowRecord as unknown as Window;
+  documentRecord.defaultView = window;
+  documentRecord.createElement = (tagName: string) => fakeElement(tagName.toUpperCase(), {
+    ownerDocument: document,
+  });
+  documentRecord.documentElement = fakeElement('HTML', {
+    ownerDocument: document,
+    clientWidth: 1024,
+    clientHeight: 768,
+    scrollWidth: 1024,
+    scrollHeight: 768,
+  });
+  documentRecord.body = fakeElement('BODY', { ownerDocument: document });
 
   return {
     document,
     window,
     reports,
-    elementsFromPoint: () => [],
+    windowScrolls,
+    elementsFromPoint: () => hits,
     requestFrame(callback) {
       frameId += 1;
       frames.set(frameId, callback);
@@ -320,6 +565,9 @@ export function fakePlatform(): FakePlatform {
     dispatchWindow: (type, event) => windowTarget.dispatch(type, event),
     setVisibility(value) {
       visibilityState = value;
+    },
+    setHits(elements) {
+      hits = elements;
     },
   };
 }

@@ -27,17 +27,19 @@ export interface PointerSensorOptions {
   platform: SortablePlatform;
   handle?: string;
   ignore?: string;
-  onActivate(snapshot: PointerSnapshot): void;
+  onActivate(snapshot: PointerSnapshot): boolean | void;
   onMove(snapshot: PointerSnapshot): void;
   onCancel(reason: AfterDragReason): void;
   onRelease(snapshot: PointerSnapshot): void;
+  onEnd?(): void;
 }
 
 export interface PointerSensor {
-  pointerDown(input: PointerInput, sourceElement?: Element): void;
+  pointerDown(input: PointerInput, sourceElement?: Element): boolean;
   pointerMove(input: PointerInput): void;
   pointerUp(input: PointerInput): void;
   pointerCancel(input: PointerInput): void;
+  cancel(reason: AfterDragReason): void;
   unmount(): void;
   destroy(): void;
 }
@@ -96,6 +98,11 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
         options.platform.report(error);
       }
     }
+    try {
+      options.onEnd?.();
+    } catch (error) {
+      options.platform.report(error);
+    }
   };
 
   const reportAfterCleanup = (error: unknown): void => {
@@ -134,7 +141,9 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
         if (typeof pointer.captureTarget.setPointerCapture === 'function') {
           pointer.captureTarget.setPointerCapture(pointer.pointerId);
         }
-        options.onActivate(nextSnapshot);
+        if (options.onActivate(nextSnapshot) === false) {
+          cleanup();
+        }
       } catch (error) {
         reportAfterCleanup(error);
       }
@@ -197,29 +206,29 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
   const pointerDown = (
     input: PointerInput,
     sourceElement?: Element,
-  ): void => {
+  ): boolean => {
     if (destroyed || current !== null || !canStartPointer(input)) {
-      return;
+      return false;
     }
     const target = asElement(input.target);
     const source = sourceElement ?? target;
     if (target === null || source === null || !source.contains(target)) {
-      return;
+      return false;
     }
     const handle = options.handle === undefined
       ? null
       : closestWithin(target, source, options.handle);
     if (options.handle !== undefined && handle === null) {
-      return;
+      return false;
     }
     const ignoreSelector = options.ignore ?? DEFAULT_IGNORE_SELECTOR;
     if (handle === null && closestWithin(target, source, ignoreSelector) !== null) {
-      return;
+      return false;
     }
 
     const pointerType = normalizePointerType(input.pointerType);
     if (pointerType === null) {
-      return;
+      return false;
     }
     const abortController = new AbortController();
     current = {
@@ -272,6 +281,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       () => cancel('blur'),
       listenerOptions,
     );
+    return true;
   };
 
   return {
@@ -279,6 +289,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     pointerMove,
     pointerUp,
     pointerCancel,
+    cancel,
     unmount: () => cancel('unmounted'),
     destroy: () => {
       if (destroyed) {
