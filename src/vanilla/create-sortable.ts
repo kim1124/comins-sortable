@@ -119,11 +119,21 @@ function resolveElement(candidate: Element | string): Element {
 }
 
 function isElement(value: unknown): value is Element {
-  return typeof value === 'object'
-    && value !== null
-    && 'ownerDocument' in value
-    && 'querySelectorAll' in value
-    && 'addEventListener' in value;
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<Element>;
+  const document = candidate.ownerDocument;
+  return document !== null
+    && document !== undefined
+    && typeof document.createElement === 'function'
+    && typeof candidate.querySelectorAll === 'function'
+    && typeof candidate.addEventListener === 'function'
+    && typeof candidate.removeEventListener === 'function'
+    && typeof candidate.getAttribute === 'function'
+    && typeof candidate.setAttribute === 'function'
+    && typeof candidate.hasAttribute === 'function'
+    && typeof candidate.matches === 'function';
 }
 
 function defaultItemId(element: Element): SortableId {

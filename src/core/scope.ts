@@ -857,7 +857,10 @@ function registeredArea(
 
 function directItems(area: ScopeArea): Element[] {
   return Array.from(area.element.querySelectorAll(area.options.item)).filter(
-    (element) => element.parentElement === area.element,
+    (element) => (
+      element.parentElement === area.element
+      && !element.hasAttribute('data-comins-sortable-placeholder')
+    ),
   );
 }
 

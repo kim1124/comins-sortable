@@ -198,6 +198,41 @@ test('createSortable uses updateArea custom identity and selector for DOM transa
   assert.deepEqual(ids(done), ['b', 'c']);
 });
 
+test('createSortable excludes its placeholder when an item selector matches every list item', async () => {
+  const { createSortable } = await import('../../../src/index.js');
+  const platform = fakePlatform();
+  const todo = area(platform.document, 0, ['a', 'b']);
+  const done = area(platform.document, 200, ['c']);
+  const reasons: string[] = [];
+  const sortable = createSortable(todo, {
+    areaId: 'todo',
+    item: 'li',
+    onAfterDrag: (result) => reasons.push(result.reason),
+    onError: () => {},
+  });
+  sortable.registerArea(done, { areaId: 'done', item: 'li' });
+
+  transfer(platform, todo, done);
+
+  assert.deepEqual(ids(todo), ['a']);
+  assert.deepEqual(ids(done), ['b', 'c']);
+  assert.deepEqual(reasons, ['drop']);
+});
+
+test('createSortable rejects structural non-Element inputs with INVALID_ELEMENT', async () => {
+  const { createSortable } = await import('../../../src/index.js');
+  const structuralValue = {
+    ownerDocument: null,
+    querySelectorAll: () => [],
+    addEventListener: () => {},
+  };
+
+  assert.throws(
+    () => createSortable(structuralValue as unknown as Element, options()),
+    hasCode('INVALID_ELEMENT'),
+  );
+});
+
 function transfer(
   platform: ReturnType<typeof fakePlatform>,
   todo: ReturnType<typeof area>,

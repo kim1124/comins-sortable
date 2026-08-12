@@ -84,10 +84,15 @@ function areaElement(area: Element | DomTransactionArea | undefined): Element {
 function directItems(area: Element | DomTransactionArea | undefined): Element[] {
   const element = areaElement(area);
   if (area === undefined || !isTransactionArea(area) || area.item === undefined) {
-    return Array.from(element.children);
+    return Array.from(element.children).filter(
+      (candidate) => !candidate.hasAttribute('data-comins-sortable-placeholder'),
+    );
   }
   return Array.from(element.querySelectorAll(area.item)).filter(
-    (candidate) => candidate.parentElement === element,
+    (candidate) => (
+      candidate.parentElement === element
+      && !candidate.hasAttribute('data-comins-sortable-placeholder')
+    ),
   );
 }
 

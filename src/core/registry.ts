@@ -113,7 +113,10 @@ export class AreaRegistry {
 
   private collectItemIds(area: RegisteredArea): readonly SortableId[] {
     const elements = Array.from(area.element.querySelectorAll(area.itemSelector))
-      .filter((element) => element.parentElement === area.element);
+      .filter((element) => (
+        element.parentElement === area.element
+        && !element.hasAttribute('data-comins-sortable-placeholder')
+      ));
     const ids: SortableId[] = [];
 
     for (const element of elements) {
