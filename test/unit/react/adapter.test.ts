@@ -21,6 +21,8 @@ import { handleAfterDrag } from '../../../src/react/context.js';
 import { createReactSortableController } from '../../../src/react/context.js';
 import { renderedArea } from '../helpers/framework-fixtures.js';
 import { dragContext } from '../helpers/core-fixtures.js';
+import { fakeElement, fakePlatform, pointer } from '../helpers/core-fixtures.js';
+import { createSortableScopeInternal } from '../../../src/core/scope.js';
 
 test('Strict Mode setup-cleanup-setup leaves one registration', () => {
   const harness = reactAdapterHarness<Task>();
@@ -190,6 +192,60 @@ test('before consumer activation validates every controlled binding structural c
 
   assert.throws(() => scopeOptions.onBeforeDragStart?.(dragContext()), hasCode('INVALID_ELEMENT'));
   assert.equal(consumerCalls, 0);
+});
+
+test('real Core activation reports a destination controlled/DOM mismatch before consumer callbacks', () => {
+  for (const placeholderOnly of [false, true]) {
+    const platform = fakePlatform();
+    const errors: unknown[] = [];
+    let beforeCalls = 0;
+    let changeCalls = 0;
+    let afterCalls = 0;
+    let setterCalls = 0;
+    const controller = createReactSortableController<Task>({
+      getRootProps: () => ({
+        onBeforeDragStart: () => { beforeCalls += 1; },
+        onChange: () => { changeCalls += 1; },
+        onAfterDrag: () => { afterCalls += 1; },
+        onError: (error) => errors.push(error),
+      }),
+      createScope: (options) => createSortableScopeInternal(options, platform),
+    });
+    const sourceArea = fakeElement('UL', { ownerDocument: platform.document, selectors: [':scope > *'] });
+    const source = fakeElement('LI', { ownerDocument: platform.document, selectors: [':scope > *'] });
+    sourceArea.appendChild(source);
+    const destinationArea = fakeElement('UL', { ownerDocument: platform.document, selectors: [':scope > *'] });
+    if (placeholderOnly) {
+      destinationArea.appendChild(fakeElement('LI', {
+        ownerDocument: platform.document,
+        attributes: { 'data-comins-sortable-placeholder': '' },
+      }));
+    }
+    const sourceBinding = {
+      areaId: 'todo', group: 'tasks', getItems: () => [{ id: 'a' }],
+      getItemId: (item: Task) => item.id, setItems: () => { setterCalls += 1; },
+      getElement: () => sourceArea as Element,
+    };
+    const destinationBinding = {
+      areaId: 'done', group: 'tasks', getItems: () => [{ id: 'b' }],
+      getItemId: (item: Task) => item.id, setItems: () => { setterCalls += 1; },
+      getElement: () => destinationArea as Element,
+    };
+    controller.registerArea(sourceArea, sourceBinding, { areaId: 'todo', group: 'tasks', item: ':scope > *', getItemId: () => 'a' });
+    controller.registerArea(destinationArea, destinationBinding, { areaId: 'done', group: 'tasks', item: ':scope > *', getItemId: () => 'b' });
+    const down = pointer({ target: source, clientX: 1, clientY: 1 });
+    platform.setHits([source, sourceArea]);
+    sourceArea.dispatch('pointerdown', down);
+    platform.dispatchDocument('pointermove', pointer({ ...down, target: source, clientX: 5 }));
+    platform.flushFrame();
+
+    assert.equal(errors.length, 1);
+    assert.equal((errors[0] as { code?: string }).code, 'INVALID_ELEMENT');
+    assert.equal(beforeCalls, 0);
+    assert.equal(setterCalls, 0);
+    assert.equal(changeCalls, 0);
+    assert.equal(afterCalls, 0);
+  }
 });
 
 test('public components SSR-render only a provider and one direct area div without DOM globals', () => {
