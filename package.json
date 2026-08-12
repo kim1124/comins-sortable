@@ -33,6 +33,10 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
     },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
+    },
     "./styles.css": "./dist/styles.css"
   },
   "scripts": {

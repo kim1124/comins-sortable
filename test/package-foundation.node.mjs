@@ -47,6 +47,10 @@ test('declares the approved private package boundary', () => {
       types: './dist/react.d.ts',
       import: './dist/react.js',
     },
+    './vue': {
+      types: './dist/vue.d.ts',
+      import: './dist/vue.js',
+    },
     './styles.css': './dist/styles.css',
   });
 });
