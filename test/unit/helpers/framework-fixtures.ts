@@ -1,9 +1,20 @@
-import type { FrameworkSortableChange, SortableChange } from '../../../src/core.js';
+import type { FrameworkSortableChange } from '../../../src/core.js';
 import {
   BindingRegistry,
   type FrameworkAreaBinding,
 } from '../../../src/framework/bindings.js';
 import { ControlledTransaction } from '../../../src/framework/controlled-transaction.js';
+import {
+  createReactSortableController,
+  type ReactSortableController,
+} from '../../../src/react/context.js';
+import type {
+  ItemKey,
+  SortableAreaOptions,
+  SortableChange,
+  SortableScope,
+  SortableScopeOptions,
+} from '../../../src/core.js';
 
 export interface Task {
   id: string;
@@ -128,6 +139,243 @@ export function throwingControlledFixture(): {
         { areaId: 'done', itemIds: ['c', 'b'] },
       ],
     },
+  };
+}
+
+export interface ReactAdapterAreaProps<T> {
+  areaId: string;
+  group?: string;
+  items: readonly T[];
+  itemKey: ItemKey<T>;
+  onItemsChange(items: readonly T[]): void;
+  direction?: SortableAreaOptions['direction'];
+  disabled?: boolean;
+  handle?: string;
+  ignore?: string;
+  activationDistance?: number;
+  emptyInsertThreshold?: number;
+  autoScroll?: boolean;
+  accept?: SortableAreaOptions['accept'];
+}
+
+export function todoProps(): ReactAdapterAreaProps<Task> {
+  return {
+    areaId: 'todo',
+    group: 'tasks',
+    items: [{ id: 'a' }, { id: 'b' }],
+    itemKey: 'id',
+    onItemsChange: () => undefined,
+  };
+}
+
+export function doneProps(): ReactAdapterAreaProps<Task> {
+  return {
+    areaId: 'done',
+    group: 'tasks',
+    items: [{ id: 'c' }],
+    itemKey: 'id',
+    onItemsChange: () => undefined,
+  };
+}
+
+export function reactAdapterHarness<T extends Task>(): {
+  readonly calls: string[];
+  mountRoot(options?: Pick<SortableScopeOptions, 'onAfterDrag'>): void;
+  mountArea(props: ReactAdapterAreaProps<T>): () => void;
+  updateArea(areaId: string, patch: Partial<SortableAreaOptions>): void;
+  transfer(
+    itemId: string,
+    sourceAreaId: string,
+    sourceIndex: number,
+    destinationAreaId: string,
+    destinationIndex: number,
+  ): void;
+  beginTransfer(
+    itemId: string,
+    sourceAreaId: string,
+    sourceIndex: number,
+    destinationAreaId: string,
+    destinationIndex: number,
+  ): void;
+  cancel(): void;
+  registrationCount(areaId: string): number;
+  updateCount(areaId: string): number;
+  scopeCount(): number;
+  items(areaId: string): readonly T[];
+} {
+  const calls: string[] = [];
+  const registrations = new Map<string, number>();
+  const updates = new Map<string, number>();
+  const states = new Map<string, readonly T[]>();
+  let callbacks: SortableScopeOptions = {};
+  let controller: ReactSortableController<T> | null = null;
+  let rootMounted = false;
+  let scopes = 0;
+
+  const createScope = (options: SortableScopeOptions): SortableScope => {
+    scopes += 1;
+    callbacks = options;
+    return {
+      registerArea(_element, options) {
+        registrations.set(options.areaId, (registrations.get(options.areaId) ?? 0) + 1);
+        let disposed = false;
+        return () => {
+          if (disposed) {
+            return;
+          }
+          disposed = true;
+          registrations.set(options.areaId, (registrations.get(options.areaId) ?? 1) - 1);
+        };
+      },
+      updateArea(areaId) {
+        updates.set(areaId, (updates.get(areaId) ?? 0) + 1);
+      },
+      cancel() {},
+      destroy() {},
+    };
+  };
+
+  const ensureController = (options: Pick<SortableScopeOptions, 'onAfterDrag'> = {}): ReactSortableController<T> => {
+    controller ??= createReactSortableController<T>({
+      getRootProps: () => ({
+        ...options,
+        onChange: (change) => calls.push(`change:${change.operation}`),
+      }),
+      createScope,
+    });
+    return controller;
+  };
+
+  const mountArea = (props: ReactAdapterAreaProps<T>): (() => void) => {
+    const activeController = rootMounted
+      ? ensureController()
+      : createReactSortableController<T>({
+        getRootProps: () => ({
+          onChange: (change) => calls.push(`change:${change.operation}`),
+        }),
+        createScope,
+      });
+    const ownsController = !rootMounted;
+    let currentProps = props;
+    states.set(props.areaId, props.items);
+    const binding = {
+      areaId: props.areaId,
+      get group() {
+        return currentProps.group ?? '';
+      },
+      getItems: () => states.get(props.areaId) as readonly T[],
+      getItemId: (item: T) => (
+        typeof currentProps.itemKey === 'function'
+          ? currentProps.itemKey(item)
+          : item[currentProps.itemKey]
+      ) as string,
+      setItems: (items: readonly T[]) => {
+        states.set(props.areaId, items);
+        calls.push(`set:${props.areaId}:${items.map((item) => item.id).join(',')}`);
+        currentProps.onItemsChange(items);
+      },
+      getElement: () => renderedElement((states.get(props.areaId) ?? []).length),
+    };
+    const unregister = activeController.registerArea(
+      binding.getElement() as Element,
+      binding,
+      toAreaOptions(props),
+    );
+    return () => {
+      unregister();
+      if (ownsController) {
+        activeController.destroy();
+        if (controller === activeController) {
+          controller = null;
+        }
+      }
+    };
+  };
+
+  const applyTransfer = (
+    itemId: string,
+    sourceAreaId: string,
+    sourceIndex: number,
+    destinationAreaId: string,
+    destinationIndex: number,
+  ): SortableChange => {
+    const source = states.get(sourceAreaId) as readonly T[];
+    const destination = states.get(destinationAreaId) as readonly T[];
+    const item = source[sourceIndex];
+    if (item === undefined) {
+      throw new Error('missing fixture item');
+    }
+    const change: SortableChange = {
+      operation: sourceAreaId === destinationAreaId ? 'reorder' : 'transfer',
+      itemId,
+      source: { areaId: sourceAreaId, index: sourceIndex },
+      destination: { areaId: destinationAreaId, index: destinationIndex },
+      orders: sourceAreaId === destinationAreaId
+        ? [{ areaId: sourceAreaId, itemIds: [] }]
+        : [
+          {
+            areaId: sourceAreaId,
+            itemIds: source.filter((_entry, index) => index !== sourceIndex).map((entry) => entry.id),
+          },
+          {
+            areaId: destinationAreaId,
+            itemIds: [item.id, ...destination.map((entry) => entry.id)],
+          },
+        ],
+    };
+    callbacks.onChange?.(change);
+    return change;
+  };
+
+  return {
+    calls,
+    mountRoot(options = {}) {
+      rootMounted = true;
+      ensureController(options);
+    },
+    mountArea,
+    updateArea(areaId, patch) {
+      ensureController().updateArea(areaId, patch);
+    },
+    beginTransfer(itemId, sourceAreaId, sourceIndex, destinationAreaId, destinationIndex) {
+      applyTransfer(itemId, sourceAreaId, sourceIndex, destinationAreaId, destinationIndex);
+    },
+    transfer(itemId, sourceAreaId, sourceIndex, destinationAreaId, destinationIndex) {
+      const change = applyTransfer(itemId, sourceAreaId, sourceIndex, destinationAreaId, destinationIndex);
+      callbacks.onAfterDrag?.({ status: 'dropped', reason: 'drop', change });
+    },
+    cancel() {
+      callbacks.onAfterDrag?.({ status: 'cancelled', reason: 'escape' });
+    },
+    registrationCount(areaId) {
+      return registrations.get(areaId) ?? 0;
+    },
+    updateCount(areaId) {
+      return updates.get(areaId) ?? 0;
+    },
+    scopeCount() {
+      return scopes;
+    },
+    items(areaId) {
+      return states.get(areaId) as readonly T[];
+    },
+  };
+}
+
+function toAreaOptions<T>(props: ReactAdapterAreaProps<T>): SortableAreaOptions {
+  return {
+    areaId: props.areaId,
+    group: props.group,
+    item: ':scope > *',
+    getItemId: () => 'fixture',
+    direction: props.direction,
+    disabled: props.disabled,
+    handle: props.handle,
+    ignore: props.ignore,
+    activationDistance: props.activationDistance,
+    emptyInsertThreshold: props.emptyInsertThreshold,
+    autoScroll: props.autoScroll,
+    accept: props.accept,
   };
 }
 

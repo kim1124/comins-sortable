@@ -22,5 +22,8 @@
     "src/**/*.tsx",
     "test/**/*.ts",
     "test/**/*.tsx"
+  ],
+  "exclude": [
+    "test/types"
   ]
 }

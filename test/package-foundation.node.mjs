@@ -43,6 +43,10 @@ test('declares the approved private package boundary', () => {
       types: './dist/core.d.ts',
       import: './dist/core.js',
     },
+    './react': {
+      types: './dist/react.d.ts',
+      import: './dist/react.js',
+    },
     './styles.css': './dist/styles.css',
   });
 });
