@@ -33,12 +33,17 @@ test('declares the approved private package boundary', () => {
   assert.deepEqual(manifest.peerDependencies, peers);
   assert.deepEqual(manifest.peerDependenciesMeta, peerMeta);
   assert.deepEqual(manifest.files, ['dist', 'README.md', 'LICENSE']);
-  assert.equal(manifest.sideEffects, false);
+  assert.deepEqual(manifest.sideEffects, ['./dist/styles.css']);
   assert.deepEqual(manifest.exports, {
+    '.': {
+      types: './dist/index.d.ts',
+      import: './dist/index.js',
+    },
     './core': {
       types: './dist/core.d.ts',
       import: './dist/core.js',
     },
+    './styles.css': './dist/styles.css',
   });
 });
 

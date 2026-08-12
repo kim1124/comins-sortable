@@ -394,6 +394,53 @@ export function hasCode(code: string): (error: unknown) => boolean {
   );
 }
 
+export interface DomFixture {
+  readonly registry: Map<string, Element>;
+  readonly areas: Readonly<Record<string, FakeElement>>;
+  ids(areaId: string): readonly string[];
+}
+
+export function domFixture(
+  itemIdsByArea: Readonly<Record<string, readonly string[]>>,
+): DomFixture {
+  const platform = fakePlatform();
+  const registry = new Map<string, Element>();
+  const areas: Record<string, FakeElement> = {};
+
+  for (const [areaId, itemIds] of Object.entries(itemIdsByArea)) {
+    const areaElement = fakeElement('UL', { ownerDocument: platform.document });
+    for (const itemId of itemIds) {
+      areaElement.appendChild(fakeElement('LI', {
+        ownerDocument: platform.document,
+        attributes: { 'data-sortable-id': itemId },
+      }));
+    }
+    registry.set(areaId, areaElement);
+    areas[areaId] = areaElement;
+  }
+
+  return {
+    registry,
+    areas,
+    ids: (areaId) => (areas[areaId]?.fixtureChildren ?? []).map(
+      (element) => element.getAttribute('data-sortable-id') as string,
+    ),
+  };
+}
+
+export function selectorDocument(
+  entries: Readonly<Record<string, Element>>,
+): Document {
+  return {
+    querySelector(selector: string): Element | null {
+      if (selector === '[') {
+        throw new SyntaxError('invalid selector');
+      }
+      return entries[selector] ?? null;
+    },
+  } as Document;
+}
+
 export function dragContext(): DragContext {
   return {
     itemId: 'source',
@@ -519,6 +566,14 @@ export function fakePlatform(): FakePlatform {
       windowScrolls.push({ left, top });
       windowRecord.scrollX = Number(windowRecord.scrollX) + left;
       windowRecord.scrollY = Number(windowRecord.scrollY) + top;
+    },
+    requestAnimationFrame: (callback: FrameRequestCallback) => {
+      frameId += 1;
+      frames.set(frameId, callback);
+      return frameId;
+    },
+    cancelAnimationFrame: (id: number) => {
+      frames.delete(id);
     },
   };
   const window = windowRecord as unknown as Window;
