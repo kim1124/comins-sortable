@@ -41,3 +41,26 @@ node --input-type=module --eval "await import('./dist/vue.js')"
 
 - Tests use a sanitized lifecycle harness and injected Core fake platform. Real browser pointer E2E remains outside Task 9.
 - Vue SSR fragment comments are framework output for VNode arrays, not DOM wrapper elements; runtime direct-child validation reads Element children only.
+
+## Review fix round 1
+
+### RED evidence
+
+```sh
+node --import tsx --test test/unit/vue/adapter.test.ts test/unit/react/adapter.test.ts
+```
+
+- Actual Vue custom renderer mount/update reproduced `register:todo`, erroneous `update:done`, then `unregister:todo` when one reactive props proxy changed area ID.
+- The omitted `autoScroll` prop was observed as `false` instead of `undefined`.
+- Real Core fake-platform activation left `platform.reports` empty for both Vue and React controllers when no consumer `onError` existed.
+
+### GREEN changes
+
+- Compare a Vue update against the immutable registered option snapshot, then dispose/re-register when the area ID differs.
+- Preserve omitted Vue Boolean `autoScroll` as `undefined`.
+- Resolve the latest `onError` dynamically in both adapters; throw the original error when absent so Core executes its platform fallback.
+
+### GREEN evidence
+
+- Vue/React focused suite: 35/35 passed, including actual Vue custom renderer and Core fake-platform boundaries.
+- `npm run typecheck`, `npm run build`, `npm run test:types`, built Vue/React imports, `npm run verify`, `.githooks/pre-commit`, and `git diff --check` passed.

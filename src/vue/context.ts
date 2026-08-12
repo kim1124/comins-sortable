@@ -50,7 +50,11 @@ export function createVueSortableController<T>(
     onInsertDragArea: (event) => options.getRootOptions().onInsertDragArea?.(event),
     onChange: (change) => transaction.apply(change),
     onAfterDrag: (result) => handleAfterDrag(transaction, options.getRootOptions(), result),
-    onError: (error) => options.getRootOptions().onError?.(error),
+    onError: (error) => {
+      const onError = options.getRootOptions().onError;
+      if (onError === undefined) throw error;
+      onError(error);
+    },
   });
   let destroyed = false;
 

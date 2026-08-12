@@ -66,7 +66,7 @@ export function createVueAreaLifecycle<T>(options: {
 
   return {
     update(nextProps) {
-      const areaChanged = props.areaId !== nextProps.areaId;
+      const areaChanged = registeredOptions !== null && registeredOptions.areaId !== nextProps.areaId;
       props = nextProps;
       if (areaChanged) {
         disposeRegistration();

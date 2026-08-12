@@ -43,7 +43,7 @@ const SortableAreaComponent = defineComponent({
     ignore: String,
     activationDistance: Number,
     emptyInsertThreshold: Number,
-    autoScroll: Boolean,
+    autoScroll: { type: Boolean, default: undefined },
     accept: Function as PropType<(context: DragContext) => boolean>,
   },
   emits: ['update:modelValue'],

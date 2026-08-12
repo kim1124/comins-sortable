@@ -56,7 +56,11 @@ export function createReactSortableController<T>(
     onInsertDragArea: (event) => options.getRootProps().onInsertDragArea?.(event),
     onChange: (change) => transaction.apply(change),
     onAfterDrag: (result) => handleAfterDrag(transaction, options.getRootProps(), result),
-    onError: (error) => options.getRootProps().onError?.(error),
+    onError: (error) => {
+      const onError = options.getRootProps().onError;
+      if (onError === undefined) throw error;
+      onError(error);
+    },
   });
   let destroyed = false;
 
