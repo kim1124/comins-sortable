@@ -45,6 +45,7 @@
   },
   "scripts": {
     "build": "node scripts/build-package.mjs",
+    "dev": "vite --config vite.example.config.ts",
     "check:licenses": "node scripts/check-licenses.mjs",
     "lint": "npm run typecheck",
     "typecheck": "tsc --noEmit",
@@ -54,6 +55,8 @@
     "test:types": "tsc -p test/types/tsconfig.json --noEmit",
     "example:build": "node scripts/build-browser-fixtures.mjs",
     "example:serve": "node scripts/serve-browser-fixtures.mjs",
+    "playground:build": "vite build --config vite.example.config.ts",
+    "playground:preview": "vite preview --config vite.example.config.ts",
     "test:e2e": "playwright test --config=playwright.config.ts",
     "verify:e2e": "npm run test:e2e",
     "verify:full": "npm run verify && npm run verify:e2e",
@@ -90,6 +93,7 @@
     "svelte": "^5.56.8",
     "tsx": "^4.23.10",
     "typescript": "^7.0.2",
+    "vite": "^8.1.5",
     "vue": "^3.5.41"
   }
 }

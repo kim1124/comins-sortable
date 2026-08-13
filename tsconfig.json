@@ -14,12 +14,15 @@
     "noEmit": true,
     "skipLibCheck": true,
     "types": [
-      "node"
+      "node",
+      "vite/client"
     ]
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "example/src/**/*.ts",
+    "example/src/**/*.tsx",
     "test/**/*.ts",
     "test/**/*.tsx"
   ],

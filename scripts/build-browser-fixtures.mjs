@@ -44,7 +44,7 @@ export async function buildBrowserFixtures() {
     outdir: output,
     plugins: [sveltePlugin],
   });
-  await cp(resolve(root, 'example', 'index.html'), resolve(output, 'index.html'));
+  await cp(resolve(root, 'example', 'fixtures-index.html'), resolve(output, 'index.html'));
   await cp(resolve(root, 'example', 'shared.css'), resolve(output, 'shared.css'));
   for (const adapter of ['vanilla', 'react', 'vue', 'svelte']) {
     await cp(resolve(root, 'example', adapter, 'index.html'), resolve(output, adapter, 'index.html'));
