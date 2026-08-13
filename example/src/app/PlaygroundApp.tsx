@@ -17,7 +17,7 @@ import {
   type PlaygroundLocale,
 } from './locale.js';
 import { message } from './messages.js';
-import { placeholderModule } from '../adapters/placeholder.js';
+import { loadPlaygroundDemo } from '../adapters/registry.js';
 import { PlaygroundRuntimeHost } from '../playground/runtime-host.js';
 import {
   playgroundScenarios,
@@ -38,7 +38,7 @@ const adapterNames = {
 } as const;
 
 async function loadDemoModule(route: PlaygroundRoute): Promise<PlaygroundDemoModule> {
-  return { ...placeholderModule, adapterId: route.adapterId };
+  return loadPlaygroundDemo(route.adapterId);
 }
 
 export function PlaygroundApp(): ReactElement {
