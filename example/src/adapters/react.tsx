@@ -25,6 +25,7 @@ import {
   type DemoState,
 } from './demo-data.js';
 import source from './react.tsx?raw';
+import { waitForAdapterReady } from './adapter-ready.js';
 
 interface DemoCommands {
   dispatch(controlId: string, value?: string | number | boolean): void;
@@ -127,11 +128,12 @@ function Demo({
 export const reactDemoModule: PlaygroundDemoModule = {
   adapterId: 'react',
   source,
-  mount(container, input, bridge) {
+  async mount(container, input, bridge) {
     const root = createRoot(container);
     let commands: DemoCommands | null = null;
     const expose = (next: DemoCommands | null): void => { commands = next; };
     root.render(<StrictMode><Demo input={input} bridge={bridge} expose={expose} /></StrictMode>);
+    await waitForAdapterReady();
     return {
       dispatch(controlId, value) { commands?.dispatch(controlId, value); },
       reset() { commands?.reset(); },

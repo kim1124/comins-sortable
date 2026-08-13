@@ -58,7 +58,9 @@
     "playground:build": "vite build --config vite.example.config.ts",
     "playground:preview": "vite preview --config vite.example.config.ts",
     "test:e2e": "playwright test --config=playwright.config.ts",
+    "test:playground": "playwright test --config=playwright.playground.config.ts",
     "verify:e2e": "npm run test:e2e",
+    "verify:playground": "npm run playground:build && npm run test:playground",
     "verify:full": "npm run verify && npm run verify:e2e",
     "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types"
   },
@@ -93,7 +95,7 @@
     "svelte": "^5.56.8",
     "tsx": "^4.23.10",
     "typescript": "^7.0.2",
-    "vite": "^8.1.5",
+    "vite": "^7.3.6",
     "vue": "^3.5.41"
   }
 }

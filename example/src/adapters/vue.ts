@@ -26,6 +26,7 @@ import {
   type DemoState,
 } from './demo-data.js';
 import source from './vue.ts?raw';
+import { waitForAdapterReady } from './adapter-ready.js';
 
 interface DemoCommands {
   dispatch(controlId: string, value?: string | number | boolean): void;
@@ -47,7 +48,7 @@ function itemCard(item: DemoItem, withHandle: boolean): VNode {
 export const vueDemoModule: PlaygroundDemoModule = {
   adapterId: 'vue',
   source,
-  mount(container, input, bridge) {
+  async mount(container, input, bridge) {
     let commands: DemoCommands | null = null;
     const Demo = defineComponent({
       name: 'VuePlaygroundDemo',
@@ -117,6 +118,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
 
     const app = createApp(Demo);
     app.mount(container);
+    await waitForAdapterReady();
     return {
       dispatch(controlId, value) { commands?.dispatch(controlId, value); },
       reset() { commands?.reset(); },

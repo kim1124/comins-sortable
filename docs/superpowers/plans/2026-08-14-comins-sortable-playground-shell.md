@@ -6,7 +6,12 @@
 
 **Architecture:** Add a Vite consumer application under `example/src` while preserving the existing Task 11 low-level fixtures. A React shell owns navigation and inspectors; a private `PlaygroundRuntimeHost` mounts one real adapter module at a time and destroys it before every route or adapter transition. The first vertical slice ships Simple, Two Lists, Handle, Empty Destination, Accept/Reject, and Auto Scroll without changing the public package API.
 
-**Tech Stack:** TypeScript 7, React 19 shell, Vite 8.1.5, existing Vue 3.5, Svelte 5 compiler, public `comins-sortable` source exports, Node test runner, Playwright 1.62.
+**Tech Stack:** TypeScript 7, React 19 shell, Vite 7.3.6, existing Vue 3.5, Svelte 5 compiler, public `comins-sortable` source exports, Node test runner, Playwright 1.62.
+
+**Dependency decision:** Vite 8.1.5 was rejected during implementation because its
+required `lightningcss` dependency triggers the repository's MPL-2.0 review gate. Vite
+7.3.6 is the license-compatible Vite 7 security-fix release; its transitive `nanoid` is
+locked to 3.3.18 or newer.
 
 ## Global Constraints
 
@@ -140,7 +145,7 @@ Create this as `test/playground-build.node.mjs`. Run `node --test test/playgroun
 
 - [ ] **Step 6: Install Vite and implement the build boundary**
 
-Run: `npm install --save-dev vite@8.1.5`
+Run: `npm install --save-dev vite@7.3.6`
 
 Add scripts:
 
