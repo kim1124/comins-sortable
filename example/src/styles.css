@@ -1,0 +1,110 @@
+:root {
+  color: #19201f;
+  background: #f4f7f5;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input { font: inherit; }
+button { color: inherit; }
+button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offset: 2px; }
+
+.cs-playground { min-height: 100vh; }
+.cs-playground__header {
+  align-items: center;
+  background: rgba(255,255,255,.94);
+  border-bottom: 1px solid #dce5e0;
+  display: flex;
+  height: 72px;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+}
+.cs-playground__brand { align-items: center; color: inherit; display: flex; gap: 12px; text-decoration: none; }
+.cs-playground__brand-mark { align-items: center; background: #153f32; border-radius: 12px; color: #fff; display: flex; font-size: 12px; font-weight: 800; height: 40px; justify-content: center; letter-spacing: .08em; width: 40px; }
+.cs-playground__brand strong, .cs-playground__brand small { display: block; }
+.cs-playground__brand strong { font-size: 16px; }
+.cs-playground__brand small { color: #728079; font-size: 11px; margin-top: 2px; text-transform: uppercase; }
+.cs-playground__header-actions { align-items: center; color: #728079; display: flex; font-size: 12px; gap: 10px; }
+.cs-playground__locale { background: #fff; border: 1px solid #cdd9d3; border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 700; padding: 8px 10px; }
+
+.cs-playground__body { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: calc(100vh - 72px); }
+.cs-playground__sidebar { background: #fbfcfb; border-right: 1px solid #dce5e0; padding: 28px 18px; }
+.cs-playground__nav-label, .cs-playground__section-label { color: #87938d; font-size: 11px; font-weight: 800; letter-spacing: .12em; margin: 0 10px 12px; text-transform: uppercase; }
+.cs-playground__example-tabs { display: grid; gap: 4px; }
+.cs-playground__example-tab { background: transparent; border: 0; border-radius: 10px; cursor: pointer; display: flex; justify-content: space-between; padding: 12px; text-align: left; width: 100%; }
+.cs-playground__example-tab small { color: #96a19c; font-family: ui-monospace, monospace; }
+.cs-playground__example-tab[aria-selected="true"] { background: #e4f4ec; color: #12583e; font-weight: 750; }
+.cs-playground__parity-note { background: #153f32; border-radius: 14px; color: #fff; display: grid; gap: 7px; margin-top: 28px; padding: 16px; }
+.cs-playground__parity-note strong { font-size: 12px; }
+.cs-playground__parity-note span { color: #8ae2b8; font-size: 22px; font-weight: 800; }
+.cs-playground__parity-note small { color: #c6dbd3; line-height: 1.45; }
+
+.cs-playground__main { min-width: 0; padding: 36px clamp(20px, 4vw, 56px) 64px; }
+.cs-playground__intro { align-items: end; display: flex; justify-content: space-between; gap: 24px; }
+.cs-playground__route { color: #42826a; font-family: ui-monospace, monospace; font-size: 12px; }
+.cs-playground__intro h1 { font-size: clamp(30px, 4vw, 46px); letter-spacing: -.04em; margin: 8px 0; }
+.cs-playground__intro p { color: #66736d; margin: 0; }
+.cs-playground__api-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.cs-playground__api-list code { background: #e8eeeb; border-radius: 6px; color: #345248; font-size: 11px; padding: 5px 8px; }
+.cs-playground__code-button { background: #fff; border: 1px solid #cfdad5; border-radius: 10px; cursor: pointer; font-weight: 700; padding: 11px 16px; white-space: nowrap; }
+.cs-playground__adapter-tabs { border-bottom: 1px solid #d7e0dc; display: flex; gap: 6px; margin-top: 34px; overflow-x: auto; }
+.cs-playground__adapter-tabs button { align-items: center; background: transparent; border: 0; border-bottom: 2px solid transparent; cursor: pointer; display: flex; gap: 8px; min-width: 100px; padding: 13px 16px; }
+.cs-playground__adapter-tabs button[aria-selected="true"] { border-bottom-color: #176343; color: #176343; font-weight: 800; }
+.cs-adapter-dot { background: #91a099; border-radius: 50%; height: 8px; width: 8px; }
+.cs-adapter-dot--vanilla { background: #e7b416; } .cs-adapter-dot--react { background: #48bfe3; } .cs-adapter-dot--vue { background: #42b883; } .cs-adapter-dot--svelte { background: #ff3e00; }
+
+.cs-playground__controls { align-items: center; background: #fff; border: 1px solid #dce5e0; border-radius: 14px; display: flex; justify-content: space-between; margin: 22px 0; padding: 15px 18px; }
+.cs-playground__controls .cs-playground__section-label { margin: 0; }
+.cs-playground__controls p { color: #7b8882; font-size: 12px; margin: 4px 0 0; }
+.cs-playground__control-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cs-playground__control-actions button { background: #f5f8f6; border: 1px solid #d6e0db; border-radius: 8px; cursor: pointer; padding: 8px 11px; }
+.cs-playground__control-actions button.is-active { background: #dff4e9; border-color: #69b58f; color: #155d40; }
+
+.cs-playground__grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1.6fr) minmax(280px, .8fr); }
+.cs-playground__panel { background: #fff; border: 1px solid #dce5e0; border-radius: 16px; box-shadow: 0 12px 35px rgba(28,60,48,.055); min-width: 0; overflow: hidden; }
+.cs-playground__panel-heading { align-items: center; border-bottom: 1px solid #e4ebe7; color: #728079; display: flex; font-size: 11px; font-weight: 800; justify-content: space-between; letter-spacing: .08em; min-height: 43px; padding: 0 16px; text-transform: uppercase; }
+.cs-playground__workspace { min-height: 420px; }
+.cs-playground__runtime { min-height: 360px; padding: 24px; }
+.cs-playground__notice { background: #f4faf7; color: #557067; margin: 16px 16px 0; padding: 10px; }
+.cs-playground__status { border-radius: 99px; padding: 4px 8px; }
+.cs-playground__status--ready { background: #dcf5e8; color: #176343; }
+.cs-playground__status--loading { background: #fff0cc; color: #755300; }
+.cs-playground__status--error { background: #ffe4e4; color: #a62c2c; }
+.cs-playground__inspectors { display: grid; gap: 20px; }
+.cs-playground__panel pre { background: #17231f; color: #c9f5df; font-size: 12px; line-height: 1.65; margin: 0; max-height: 300px; overflow: auto; padding: 18px; }
+.cs-playground__empty { color: #89958f; font-size: 13px; margin: 0; padding: 20px; }
+.cs-playground__events { margin-top: 20px; }
+.cs-playground__events ol { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 16px; }
+.cs-playground__events li { align-items: center; background: #f1f5f3; border-radius: 99px; display: flex; gap: 7px; padding: 7px 10px; }
+.cs-playground__events li span { color: #7a8781; font-size: 11px; }
+.cs-playground__source { margin-top: 20px; }
+.cs-playground__source pre { max-height: 560px; }
+.cs-demo-placeholder { align-items: center; background: repeating-linear-gradient(135deg,#edf5f1,#edf5f1 10px,#f6faf8 10px,#f6faf8 20px); border: 1px dashed #a8bcb2; border-radius: 14px; color: #60736a; display: flex; justify-content: center; margin: 0; min-height: 280px; }
+
+@media (max-width: 900px) {
+  .cs-playground__body { display: block; }
+  .cs-playground__sidebar { border-bottom: 1px solid #dce5e0; border-right: 0; overflow-x: auto; padding: 14px 20px; }
+  .cs-playground__nav-label, .cs-playground__parity-note { display: none; }
+  .cs-playground__example-tabs { display: flex; width: max-content; }
+  .cs-playground__example-tab { min-width: 150px; }
+  .cs-playground__grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .cs-playground__header { height: 64px; padding: 0 16px; }
+  .cs-playground__header-actions > span, .cs-playground__brand small { display: none; }
+  .cs-playground__main { padding: 26px 16px 48px; }
+  .cs-playground__intro, .cs-playground__controls { align-items: stretch; flex-direction: column; }
+  .cs-playground__adapter-tabs button { min-width: auto; padding-inline: 12px; }
+  .cs-playground__runtime { padding: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; }
+}
