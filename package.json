@@ -52,6 +52,11 @@
     "test:run": "node scripts/run-unit-tests.mjs",
     "test:policy": "node --test test/*.node.mjs",
     "test:types": "tsc -p test/types/tsconfig.json --noEmit",
+    "example:build": "node scripts/build-browser-fixtures.mjs",
+    "example:serve": "node scripts/serve-browser-fixtures.mjs",
+    "test:e2e": "playwright test --config=playwright.config.ts",
+    "verify:e2e": "npm run test:e2e",
+    "verify:full": "npm run verify && npm run verify:e2e",
     "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types"
   },
   "peerDependencies": {

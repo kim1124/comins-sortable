@@ -1,4 +1,4 @@
-import { createSortableScope as createCoreSortableScope } from '../core/scope.js';
+import { createSortableScopeForFramework } from '../core/scope.js';
 import { SortableError } from '../core/errors.js';
 import type {
   AfterDragResult,
@@ -71,7 +71,7 @@ export function controllerForScope<T>(scope: SvelteSortableScope<T>): SvelteSort
 
 export function createSvelteSortableController<T>(
   scopeOptions: SvelteSortableScopeOptions<T>,
-  createScope: (options: SortableScopeOptions) => SortableScope = createCoreSortableScope,
+  createScope: (options: SortableScopeOptions) => SortableScope = createSortableScopeForFramework,
 ): SvelteSortableController<T> {
   const bindings = new BindingRegistry<T>();
   const transaction = new ControlledTransaction(bindings, (change) => {
@@ -127,8 +127,8 @@ export function createSvelteSortableController<T>(
     destroy() {
       if (destroyed) return;
       destroyed = true;
-      for (const dispose of [...registrations]) dispose();
       scope.destroy();
+      for (const dispose of [...registrations]) dispose();
       transaction.destroy();
     },
   };

@@ -1,6 +1,6 @@
 import type { InjectionKey } from 'vue';
 
-import { createSortableScope } from '../core/scope.js';
+import { createSortableScopeForFramework } from '../core/scope.js';
 import type {
   AfterDragResult,
   FrameworkSortableChange,
@@ -40,7 +40,7 @@ export function createVueSortableController<T>(
   const transaction = new ControlledTransaction(bindings, (change) => {
     options.getRootOptions().onChange?.(change);
   });
-  const scope = (options.createScope ?? createSortableScope)({
+  const scope = (options.createScope ?? createSortableScopeForFramework)({
     onBeforeDragStart: (context) => {
       bindings.validateElements();
       return options.getRootOptions().onBeforeDragStart?.(context);

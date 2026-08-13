@@ -161,3 +161,34 @@ test('interaction getItemId errors are reported without escaping the event bound
   assert.deepEqual(fixture.results, []);
   assert.equal(fixture.platform.listenerCount(), 0);
 });
+
+test('pointerdown on a nested item descendant activates its direct sortable item', () => {
+  const platform = fakePlatform();
+  const starts: string[] = [];
+  const scope = createSortableScopeInternal({
+    onDragStart: (context) => { starts.push(String(context.itemId)); },
+  }, platform);
+  const area = fakeElement('UL', { ownerDocument: platform.document });
+  const item = fakeElement('LI', {
+    ownerDocument: platform.document,
+    attributes: { 'data-sortable-item': '', 'data-sortable-id': 'a' },
+  });
+  const nested = fakeElement('SPAN', {
+    ownerDocument: platform.document,
+    attributes: { 'data-sortable-item': '' },
+  });
+  item.appendChild(nested);
+  area.appendChild(item);
+  scope.registerArea(area, { areaId: 'todo', item: '[data-sortable-item]' });
+
+  const start = {
+    pointerId: 1, pointerType: 'mouse', clientX: 0, clientY: 0,
+    isPrimary: true, button: 0, target: nested,
+  };
+  area.dispatch('pointerdown', start);
+  platform.dispatchDocument('pointermove', { ...start, clientX: 4 });
+  platform.flushFrame();
+
+  assert.deepEqual(starts, ['a']);
+  scope.destroy();
+});

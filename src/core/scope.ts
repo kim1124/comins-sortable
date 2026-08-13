@@ -113,6 +113,20 @@ let scopeSequence = 0;
 export function createSortableScope(
   options: SortableScopeOptions = {},
 ): SortableScope {
+  return createScopeWithVerificationFrames(options, 1);
+}
+
+/** Internal adapter factory; framework renderers commit after the browser's next frame. */
+export function createSortableScopeForFramework(
+  options: SortableScopeOptions = {},
+): SortableScope {
+  return createScopeWithVerificationFrames(options, 2);
+}
+
+function createScopeWithVerificationFrames(
+  options: SortableScopeOptions,
+  verificationFrames: number,
+): SortableScope {
   let internal: SortableScope | null = null;
   let destroyed = false;
 
@@ -134,6 +148,7 @@ export function createSortableScope(
       const candidate = createSortableScopeInternal(
         options,
         createBrowserPlatform(element),
+        verificationFrames,
       );
       try {
         const unregister = candidate.registerArea(element, areaOptions);
@@ -164,6 +179,7 @@ export function createSortableScope(
 export function createSortableScopeInternal(
   options: SortableScopeOptions,
   platform: SortablePlatform,
+  verificationFrames = 1,
 ): SortableScope {
   const defaultGroup = `comins-sortable-scope-${++scopeSequence}`;
   const registry = new AreaRegistry();
@@ -307,18 +323,25 @@ export function createSortableScopeInternal(
   };
 
   const verifyCommit = (change: SortableChange): void => {
-    verificationFrame = platform.requestFrame(() => {
-      verificationFrame = null;
-      try {
-        const committed = change.orders.every((order) => arraysEqual(
-          registry.itemIds(order.areaId),
-          order.itemIds,
-        ));
-        finish(committed ? 'drop' : 'state-not-committed', change);
-      } catch (error) {
-        finish('error', undefined, error);
-      }
-    });
+    const verifyAfter = (remainingFrames: number): void => {
+      verificationFrame = platform.requestFrame(() => {
+        if (remainingFrames > 1) {
+          verifyAfter(remainingFrames - 1);
+          return;
+        }
+        verificationFrame = null;
+        try {
+          const committed = change.orders.every((order) => arraysEqual(
+            registry.itemIds(order.areaId),
+            order.itemIds,
+          ));
+          finish(committed ? 'drop' : 'state-not-committed', change);
+        } catch (error) {
+          finish('error', undefined, error);
+        }
+      });
+    };
+    verifyAfter(verificationFrames);
   };
 
   const release = (): void => {
@@ -566,13 +589,10 @@ export function createSortableScopeInternal(
     if (target === null) {
       return;
     }
-    let sourceElement: Element | null;
-    try {
-      sourceElement = target.closest(area.options.item);
-    } catch {
-      throw new SortableError('INVALID_OPTION');
-    }
-    if (sourceElement === null || sourceElement.parentElement !== area.element) {
+    const sourceElement = directItems(area).find((item) => (
+      item === target || item.contains(target)
+    )) ?? null;
+    if (sourceElement === null) {
       return;
     }
     const elements = directItems(area);

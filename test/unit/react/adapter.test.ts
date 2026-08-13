@@ -24,6 +24,7 @@ import { renderedArea } from '../helpers/framework-fixtures.js';
 import { dragContext } from '../helpers/core-fixtures.js';
 import { fakeElement, fakePlatform, pointer } from '../helpers/core-fixtures.js';
 import { createSortableScopeInternal } from '../../../src/core/scope.js';
+import { createReactRootLifecycle } from '../../../src/react/root-lifecycle.js';
 
 test('Strict Mode setup-cleanup-setup leaves one registration', () => {
   const harness = reactAdapterHarness<Task>();
@@ -33,6 +34,49 @@ test('Strict Mode setup-cleanup-setup leaves one registration', () => {
   assert.equal(harness.registrationCount('todo'), 1);
   secondCleanup();
   assert.equal(harness.registrationCount('todo'), 0);
+});
+
+test('Root cleanup destroys its controller and Strict Mode setup can register again', () => {
+  const calls: string[] = [];
+  let instance = 0;
+  const root = createReactRootLifecycle<Task>(() => {
+    instance += 1;
+    const current = instance;
+    return {
+      registerArea() {
+        calls.push(`register:${current}`);
+        return () => calls.push(`unregister:${current}`);
+      },
+      updateArea() {},
+      destroy() {
+        calls.push(`destroy:${current}`);
+      },
+    };
+  });
+  const area = {} as Element;
+  const binding = renderedArea('todo', 'tasks', [{ id: 'a' }]);
+
+  const firstCleanup = root.registerArea(area, binding, {
+    areaId: 'todo',
+    item: ':scope > *',
+  });
+  root.destroy();
+  firstCleanup();
+  const secondCleanup = root.registerArea(area, binding, {
+    areaId: 'todo',
+    item: ':scope > *',
+  });
+  secondCleanup();
+  root.destroy();
+
+  assert.deepEqual(calls, [
+    'register:1',
+    'destroy:1',
+    'unregister:1',
+    'register:2',
+    'unregister:2',
+    'destroy:2',
+  ]);
 });
 
 test('an Area without a Root owns a one-area scope', () => {

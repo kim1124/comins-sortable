@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 
-import { createSortableScope } from '../core/scope.js';
+import { createSortableScopeForFramework } from '../core/scope.js';
 import type {
   AfterDragResult,
   FrameworkSortableChange,
@@ -45,7 +45,7 @@ export function createReactSortableController<T>(
   const transaction = new ControlledTransaction(bindings, (change) => {
     options.getRootProps().onChange?.(change);
   });
-  const createScope = options.createScope ?? createSortableScope;
+  const createScope = options.createScope ?? createSortableScopeForFramework;
   const scope = createScope({
     onBeforeDragStart: (context) => {
       bindings.validateElements();
