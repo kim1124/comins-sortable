@@ -95,7 +95,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 .cs-demo-column > header strong { font-size: 13px; }
 .cs-demo-column > header small { color: #8a9690; font-size: 10px; margin-top: 3px; text-transform: uppercase; }
 .cs-demo-list,
-.cs-demo-list-shell > [data-comins-sortable-area] { display: grid; gap: 9px; min-height: 88px; }
+.cs-demo-list-shell > [data-comins-sortable-area] { align-content: start; display: grid; gap: 9px; min-height: 88px; }
 .cs-demo-list:empty,
 .cs-demo-list-shell > [data-comins-sortable-area]:empty { align-items: center; border: 1px dashed #b8c9c1; border-radius: 10px; display: flex; justify-content: center; }
 .cs-demo-list:empty::after,

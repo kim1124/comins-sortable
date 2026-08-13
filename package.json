@@ -51,7 +51,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-unit-tests.mjs",
     "test:run": "node scripts/run-unit-tests.mjs",
-    "test:policy": "node --test test/*.node.mjs",
+    "test:policy": "node --test --test-concurrency=1 test/*.node.mjs",
     "test:types": "tsc -p test/types/tsconfig.json --noEmit",
     "example:build": "node scripts/build-browser-fixtures.mjs",
     "example:serve": "node scripts/serve-browser-fixtures.mjs",

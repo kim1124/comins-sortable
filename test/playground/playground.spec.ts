@@ -46,6 +46,26 @@ for (const adapter of adapters) {
   });
 }
 
+for (const adapter of adapters) {
+  test(`${adapter} empty example keeps the remaining single card at the standard height`, async ({ page }) => {
+    await page.goto(`/examples/empty/${adapter}`);
+    await waitForRuntime(page);
+
+    const standardHeight = await page.locator('[data-sortable-id="research"]').evaluate(
+      (element) => element.getBoundingClientRect().height,
+    );
+    await dragItem(page, 'todo', 'design', { areaId: 'done' });
+    await dragItem(page, 'todo', 'build', { areaId: 'done' });
+
+    await expect.poll(() => page.locator('[data-comins-sortable-area="todo"] > [data-sortable-id="research"]')
+      .evaluate(
+        (element, expectedHeight) => element.getBoundingClientRect().height - expectedHeight,
+        standardHeight,
+      ))
+      .toBe(0);
+  });
+}
+
 test('handle, empty destination, and rejection scenarios change only through product behavior', async ({ page }) => {
   await page.goto('/examples/handle/react');
   await waitForRuntime(page);
