@@ -128,6 +128,7 @@ interface PlaygroundDemoModule {
 }
 
 interface PlaygroundDemoHandle {
+  dispatch(controlId: string, value?: string | number | boolean): void;
   reset(): void;
   destroy(): void;
 }
@@ -145,6 +146,8 @@ interface PlaygroundBridge {
 - Svelte module은 실제 compiled component와 `use:sortable` action을 사용한다.
 - adapter 전환 시 이전 handle의 `destroy()`를 먼저 호출한 뒤 target을 비우고 다음
   runtime을 mount한다.
+- shell control panel은 example registry의 control definition을 렌더하고 현재 handle의
+  `dispatch()`로만 명령을 전달한다. 알 수 없는 control ID는 실행하지 않는다.
 - bridge에는 ID, order, lifecycle name, status/reason만 전달한다. raw Event, DOM node,
   component instance, consumer text 전체를 노출하지 않는다.
 
