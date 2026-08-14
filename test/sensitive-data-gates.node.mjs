@@ -51,14 +51,14 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts Contract v1.5 without inventing a package boundary', () => {
+test('adopts Contract v1.6 without inventing a package boundary', () => {
   const agents = read('AGENTS.md');
   const readme = read('README.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /managed-start contract=v1\.5/);
-  assert.match(readme, /Contract v1\.5/);
+  assert.match(agents, /managed-start contract=v1\.6/);
+  assert.match(readme, /Contract v1\.6/);
   assert.match(
     agents,
     /license compliance; security and sensitive data; Comins common rules;/,
