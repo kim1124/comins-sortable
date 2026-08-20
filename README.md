@@ -18,7 +18,7 @@ require separate maintainer approval.
 
 ## Governance
 
-- Shared operating policy: [Comins Contract v1.4](https://github.com/kim1124/comins-governance/blob/main/COMINS_CONTRACT.md)
+- Shared operating policy: [Comins Contract v1.6](https://github.com/kim1124/comins-governance/blob/main/COMINS_CONTRACT.md)
 - Open-source policy: [Comins OSS License Policy](https://github.com/kim1124/comins-governance/blob/main/OSS_LICENSE_POLICY.md)
 - License: [MIT](./LICENSE)
 - Security reports: [SECURITY.md](./SECURITY.md)

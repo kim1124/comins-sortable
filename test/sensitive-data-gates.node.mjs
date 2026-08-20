@@ -51,14 +51,14 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts the approved private package boundary under Contract v1.4', () => {
+test('adopts the approved private package boundary under Contract v1.6', () => {
   const agents = read('AGENTS.md');
   const readme = read('README.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /managed-start contract=v1\.4/);
-  assert.match(readme, /Contract v1\.4/);
+  assert.match(agents, /managed-start contract=v1\.6/);
+  assert.match(readme, /Contract v1\.6/);
   assert.match(
     agents,
     /license compliance; security and sensitive data; Comins common rules;/,
