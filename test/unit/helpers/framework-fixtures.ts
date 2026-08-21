@@ -156,7 +156,7 @@ export function throwingControlledFixture(): {
 
 export interface ReactAdapterAreaProps<T> {
   areaId: string;
-  group?: string;
+  group?: SortableAreaOptions['group'];
   items: readonly T[];
   itemKey: ItemKey<T>;
   onItemsChange(items: readonly T[]): void;
@@ -409,7 +409,7 @@ function fakeChild(placeholder: boolean): Element {
 
 export interface VueAdapterAreaProps<T> {
   areaId: string;
-  group?: string;
+  group?: SortableAreaOptions['group'];
   modelValue: readonly T[];
   itemKey: ItemKey<T>;
   direction?: SortableAreaOptions['direction'];

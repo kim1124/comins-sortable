@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { reorder, transfer } from '../../../src/core.js';
 import {
+  buildCopyChange,
   buildReorderChange,
   buildTransferChange,
 } from '../../../src/core/operations.js';
@@ -90,6 +91,28 @@ test('transfer change builder emits source then destination orders', () => {
     orders: [
       { areaId: 'todo', itemIds: ['a'] },
       { areaId: 'done', itemIds: ['b', 'c'] },
+    ],
+  });
+});
+
+test('copy change builder preserves the source and inserts the copied item ID', () => {
+  const change = buildCopyChange(
+    ['a', 'b'],
+    ['c'],
+    { areaId: 'todo', index: 1 },
+    { areaId: 'done', index: 0 },
+    'b-copy',
+  );
+
+  assert.deepEqual(change, {
+    operation: 'copy',
+    sourceItemId: 'b',
+    itemId: 'b-copy',
+    source: { areaId: 'todo', index: 1 },
+    destination: { areaId: 'done', index: 0 },
+    orders: [
+      { areaId: 'todo', itemIds: ['a', 'b'] },
+      { areaId: 'done', itemIds: ['b-copy', 'c'] },
     ],
   });
 });

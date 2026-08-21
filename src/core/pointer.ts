@@ -19,6 +19,10 @@ export interface PointerInput {
   readonly isPrimary: boolean;
   readonly button: number;
   readonly target: EventTarget | null;
+  readonly altKey?: boolean;
+  readonly ctrlKey?: boolean;
+  readonly metaKey?: boolean;
+  readonly shiftKey?: boolean;
   preventDefault?(): void;
 }
 
@@ -49,11 +53,18 @@ interface Coordinates {
   clientY: number;
 }
 
+interface Modifiers {
+  altKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  shiftKey: boolean;
+}
+
 interface PendingPointer {
   pointerId: number;
   pointerType: PointerSnapshot['type'];
   origin: Coordinates;
-  latest: Coordinates;
+  latest: Coordinates & Modifiers;
   frameId: number | null;
   active: boolean;
   captureTarget: Element;
@@ -72,6 +83,19 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     clientY: pointer.latest.clientY,
     deltaX: pointer.latest.clientX - pointer.origin.clientX,
     deltaY: pointer.latest.clientY - pointer.origin.clientY,
+    altKey: pointer.latest.altKey,
+    ctrlKey: pointer.latest.ctrlKey,
+    metaKey: pointer.latest.metaKey,
+    shiftKey: pointer.latest.shiftKey,
+  });
+
+  const latestInput = (input: PointerInput): Coordinates & Modifiers => ({
+    clientX: input.clientX,
+    clientY: input.clientY,
+    altKey: input.altKey === true,
+    ctrlKey: input.ctrlKey === true,
+    metaKey: input.metaKey === true,
+    shiftKey: input.shiftKey === true,
   });
 
   const cleanup = (): void => {
@@ -168,7 +192,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     if (pointer === null || input.pointerId !== pointer.pointerId) {
       return;
     }
-    pointer.latest = { clientX: input.clientX, clientY: input.clientY };
+    pointer.latest = latestInput(input);
     if (pointer.active) {
       input.preventDefault?.();
     }
@@ -182,7 +206,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     if (pointer === null || input.pointerId !== pointer.pointerId) {
       return;
     }
-    pointer.latest = { clientX: input.clientX, clientY: input.clientY };
+    pointer.latest = latestInput(input);
     const active = pointer.active;
     const finalSnapshot = snapshot(pointer);
     cleanup();
@@ -235,7 +259,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       pointerId: input.pointerId,
       pointerType,
       origin: { clientX: input.clientX, clientY: input.clientY },
-      latest: { clientX: input.clientX, clientY: input.clientY },
+      latest: latestInput(input),
       frameId: null,
       active: false,
       captureTarget: source,

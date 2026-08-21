@@ -4,6 +4,7 @@ import type {
   ItemKey,
   SortableAreaOptions,
   SortableDirection,
+  SortableGroup,
   SortableId,
 } from '../core/model.js';
 import type { FrameworkAreaBinding } from '../framework/bindings.js';
@@ -12,7 +13,7 @@ import type { VueSortableController } from './context.js';
 
 export interface VueAreaLifecycleProps<T> {
   areaId: string;
-  group?: string;
+  group?: SortableGroup;
   modelValue: readonly T[];
   itemKey: ItemKey<T>;
   direction?: SortableDirection;
@@ -106,7 +107,10 @@ function createBinding<T>(
   const initial = getProps();
   return {
     areaId: initial.areaId,
-    get group() { return getProps().group ?? ''; },
+    get group() {
+      const group = getProps().group;
+      return typeof group === 'string' ? group : group?.name ?? '';
+    },
     getItems: () => getProps().modelValue,
     getItemId: (item) => resolveItemId(item, getProps().itemKey),
     setItems: emitModelValue,

@@ -118,6 +118,10 @@ test('pointer activates at four CSS pixels and captures the active pointer', () 
     clientY: 10,
     deltaX: 4,
     deltaY: 0,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
   }]);
   assert.deepEqual(item.capturedPointers, [1]);
 });
@@ -141,6 +145,38 @@ test('pointer movement is coalesced to the latest coordinates once per frame', (
     clientY: 3,
     deltaX: 8,
     deltaY: 3,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+  });
+});
+
+test('pointer snapshots preserve the latest keyboard modifiers', () => {
+  const { platform, sensor, snapshots } = sensorFixture();
+  const item = fakeElement('LI');
+
+  sensor.pointerDown(pointer({ target: item }), item);
+  sensor.pointerMove(pointer({
+    clientX: 4,
+    target: item,
+    altKey: true,
+    ctrlKey: true,
+    metaKey: true,
+    shiftKey: true,
+  } as never));
+  platform.flushFrame();
+
+  assert.deepEqual(snapshots[0], {
+    type: 'mouse',
+    clientX: 4,
+    clientY: 0,
+    deltaX: 4,
+    deltaY: 0,
+    altKey: true,
+    ctrlKey: true,
+    metaKey: true,
+    shiftKey: true,
   });
 });
 

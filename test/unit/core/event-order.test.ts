@@ -139,3 +139,105 @@ test('destination acceptance is evaluated once per pointer frame', () => {
 
   assert.equal(calls, 1);
 });
+
+test('copy pull preserves the source and commits one prepared destination item', () => {
+  const changes: unknown[] = [];
+  let prepareCalls = 0;
+  const fixture = scopeFixture({
+    groupTodo: { name: 'tasks', pull: 'copy' },
+    prepareCopy: (context) => {
+      prepareCalls += 1;
+      assert.deepEqual(context.destination, { areaId: 'done', index: 1 });
+      return `${String(context.itemId)}-copy`;
+    },
+    onChange: (change) => changes.push(change),
+  });
+
+  fixture.drop('todo', 0, 'done', 1);
+  fixture.platform.flushFrame();
+
+  assert.equal(prepareCalls, 1);
+  assert.deepEqual(fixture.ids('todo'), ['a', 'b']);
+  assert.deepEqual(fixture.ids('done'), ['c', 'a-copy', 'd']);
+  assert.deepEqual(changes, [{
+    operation: 'copy',
+    sourceItemId: 'a',
+    itemId: 'a-copy',
+    source: { areaId: 'todo', index: 0 },
+    destination: { areaId: 'done', index: 1 },
+    orders: [
+      { areaId: 'todo', itemIds: ['a', 'b'] },
+      { areaId: 'done', itemIds: ['c', 'a-copy', 'd'] },
+    ],
+  }]);
+});
+
+test('pull callback uses activation modifier snapshot to choose copy', () => {
+  const pointers: unknown[] = [];
+  const fixture = scopeFixture({
+    groupTodo: {
+      name: 'tasks',
+      pull: (context) => {
+        pointers.push(context.pointer);
+        return context.pointer.altKey ? 'copy' : 'move';
+      },
+    },
+    prepareCopy: (context) => `${String(context.itemId)}-copy`,
+  });
+
+  fixture.begin('todo', 0, { altKey: true });
+  fixture.move('done', 1);
+  fixture.release();
+  fixture.platform.flushFrame();
+
+  assert.equal(pointers.length, 1);
+  assert.equal((pointers[0] as { altKey: boolean }).altKey, true);
+  assert.deepEqual(fixture.ids('todo'), ['a', 'b']);
+  assert.deepEqual(fixture.ids('done'), ['c', 'a-copy', 'd']);
+});
+
+test('pull false and destination put rejection do not emit changes', () => {
+  for (const options of [
+    { groupTodo: { name: 'tasks', pull: false } as const },
+    {
+      groupTodo: { name: 'tasks', pull: 'move' } as const,
+      groupDone: { name: 'tasks', put: false } as const,
+    },
+  ]) {
+    let changeCalls = 0;
+    const fixture = scopeFixture({
+      ...options,
+      onChange: () => { changeCalls += 1; },
+    });
+
+    fixture.drop('todo', 0, 'done', 0);
+
+    assert.equal(changeCalls, 0);
+    assert.deepEqual(fixture.ids('todo'), ['a', 'b']);
+    assert.deepEqual(fixture.ids('done'), ['c', 'd']);
+    assert.deepEqual(fixture.results, [{ status: 'rejected', reason: 'not-accepted' }]);
+  }
+});
+
+test('duplicate copy IDs and copy preparation failures clean up and report once', () => {
+  for (const prepareCopy of [
+    () => 'c',
+    () => { throw new Error('copy failed'); },
+  ]) {
+    const calls: string[] = [];
+    const fixture = scopeFixture({
+      groupTodo: { name: 'tasks', pull: 'copy' },
+      prepareCopy,
+      onChange: () => calls.push('change'),
+      onAfterDrag: (result) => calls.push(`after:${result.status}:${result.reason}`),
+      onError: () => calls.push('error'),
+    });
+
+    fixture.drop('todo', 0, 'done', 0);
+
+    assert.deepEqual(calls, ['after:cancelled:error', 'error']);
+    assert.equal(fixture.placeholderCount(), 0);
+    assert.deepEqual(fixture.ids('todo'), ['a', 'b']);
+    assert.deepEqual(fixture.ids('done'), ['c', 'd']);
+  }
+});

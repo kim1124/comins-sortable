@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createSortableScopeInternal } from '../../../src/core/scope.js';
 import type {
   AfterDragResult,
+  CopyItemContext,
   SortableAreaOptions,
   SortableChange,
   SortableId,
@@ -27,6 +28,9 @@ export interface ScopeFixtureOptions extends SortableScopeOptions {
   autoScroll?: boolean;
   scrollableDone?: boolean;
   getItemId?: (element: Element) => SortableId;
+  groupTodo?: SortableAreaOptions['group'];
+  groupDone?: SortableAreaOptions['group'];
+  prepareCopy?: (context: CopyItemContext) => SortableId;
 }
 
 export interface ScopeFixture {
@@ -34,7 +38,16 @@ export interface ScopeFixture {
   readonly platform: FakePlatform;
   readonly results: AfterDragResult[];
   readonly unregister: Record<'todo' | 'done', () => void>;
-  begin(areaId: 'todo' | 'done', index: number): void;
+  begin(
+    areaId: 'todo' | 'done',
+    index: number,
+    modifiers?: Readonly<{
+      altKey?: boolean;
+      ctrlKey?: boolean;
+      metaKey?: boolean;
+      shiftKey?: boolean;
+    }>,
+  ): void;
   move(areaId: 'todo' | 'done', index: number): void;
   repeatMove(): void;
   moveOutside(): void;
@@ -67,6 +80,25 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
   let lastPointer = pointer();
 
   const applyChange = (sortableChange: SortableChange): void => {
+    if (sortableChange.operation === 'copy') {
+      const source = findItem(areas, sortableChange.sourceItemId);
+      const destination = areas[sortableChange.destination.areaId as 'todo' | 'done'];
+      if (source === undefined || destination === undefined) {
+        return;
+      }
+      const copy = fakeElement('LI', {
+        ownerDocument: platform.document,
+        attributes: {
+          'data-sortable-item': '',
+          'data-sortable-id': String(sortableChange.itemId),
+        },
+        rect: source.getBoundingClientRect(),
+      });
+      const remaining = sortableChildren(destination);
+      const before = remaining[sortableChange.destination.index] ?? null;
+      destination.insertBefore(copy, before);
+      return;
+    }
     const source = findItem(areas, sortableChange.itemId);
     const destination = areas[sortableChange.destination.areaId as 'todo' | 'done'];
     if (source === undefined || destination === undefined) {
@@ -97,7 +129,9 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
   const scope = createSortableScopeInternal(scopeOptions, platform);
   const itemOptions = (areaId: 'todo' | 'done'): SortableAreaOptions => ({
     areaId,
-    group: 'tasks',
+    group: areaId === 'todo'
+      ? options.groupTodo ?? 'tasks'
+      : options.groupDone ?? 'tasks',
     item: '[data-sortable-item]',
     getItemId: options.getItemId ?? (
       (element) => element.getAttribute('data-sortable-id') as string
@@ -107,13 +141,23 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
       ? options.onAcceptDone ?? (() => options.acceptDone !== false)
       : () => true,
     autoScroll: options.autoScroll ?? false,
+    prepareCopy: areaId === 'todo' ? options.prepareCopy : undefined,
   });
   const unregister = {
     todo: scope.registerArea(areas.todo, itemOptions('todo')),
     done: scope.registerArea(areas.done, itemOptions('done')),
   };
 
-  const begin = (areaId: 'todo' | 'done', index: number): void => {
+  const begin = (
+    areaId: 'todo' | 'done',
+    index: number,
+    modifiers: Readonly<{
+      altKey?: boolean;
+      ctrlKey?: boolean;
+      metaKey?: boolean;
+      shiftKey?: boolean;
+    }> = {},
+  ): void => {
     const area = areas[areaId];
     const item = sortableChildren(area)[index] as FakeElement;
     item.focus();
@@ -122,6 +166,7 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
       clientX: itemRect.left + 10,
       clientY: itemRect.top + 10,
       target: item,
+      ...modifiers,
     });
     lastPointer = start;
     platform.setHits([item, area]);

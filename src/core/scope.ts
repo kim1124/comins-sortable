@@ -17,6 +17,7 @@ import type {
   Point,
 } from './geometry.js';
 import {
+  buildCopyChange,
   buildReorderChange,
   buildTransferChange,
 } from './operations.js';
@@ -46,6 +47,7 @@ import type {
 import type {
   AfterDragReason,
   AfterDragResult,
+  CopyItemContext,
   DragContext,
   PointerSnapshot,
   SortableAreaOptions,
@@ -56,6 +58,7 @@ import type {
   SortableLocation,
   SortableScope,
   SortableScopeOptions,
+  SortableTransferMode,
 } from './model.js';
 import type { SortableFeedback } from './feedback.js';
 
@@ -72,11 +75,15 @@ interface NormalizedAreaOptions {
   emptyInsertThreshold: number;
   autoScroll: boolean;
   accept(context: DragContext): boolean;
+  pull(context: DragContext): false | SortableTransferMode;
+  put(context: DragContext, sourceGroup: string): boolean;
+  prepareCopy?: (context: CopyItemContext) => SortableId;
 }
 
 interface ScopeArea {
   element: Element;
   options: NormalizedAreaOptions;
+  rawOptions: SortableAreaOptions;
   registered: RegisteredArea;
   disposeRegistry(): void;
   pointerDown: EventListener;
@@ -94,6 +101,7 @@ interface ActiveDrag {
   feedback: SortableFeedback | null;
   lastRejection: 'disabled' | 'not-accepted' | null;
   overArea: ScopeArea | null;
+  transferMode: false | SortableTransferMode;
 }
 
 interface LocatedDestination {
@@ -365,6 +373,36 @@ export function createSortableScopeInternal(
           { areaId: dragging.sourceArea.options.areaId, index: dragging.sourceIndex },
           destination,
         );
+      } else if (dragging.transferMode === 'copy') {
+        const destinationArea = areas.get(destination.areaId);
+        const prepareCopy = dragging.sourceArea.options.prepareCopy;
+        if (destinationArea === undefined || prepareCopy === undefined) {
+          throw new SortableError('INVALID_OPTION');
+        }
+        const copyContext: CopyItemContext = {
+          ...dragging.context,
+          destination,
+        };
+        const copiedItemId = prepareCopy(copyContext);
+        if (typeof copiedItemId !== 'string' && typeof copiedItemId !== 'number') {
+          throw new SortableError('MISSING_ITEM_ID');
+        }
+        if (
+          registry.hasItemIdInGroup(dragging.sourceArea.options.group, copiedItemId)
+          || (
+            destinationArea.options.group !== dragging.sourceArea.options.group
+            && registry.hasItemIdInGroup(destinationArea.options.group, copiedItemId)
+          )
+        ) {
+          throw new SortableError('DUPLICATE_ITEM_ID');
+        }
+        change = buildCopyChange(
+          sourceIds,
+          registry.itemIds(destination.areaId),
+          { areaId: dragging.sourceArea.options.areaId, index: dragging.sourceIndex },
+          destination,
+          copiedItemId,
+        );
       } else {
         change = buildTransferChange(
           sourceIds,
@@ -526,6 +564,7 @@ export function createSortableScopeInternal(
           feedback: null,
           lastRejection: 'disabled',
           overArea: null,
+          transferMode: false,
         };
         afterSensor(() => finish('disabled'));
         return false;
@@ -542,6 +581,15 @@ export function createSortableScopeInternal(
       if (beforeResult === false) {
         session.abandon();
         return false;
+      }
+
+      const transferMode = area.options.pull(context);
+      if (
+        transferMode !== false
+        && transferMode !== 'move'
+        && transferMode !== 'copy'
+      ) {
+        throw new SortableError('INVALID_OPTION');
       }
 
       const parent = sourceElement.parentElement;
@@ -561,6 +609,7 @@ export function createSortableScopeInternal(
         feedback,
         lastRejection: null,
         overArea: area,
+        transferMode,
       };
       area.element.setAttribute('data-comins-sortable-over', '');
       session.activate(activeSession);
@@ -678,6 +727,7 @@ export function createSortableScopeInternal(
     const area: ScopeArea = {
       element,
       options: normalized,
+      rawOptions: areaOptions,
       registered,
       disposeRegistry,
       pointerDown: (() => {}) as EventListener,
@@ -726,11 +776,12 @@ export function createSortableScopeInternal(
       if (area === undefined || area.disposed) {
         throw new SortableError('INVALID_ELEMENT');
       }
-      const next = normalizeAreaOptions({
-        ...area.options,
+      const nextRaw: SortableAreaOptions = {
+        ...area.rawOptions,
         ...patch,
         areaId,
-      }, defaultGroup);
+      };
+      const next = normalizeAreaOptions(nextRaw, defaultGroup);
       validateSelectors(area.element, next);
       const nextRegistered = registeredArea(area.element, next);
       area.disposeRegistry();
@@ -741,6 +792,7 @@ export function createSortableScopeInternal(
         throw error;
       }
       area.options = next;
+      area.rawOptions = nextRaw;
       area.registered = nextRegistered;
       invalidateTargets(areaTargets(area), 'framework');
       const disablesDrag = (
@@ -801,7 +853,7 @@ export function createSortableScopeInternal(
 }
 
 function normalizeAreaOptions(
-  options: SortableAreaOptions | (NormalizedAreaOptions & SortableAreaPatch),
+  options: SortableAreaOptions,
   defaultGroup: string,
 ): NormalizedAreaOptions {
   if (typeof options.areaId !== 'string' || options.areaId.length === 0) {
@@ -819,10 +871,11 @@ function normalizeAreaOptions(
   const getItemId = options.getItemId ?? ((element: Element) => (
     element.getAttribute('data-sortable-id') as SortableId
   ));
+  const group = normalizeGroup(options.group, defaultGroup);
 
   return {
     areaId: options.areaId,
-    group: options.group ?? defaultGroup,
+    group: group.name,
     item: options.item,
     getItemId,
     direction,
@@ -833,6 +886,65 @@ function normalizeAreaOptions(
     emptyInsertThreshold,
     autoScroll: options.autoScroll ?? true,
     accept: options.accept ?? (() => true),
+    pull: group.pull,
+    put: group.put,
+    ...(options.prepareCopy === undefined ? {} : { prepareCopy: options.prepareCopy }),
+  };
+}
+
+function normalizeGroup(
+  group: SortableAreaOptions['group'],
+  defaultGroup: string,
+): Pick<NormalizedAreaOptions, 'pull' | 'put'> & { name: string } {
+  if (group === undefined || typeof group === 'string') {
+    const name = group ?? defaultGroup;
+    if (name.length === 0) {
+      throw new SortableError('INVALID_OPTION');
+    }
+    return {
+      name,
+      pull: () => 'move',
+      put: (_context, sourceGroup) => sourceGroup === name,
+    };
+  }
+  if (
+    typeof group !== 'object'
+    || group === null
+    || typeof group.name !== 'string'
+    || group.name.length === 0
+  ) {
+    throw new SortableError('INVALID_OPTION');
+  }
+
+  const pull = group.pull ?? 'move';
+  if (
+    pull !== false
+    && pull !== 'move'
+    && pull !== 'copy'
+    && typeof pull !== 'function'
+  ) {
+    throw new SortableError('INVALID_OPTION');
+  }
+  const put = group.put ?? [group.name];
+  if (
+    typeof put !== 'boolean'
+    && typeof put !== 'function'
+    && !(
+      Array.isArray(put)
+      && put.every((name) => typeof name === 'string' && name.length > 0)
+    )
+  ) {
+    throw new SortableError('INVALID_OPTION');
+  }
+
+  return {
+    name: group.name,
+    pull: typeof pull === 'function' ? pull : () => pull,
+    put: typeof put === 'function'
+      ? (context) => put(context)
+      : typeof put === 'boolean'
+        ? () => put
+        : (_context, sourceGroup) => put.includes(sourceGroup),
   };
 }
 
@@ -898,20 +1010,60 @@ function locateDestination(
   const context = { ...dragging.context, pointer };
   const directAreas = uniqueAreasFromHits(hits, registry, areas);
   const acceptance = new Map<ScopeArea, boolean>();
+  const destinations = new Map<ScopeArea, LocatedDestination>();
+  const destinationFor = (area: ScopeArea): LocatedDestination => {
+    const cached = destinations.get(area);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const elements = itemElements(area, dragging.sourceElement);
+    const itemGeometry = elements.map((element) => ({
+      element,
+      geometry: {
+        id: area.options.getItemId(element),
+        rect: rectFor(element),
+      } satisfies ItemGeometry,
+    }));
+    const direction = resolveDirection(
+      area.options.direction,
+      itemGeometry.map((entry) => entry.geometry),
+    );
+    const index = insertionIndex({
+      pointer: { x: pointer.clientX, y: pointer.clientY },
+      direction,
+      items: itemGeometry.map((entry) => entry.geometry),
+    });
+    const destination: LocatedDestination = {
+      area,
+      location: { areaId: area.options.areaId, index },
+      before: itemGeometry[index]?.element ?? null,
+    };
+    destinations.set(area, destination);
+    return destination;
+  };
   const acceptsArea = (area: ScopeArea): boolean => {
     const cached = acceptance.get(area);
     if (cached !== undefined || acceptance.has(area)) {
       return cached as boolean;
     }
-    const accepted = area.options.accept(context);
+    const candidate = destinationFor(area);
+    const candidateContext: DragContext = {
+      ...context,
+      destination: candidate.location,
+    };
+    const sameArea = area === dragging.sourceArea;
+    const accepted = (
+      sameArea
+      || (
+        dragging.transferMode !== false
+        && area.options.put(candidateContext, dragging.sourceArea.options.group)
+      )
+    ) && area.options.accept(candidateContext);
     acceptance.set(area, accepted);
     return accepted;
   };
   let rejection: 'disabled' | 'not-accepted' | null = null;
   for (const area of directAreas) {
-    if (area.options.group !== dragging.sourceArea.options.group) {
-      continue;
-    }
     if (area.options.disabled) {
       rejection = 'disabled';
       break;
@@ -927,9 +1079,7 @@ function locateDestination(
     rectFor,
     () => acceptsArea(area),
   ));
-  const groupAreas = [...areas.values()].filter(
-    (area) => !area.disposed && area.options.group === dragging.sourceArea.options.group,
-  );
+  const groupAreas = [...areas.values()].filter((area) => !area.disposed);
   const emptyGeometries = groupAreas
     .filter((area) => itemElements(area, dragging.sourceElement).length === 0)
     .map((area) => areaGeometry(area, rectFor, () => acceptsArea(area)));
@@ -940,6 +1090,7 @@ function locateDestination(
     emptyInsertThreshold: 0,
     sourceGroup: dragging.sourceArea.options.group,
     context,
+    acceptsGroup: () => true,
   });
   if (area === undefined) {
     return { rejection };
@@ -948,30 +1099,9 @@ function locateDestination(
   if (scopeArea === undefined) {
     return { rejection };
   }
-  const elements = itemElements(scopeArea, dragging.sourceElement);
-  const itemGeometry = elements.map((element) => ({
-    element,
-    geometry: {
-      id: scopeArea.options.getItemId(element),
-      rect: rectFor(element),
-    } satisfies ItemGeometry,
-  }));
-  const direction = resolveDirection(
-    scopeArea.options.direction,
-    itemGeometry.map((entry) => entry.geometry),
-  );
-  const index = insertionIndex({
-    pointer: { x: pointer.clientX, y: pointer.clientY },
-    direction,
-    items: itemGeometry.map((entry) => entry.geometry),
-  });
   return {
     rejection: null,
-    destination: {
-      area: scopeArea,
-      location: { areaId: scopeArea.options.areaId, index },
-      before: itemGeometry[index]?.element ?? null,
-    },
+    destination: destinationFor(scopeArea),
   };
 }
 
@@ -1045,6 +1175,10 @@ function pointerSnapshot(
     clientY: input.clientY,
     deltaX: input.clientX - originX,
     deltaY: input.clientY - originY,
+    altKey: input.altKey === true,
+    ctrlKey: input.ctrlKey === true,
+    metaKey: input.metaKey === true,
+    shiftKey: input.shiftKey === true,
   };
 }
 

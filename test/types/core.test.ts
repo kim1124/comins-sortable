@@ -6,6 +6,7 @@ import {
 } from '../../src/core.js';
 import type {
   AfterDragResult,
+  CopyItemContext,
   DragContext,
   FrameworkSortableChange,
   InsertDragAreaEvent,
@@ -16,11 +17,14 @@ import type {
   SortableAreaPatch,
   SortableChange,
   SortableDirection,
+  SortableGroup,
+  SortableGroupOptions,
   SortableId,
   SortableLocation,
   SortableOrder,
   SortableScope,
   SortableScopeOptions,
+  SortableTransferMode,
 } from '../../src/core.js';
 
 interface Item {
@@ -39,6 +43,10 @@ const pointer: PointerSnapshot = {
   clientY: 20,
   deltaX: 1,
   deltaY: 2,
+  altKey: false,
+  ctrlKey: false,
+  metaKey: false,
+  shiftKey: false,
 };
 const context: DragContext = {
   itemId: id,
@@ -80,9 +88,19 @@ const transferredItems: {
 } = transfer(items, [], 0, 0);
 const areaOptions: SortableAreaOptions = {
   areaId: 'todo',
+  group: {
+    name: 'tasks',
+    pull: (drag) => drag.pointer.altKey ? 'copy' : 'move',
+    put: ['tasks'],
+  },
   item: '[data-sortable-item]',
   getItemId: (element) => element.getAttribute('data-id') ?? 0,
+  prepareCopy: (copyContext) => `${String(copyContext.itemId)}-copy`,
 };
+const transferMode: SortableTransferMode = 'copy';
+const groupOptions: SortableGroupOptions = areaOptions.group as SortableGroupOptions;
+const group: SortableGroup = groupOptions;
+const copyContext: CopyItemContext = { ...context, destination: location };
 const areaPatch: SortableAreaPatch = { disabled: true };
 const scopeOptions: SortableScopeOptions = {
   onChange: (sortableChange) => void sortableChange,
@@ -99,6 +117,9 @@ void [
   reorderedItems,
   transferredItems,
   areaOptions,
+  transferMode,
+  group,
+  copyContext,
   areaPatch,
   scope,
 ];

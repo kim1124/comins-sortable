@@ -102,3 +102,30 @@ export function buildTransferChange(
     ],
   };
 }
+
+export function buildCopyChange(
+  sourceItemIds: readonly SortableId[],
+  destinationItemIds: readonly SortableId[],
+  source: SortableLocation,
+  destination: SortableLocation,
+  itemId: SortableId,
+): SortableChange {
+  assertIndex(source.index, sourceItemIds.length, false);
+  assertIndex(destination.index, destinationItemIds.length, true);
+
+  const sourceItemId = sourceItemIds[source.index] as SortableId;
+  const nextDestinationItemIds = [...destinationItemIds];
+  nextDestinationItemIds.splice(destination.index, 0, itemId);
+
+  return {
+    operation: 'copy',
+    sourceItemId,
+    itemId,
+    source,
+    destination,
+    orders: [
+      { areaId: source.areaId, itemIds: sourceItemIds },
+      { areaId: destination.areaId, itemIds: nextDestinationItemIds },
+    ],
+  };
+}

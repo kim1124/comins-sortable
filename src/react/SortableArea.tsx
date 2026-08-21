@@ -11,6 +11,7 @@ import type {
   DragContext,
   ItemKey,
   SortableDirection,
+  SortableGroup,
 } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
 import {
@@ -22,7 +23,7 @@ import { createReactAreaLifecycle } from './lifecycle.js';
 
 export interface SortableAreaProps<T> {
   areaId: string;
-  group?: string;
+  group?: SortableGroup;
   items: readonly T[];
   itemKey: ItemKey<T>;
   onItemsChange(items: readonly T[]): void;

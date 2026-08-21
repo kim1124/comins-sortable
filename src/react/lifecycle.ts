@@ -4,6 +4,7 @@ import type {
   ItemKey,
   SortableAreaOptions,
   SortableDirection,
+  SortableGroup,
   SortableId,
 } from '../core/model.js';
 import type { FrameworkAreaBinding } from '../framework/bindings.js';
@@ -12,7 +13,7 @@ import type { ReactSortableController } from './context.js';
 
 export interface ReactAreaLifecycleProps<T> {
   areaId: string;
-  group?: string;
+  group?: SortableGroup;
   items: readonly T[];
   itemKey: ItemKey<T>;
   onItemsChange(items: readonly T[]): void;
@@ -116,7 +117,8 @@ function createBinding<T>(
   return {
     areaId: initial.areaId,
     get group() {
-      return getProps().group ?? '';
+      const group = getProps().group;
+      return typeof group === 'string' ? group : group?.name ?? '';
     },
     getItems: () => getProps().items,
     getItemId: (item) => resolveItemId(item, getProps().itemKey),

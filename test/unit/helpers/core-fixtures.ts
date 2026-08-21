@@ -452,6 +452,10 @@ export function dragContext(): DragContext {
       clientY: 0,
       deltaX: 0,
       deltaY: 0,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
     },
   };
 }
@@ -652,6 +656,10 @@ export function pendingInput(): PendingSession {
       clientY: 0,
       deltaX: 0,
       deltaY: 0,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
     },
   };
 }
@@ -665,6 +673,10 @@ export function activeInput(): ActiveSession {
       clientY: 0,
       deltaX: 4,
       deltaY: 0,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
     },
     destination: { areaId: 'todo', index: 1 },
   };

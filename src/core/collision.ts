@@ -49,6 +49,7 @@ export function findAreaAtPoint(input: {
   emptyInsertThreshold: number;
   sourceGroup: string;
   context: DragContext;
+  acceptsGroup?: (group: string) => boolean;
 }): AreaGeometry | undefined {
   let direct: AreaGeometry | undefined;
   for (const area of input.directHits) {
@@ -72,9 +73,14 @@ export function findAreaAtPoint(input: {
 
 function accepts(
   area: AreaGeometry,
-  input: Pick<Parameters<typeof findAreaAtPoint>[0], 'sourceGroup' | 'context'>,
+  input: Pick<
+    Parameters<typeof findAreaAtPoint>[0],
+    'sourceGroup' | 'context' | 'acceptsGroup'
+  >,
 ): boolean {
-  return !area.disabled && area.group === input.sourceGroup && area.accept(input.context);
+  const acceptsGroup = input.acceptsGroup?.(area.group)
+    ?? area.group === input.sourceGroup;
+  return !area.disabled && acceptsGroup && area.accept(input.context);
 }
 
 function containsEmptyArea(

@@ -1,6 +1,7 @@
 export type SortableId = string | number;
 export type ItemKey<T> = keyof T | ((item: T) => SortableId);
 export type SortableDirection = 'vertical' | 'horizontal' | 'auto';
+export type SortableTransferMode = 'move' | 'copy';
 
 export interface SortableLocation {
   areaId: string;
@@ -12,22 +13,32 @@ export interface SortableOrder {
   itemIds: readonly SortableId[];
 }
 
-export interface SortableChange {
-  operation: 'reorder' | 'transfer';
+interface SortableChangeBase {
   itemId: SortableId;
   source: SortableLocation;
   destination: SortableLocation;
   orders: readonly SortableOrder[];
 }
 
+export interface SortableMoveChange extends SortableChangeBase {
+  operation: 'reorder' | 'transfer';
+}
+
+export interface SortableCopyChange extends SortableChangeBase {
+  operation: 'copy';
+  sourceItemId: SortableId;
+}
+
+export type SortableChange = SortableMoveChange | SortableCopyChange;
+
 export interface SortableAreaUpdate<T> {
   areaId: string;
   items: readonly T[];
 }
 
-export interface FrameworkSortableChange<T> extends SortableChange {
+export type FrameworkSortableChange<T> = SortableChange & {
   updates: readonly SortableAreaUpdate<T>[];
-}
+};
 
 export interface PointerSnapshot {
   type: 'mouse' | 'touch' | 'pen';
@@ -35,6 +46,10 @@ export interface PointerSnapshot {
   clientY: number;
   deltaX: number;
   deltaY: number;
+  altKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  shiftKey: boolean;
 }
 
 export interface DragContext {
@@ -43,6 +58,20 @@ export interface DragContext {
   destination: SortableLocation | null;
   pointer: PointerSnapshot;
 }
+
+export interface CopyItemContext extends DragContext {
+  destination: SortableLocation;
+}
+
+export interface SortableGroupOptions {
+  name: string;
+  pull?: false | SortableTransferMode | (
+    (context: DragContext) => false | SortableTransferMode
+  );
+  put?: boolean | readonly string[] | ((context: DragContext) => boolean);
+}
+
+export type SortableGroup = string | SortableGroupOptions;
 
 export interface InsertDragAreaEvent extends DragContext {
   previousDestination: SortableLocation | null;
@@ -70,7 +99,7 @@ export interface AfterDragResult {
 
 export interface SortableAreaOptions {
   areaId: string;
-  group?: string;
+  group?: SortableGroup;
   item: string;
   getItemId?: (element: Element) => SortableId;
   direction?: SortableDirection;
@@ -81,6 +110,7 @@ export interface SortableAreaOptions {
   emptyInsertThreshold?: number;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
+  prepareCopy?: (context: CopyItemContext) => SortableId;
 }
 
 export type SortableAreaPatch = Partial<Omit<SortableAreaOptions, 'areaId'>>;

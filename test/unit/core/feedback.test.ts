@@ -48,6 +48,10 @@ test('feedback moves by pointer delta and restores only changed source state', (
     clientY: 8,
     deltaX: 10,
     deltaY: -2,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
   });
 
   assert.equal(source.style.transform, 'translate(10px, -2px)');

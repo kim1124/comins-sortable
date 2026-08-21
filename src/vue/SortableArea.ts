@@ -2,7 +2,7 @@ import { cloneVNode, defineComponent, inject, isVNode, onBeforeUnmount, onUpdate
 import { h } from 'vue';
 import type { PropType, VNodeChild } from 'vue';
 
-import type { DragContext, ItemKey, SortableDirection } from '../core/model.js';
+import type { DragContext, ItemKey, SortableDirection, SortableGroup } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
 import {
   createVueSortableController,
@@ -14,7 +14,7 @@ import { createVueAreaLifecycle } from './lifecycle.js';
 export interface VueSortableAreaProps<T> {
   modelValue: readonly T[];
   areaId: string;
-  group?: string;
+  group?: SortableGroup;
   itemKey: ItemKey<T>;
   direction?: SortableDirection;
   disabled?: boolean;
@@ -35,7 +35,7 @@ const SortableAreaComponent = defineComponent({
   props: {
     modelValue: { type: Array as PropType<readonly unknown[]>, required: true },
     areaId: { type: String, required: true },
-    group: String,
+    group: [String, Object] as PropType<SortableGroup>,
     itemKey: { type: [String, Function] as PropType<ItemKey<unknown>>, required: true },
     direction: String as PropType<SortableDirection>,
     disabled: Boolean,

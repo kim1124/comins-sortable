@@ -92,6 +92,13 @@ export class AreaRegistry {
     return [...this.areas.values()].filter((area) => area.group === group);
   }
 
+  hasItemIdInGroup(group: string, itemId: SortableId): boolean {
+    this.validateItemIds(this.areas.values());
+    return this.areasInGroup(group).some(
+      (area) => this.collectItemIds(area).includes(itemId),
+    );
+  }
+
   private validateItemIds(areas: Iterable<RegisteredArea>): void {
     const idsByGroup = new Map<string, Set<SortableId>>();
 
