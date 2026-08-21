@@ -10,6 +10,7 @@ import type { DomTransactionArea } from './dom-transaction.js';
 import type {
   Sortable,
   VanillaSortableAreaOptions,
+  VanillaSortableAreaPatch,
   VanillaSortableOptions,
 } from './types.js';
 
@@ -35,12 +36,16 @@ export function createSortable(
     areaOptions: VanillaSortableAreaOptions,
   ): (() => void) => {
     const areaElement = resolveElement(candidate);
-    const unregisterScope = scope.registerArea(areaElement, areaOptions);
     const registered: DomTransactionArea = {
       element: areaElement,
       item: areaOptions.item,
       getItemId: areaOptions.getItemId ?? defaultItemId,
+      copyElement: areaOptions.copyElement,
     };
+    const unregisterScope = scope.registerArea(
+      areaElement,
+      withCopyPreparation(areaOptions, transaction),
+    );
     areas.set(areaOptions.areaId, registered);
     return () => {
       unregisterScope();
@@ -54,8 +59,8 @@ export function createSortable(
 
   return {
     registerArea,
-    updateArea(areaId: string, patch: SortableAreaPatch): void {
-      scope.updateArea(areaId, patch);
+    updateArea(areaId: string, patch: VanillaSortableAreaPatch): void {
+      scope.updateArea(areaId, withCopyPreparation(patch, transaction));
       const area = areas.get(areaId);
       if (area !== undefined) {
         if (patch.item !== undefined) {
@@ -63,6 +68,9 @@ export function createSortable(
         }
         if ('getItemId' in patch) {
           area.getItemId = patch.getItemId ?? defaultItemId;
+        }
+        if ('copyElement' in patch) {
+          area.copyElement = patch.copyElement;
         }
       }
     },
@@ -97,6 +105,19 @@ export function createSortable(
     }
     options.onAfterDrag?.(result);
   }
+}
+
+function withCopyPreparation<
+  O extends VanillaSortableAreaOptions | VanillaSortableAreaPatch,
+>(
+  options: O,
+  transaction: ReturnType<typeof createDomTransaction>,
+): Omit<O, 'copyElement'> & Pick<SortableAreaPatch, 'prepareCopy'> {
+  const { copyElement: _copyElement, ...coreOptions } = options;
+  return {
+    ...coreOptions,
+    prepareCopy: (context) => transaction.prepareCopy(context.source.areaId, context),
+  };
 }
 
 function resolveElement(candidate: Element | string): Element {

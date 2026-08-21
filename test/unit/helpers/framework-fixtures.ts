@@ -168,6 +168,7 @@ export interface ReactAdapterAreaProps<T> {
   emptyInsertThreshold?: number;
   autoScroll?: boolean;
   accept?: SortableAreaOptions['accept'];
+  copyItem?: import('../../../src/core.js').CopyItem<T>;
 }
 
 export function todoProps(): ReactAdapterAreaProps<Task> {
@@ -420,6 +421,7 @@ export interface VueAdapterAreaProps<T> {
   emptyInsertThreshold?: number;
   autoScroll?: boolean;
   accept?: SortableAreaOptions['accept'];
+  copyItem?: import('../../../src/core.js').CopyItem<T>;
 }
 
 export function vueTodoProps(): VueAdapterAreaProps<Task> {

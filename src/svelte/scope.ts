@@ -102,7 +102,10 @@ export function createSvelteSortableController<T>(
       const unregisterBinding = bindings.register(binding);
       let unregisterScope: (() => void) | null = null;
       try {
-        unregisterScope = scope.registerArea(element, areaOptions);
+        unregisterScope = scope.registerArea(
+          element,
+          withCopyPreparation(areaOptions, binding, transaction),
+        );
       } catch (error) {
         unregisterBinding();
         throw error;
@@ -119,7 +122,9 @@ export function createSvelteSortableController<T>(
       return dispose;
     },
     updateArea(areaId, patch) {
-      scope.updateArea(areaId, patch);
+      const binding = bindings.get(areaId);
+      if (binding === undefined) throw new SortableError('INVALID_OPTION');
+      scope.updateArea(areaId, withCopyPreparation(patch, binding, transaction));
     },
     cancel() {
       scope.cancel();
@@ -131,6 +136,20 @@ export function createSvelteSortableController<T>(
       for (const dispose of [...registrations]) dispose();
       transaction.destroy();
     },
+  };
+}
+
+function withCopyPreparation<
+  T,
+  O extends SortableAreaOptions | SortableAreaPatch,
+>(
+  options: O,
+  binding: FrameworkAreaBinding<T>,
+  transaction: ControlledTransaction<T>,
+): O & Pick<SortableAreaOptions, 'prepareCopy'> {
+  return {
+    ...options,
+    prepareCopy: (context) => transaction.prepareCopy(binding.areaId, context),
   };
 }
 

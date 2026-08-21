@@ -2,7 +2,14 @@ import { cloneVNode, defineComponent, inject, isVNode, onBeforeUnmount, onUpdate
 import { h } from 'vue';
 import type { PropType, VNodeChild } from 'vue';
 
-import type { DragContext, ItemKey, SortableDirection, SortableGroup } from '../core/model.js';
+import type {
+  CopyItem,
+  CopyItemContext,
+  DragContext,
+  ItemKey,
+  SortableDirection,
+  SortableGroup,
+} from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
 import {
   createVueSortableController,
@@ -24,6 +31,7 @@ export interface VueSortableAreaProps<T> {
   emptyInsertThreshold?: number;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
+  copyItem?: CopyItem<T>;
 }
 
 export interface VueSortableAreaSlots<T> {
@@ -45,6 +53,7 @@ const SortableAreaComponent = defineComponent({
     emptyInsertThreshold: Number,
     autoScroll: { type: Boolean, default: undefined },
     accept: Function as PropType<(context: DragContext) => boolean>,
+    copyItem: Function as PropType<(item: unknown, context: CopyItemContext) => unknown>,
   },
   emits: ['update:modelValue'],
   setup(props, { emit, slots }) {

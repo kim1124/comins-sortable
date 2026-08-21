@@ -1,5 +1,6 @@
 import { SortableError } from '../core/errors.js';
 import type {
+  CopyItem,
   DragContext,
   ItemKey,
   SortableAreaOptions,
@@ -24,6 +25,7 @@ export interface VueAreaLifecycleProps<T> {
   emptyInsertThreshold?: number;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
+  copyItem?: CopyItem<T>;
 }
 
 export interface VueAreaLifecycle<T> {
@@ -115,6 +117,14 @@ function createBinding<T>(
     getItemId: (item) => resolveItemId(item, getProps().itemKey),
     setItems: emitModelValue,
     getElement,
+    copyItem: (context) => {
+      const current = getProps();
+      const item = current.modelValue[context.source.index];
+      if (item === undefined || current.copyItem === undefined) {
+        throw new SortableError('INVALID_OPTION');
+      }
+      return current.copyItem(item, context);
+    },
   };
 }
 

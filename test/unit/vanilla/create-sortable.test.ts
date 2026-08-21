@@ -102,6 +102,38 @@ test('createSortable commits DOM before the core next-frame verification', async
   assert.deepEqual(results, ['drop']);
 });
 
+test('createSortable copies a distinct element without removing the source', async () => {
+  const { createSortable } = await import('../../../src/index.js');
+  const platform = fakePlatform();
+  const todo = area(platform.document, 0, ['a', 'b']);
+  const done = area(platform.document, 200, ['c']);
+  const operations: string[] = [];
+  const sortable = createSortable(todo, {
+    ...options(),
+    group: { name: 'tasks', pull: 'copy' },
+    copyElement: (source, context) => {
+      assert.equal(source.getAttribute('data-sortable-id'), 'b');
+      assert.deepEqual(context.destination, { areaId: 'done', index: 0 });
+      return fakeElement('LI', {
+        ownerDocument: platform.document,
+        attributes: { 'data-sortable-id': 'b-copy' },
+      });
+    },
+    onChange: (change) => operations.push(change.operation),
+  });
+  sortable.registerArea(done, {
+    areaId: 'done',
+    group: 'tasks',
+    item: '[data-sortable-id]',
+  });
+
+  transfer(platform, todo, done);
+
+  assert.deepEqual(ids(todo), ['a', 'b']);
+  assert.deepEqual(ids(done), ['b-copy', 'c']);
+  assert.deepEqual(operations, ['copy']);
+});
+
 test('createSortable restores the source before after-drag after a user onChange error', async () => {
   const { createSortable } = await import('../../../src/index.js');
   const platform = fakePlatform();

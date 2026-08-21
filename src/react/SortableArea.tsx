@@ -8,6 +8,7 @@ import {
 import type { ReactElement } from 'react';
 
 import type {
+  CopyItem,
   DragContext,
   ItemKey,
   SortableDirection,
@@ -36,6 +37,7 @@ export interface SortableAreaProps<T> {
   emptyInsertThreshold?: number;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
+  copyItem?: CopyItem<T>;
 }
 
 export function SortableArea<T>(props: SortableAreaProps<T>): ReactElement {

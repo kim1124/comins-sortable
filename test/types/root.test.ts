@@ -11,6 +11,12 @@ const areaOptions: VanillaSortableAreaOptions = {
   areaId: 'todo',
   item: '[data-sortable-id]',
   getItemId: (element) => element.getAttribute('data-sortable-id') ?? 'missing',
+  group: { name: 'tasks', pull: 'copy' },
+  copyElement: (source, context) => {
+    const copy = source.cloneNode(true) as Element;
+    copy.setAttribute('data-sortable-id', `${String(context.itemId)}-copy`);
+    return copy;
+  },
 };
 const options: VanillaSortableOptions = {
   ...areaOptions,

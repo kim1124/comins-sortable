@@ -1,5 +1,6 @@
 import type { InjectionKey } from 'vue';
 
+import { SortableError } from '../core/errors.js';
 import { createSortableScopeForFramework } from '../core/scope.js';
 import type {
   AfterDragResult,
@@ -66,7 +67,10 @@ export function createVueSortableController<T>(
       const unregisterBinding = bindings.register(binding);
       let unregisterScope: (() => void) | null = null;
       try {
-        unregisterScope = scope.registerArea(element, areaOptions);
+        unregisterScope = scope.registerArea(
+          element,
+          withCopyPreparation(areaOptions, binding, transaction),
+        );
       } catch (error) {
         unregisterBinding();
         throw error;
@@ -80,7 +84,9 @@ export function createVueSortableController<T>(
       };
     },
     updateArea(areaId, patch) {
-      scope.updateArea(areaId, patch);
+      const binding = bindings.get(areaId);
+      if (binding === undefined) throw new SortableError('INVALID_OPTION');
+      scope.updateArea(areaId, withCopyPreparation(patch, binding, transaction));
     },
     destroy() {
       if (destroyed) return;
@@ -88,6 +94,20 @@ export function createVueSortableController<T>(
       scope.destroy();
       transaction.destroy();
     },
+  };
+}
+
+function withCopyPreparation<
+  T,
+  O extends SortableAreaOptions | SortableAreaPatch,
+>(
+  options: O,
+  binding: FrameworkAreaBinding<T>,
+  transaction: ControlledTransaction<T>,
+): O & Pick<SortableAreaOptions, 'prepareCopy'> {
+  return {
+    ...options,
+    prepareCopy: (context) => transaction.prepareCopy(binding.areaId, context),
   };
 }
 

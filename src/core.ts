@@ -6,6 +6,7 @@ export type {
   AfterDragReason,
   AfterDragResult,
   CopyItemContext,
+  CopyItem,
   DragContext,
   FrameworkSortableChange,
   InsertDragAreaEvent,
@@ -23,7 +24,9 @@ export type {
   SortableLocation,
   SortableMoveChange,
   SortableOrder,
+  SortableReorderChange,
   SortableScope,
   SortableScopeOptions,
   SortableTransferMode,
+  SortableTransferChange,
 } from './core/model.js';

@@ -1,4 +1,5 @@
 import type {
+  CopyItemContext,
   SortableAreaOptions,
   SortableAreaPatch,
   SortableId,
@@ -6,9 +7,14 @@ import type {
 } from '../core.js';
 
 export interface VanillaSortableAreaOptions
-  extends Omit<SortableAreaOptions, 'getItemId'> {
+  extends Omit<SortableAreaOptions, 'getItemId' | 'prepareCopy'> {
   getItemId?: (element: Element) => SortableId;
+  copyElement?: (source: Element, context: CopyItemContext) => Element;
 }
+
+export type VanillaSortableAreaPatch = Partial<
+  Omit<VanillaSortableAreaOptions, 'areaId'>
+>;
 
 export interface VanillaSortableOptions
   extends VanillaSortableAreaOptions, SortableScopeOptions {}
@@ -18,7 +24,7 @@ export interface Sortable {
     element: Element | string,
     options: VanillaSortableAreaOptions,
   ): () => void;
-  updateArea(areaId: string, patch: SortableAreaPatch): void;
+  updateArea(areaId: string, patch: VanillaSortableAreaPatch): void;
   cancel(): void;
   destroy(): void;
 }

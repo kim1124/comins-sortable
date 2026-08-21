@@ -24,6 +24,11 @@ const options: SvelteSortableOptions<Task> = {
   areaId: 'todo',
   items: tasks,
   itemKey: 'id',
+  group: { name: 'tasks', pull: 'copy', put: ['tasks'] },
+  copyItem: (item, context) => ({
+    ...item,
+    id: `${item.id}-${context.destination.areaId}`,
+  }),
   onItemsChange(next) {
     const task: Task | undefined = next[0];
     void task;
@@ -65,6 +70,16 @@ const invalidCallback: SvelteSortableOptions<Task> = {
   onItemsChange: (next: readonly string[]) => undefined,
 };
 void invalidCallback;
+
+const invalidCopy: SvelteSortableOptions<Task> = {
+  areaId: 'todo',
+  items: tasks,
+  itemKey: 'id',
+  onItemsChange: () => undefined,
+  // @ts-expect-error copyItem must return Task
+  copyItem: () => 'invalid',
+};
+void invalidCopy;
 
 interface OtherTask { id: number }
 const otherScope = createSortableScope<OtherTask>();

@@ -20,9 +20,15 @@ interface SortableChangeBase {
   orders: readonly SortableOrder[];
 }
 
-export interface SortableMoveChange extends SortableChangeBase {
-  operation: 'reorder' | 'transfer';
+export interface SortableReorderChange extends SortableChangeBase {
+  operation: 'reorder';
 }
+
+export interface SortableTransferChange extends SortableChangeBase {
+  operation: 'transfer';
+}
+
+export type SortableMoveChange = SortableReorderChange | SortableTransferChange;
 
 export interface SortableCopyChange extends SortableChangeBase {
   operation: 'copy';
@@ -62,6 +68,8 @@ export interface DragContext {
 export interface CopyItemContext extends DragContext {
   destination: SortableLocation;
 }
+
+export type CopyItem<T> = (item: T, context: CopyItemContext) => T;
 
 export interface SortableGroupOptions {
   name: string;

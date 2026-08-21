@@ -8,10 +8,12 @@ import {
   vueAdapterHarness,
   vueDoneProps,
   vueTodoProps,
+  renderedArea,
   type Task,
 } from '../helpers/framework-fixtures.js';
 import {
   hasCode,
+  dragContext,
   fakeElement,
   fakePlatform,
   pointer,
@@ -41,6 +43,41 @@ test('transfer emits both model updates before one Root change', () => {
     'update:done:c,b',
     'change:transfer',
   ]);
+});
+
+test('controller exposes the Area copy factory through Core preparation', () => {
+  let registeredOptions: import('../../../src/core.js').SortableAreaOptions | undefined;
+  const controller = createVueSortableController<Task>({
+    getRootOptions: () => ({}),
+    createScope: () => ({
+      registerArea(_element, options) {
+        registeredOptions = options;
+        return () => undefined;
+      },
+      updateArea: () => undefined,
+      cancel: () => undefined,
+      destroy: () => undefined,
+    }),
+  });
+  controller.registerArea(
+    {} as Element,
+    {
+      ...renderedArea('todo', 'tasks', [{ id: 'a' }]),
+      copyItem: () => ({ id: 'a-copy' }),
+    },
+    {
+      areaId: 'todo',
+      group: { name: 'tasks', pull: 'copy' },
+      item: ':scope > *',
+    },
+  );
+
+  assert.equal(registeredOptions?.prepareCopy?.({
+    ...dragContext(),
+    itemId: 'a',
+    destination: { areaId: 'done', index: 0 },
+  }), 'a-copy');
+  controller.destroy();
 });
 
 test('Area update replaces current items without re-registering', () => {
@@ -86,7 +123,14 @@ test('shared lifecycle uses the latest model and emit callback without registrat
   };
   const element = { children: [] } as unknown as HTMLDivElement;
   const emitted: (readonly Task[])[] = [];
-  let props = vueTodoProps();
+  const copyCalls: string[] = [];
+  let props = {
+    ...vueTodoProps(),
+    copyItem: (_item: Task) => {
+      copyCalls.push('first');
+      return { id: 'first-copy' };
+    },
+  };
   const lifecycle = createVueAreaLifecycle({
     controller,
     props: () => props,
@@ -94,13 +138,27 @@ test('shared lifecycle uses the latest model and emit callback without registrat
   });
 
   lifecycle.setElement(element);
-  props = { ...props, modelValue: [{ id: 'c' }], itemKey: 'id' };
+  props = {
+    ...props,
+    modelValue: [{ id: 'c' }],
+    itemKey: 'id',
+    copyItem: (item: Task) => {
+      copyCalls.push('latest');
+      return { id: `${item.id}-copy` };
+    },
+  };
   lifecycle.update(props);
   binding?.setItems([{ id: 'd' }]);
+  assert.deepEqual(binding?.copyItem?.({
+    ...dragContext(),
+    itemId: 'c',
+    destination: { areaId: 'done', index: 0 },
+  }), { id: 'c-copy' });
 
   assert.deepEqual(calls, ['register']);
   assert.equal(binding?.getItemId({ id: 'c' }), 'c');
   assert.deepEqual(emitted, [[{ id: 'd' }]]);
+  assert.deepEqual(copyCalls, ['latest']);
 });
 
 test('shared lifecycle unregisters an old area before registering its replacement', () => {

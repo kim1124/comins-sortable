@@ -1,6 +1,7 @@
 import { SortableError } from '../core/errors.js';
 import { reorder, transfer } from '../core/operations.js';
 import type {
+  CopyItemContext,
   FrameworkSortableChange,
   SortableAreaUpdate,
   SortableChange,
@@ -9,6 +10,7 @@ import type { BindingSnapshot, FrameworkAreaBinding } from './bindings.js';
 import { BindingRegistry } from './bindings.js';
 
 export interface ControlledTransaction<T> {
+  prepareCopy(areaId: string, context: CopyItemContext): string | number;
   apply(change: SortableChange): FrameworkSortableChange<T>;
   confirm(change: SortableChange): boolean;
   finish(): void;
@@ -18,11 +20,42 @@ export interface ControlledTransaction<T> {
 
 export class ControlledTransaction<T> implements ControlledTransaction<T> {
   private originals: readonly BindingSnapshot<T>[] | null = null;
+  private preparedCopy: {
+    sourceAreaId: string;
+    item: T;
+    itemId: string | number;
+  } | null = null;
 
   constructor(
     private readonly registry: BindingRegistry<T>,
     private readonly onChange: (change: FrameworkSortableChange<T>) => void,
   ) {}
+
+  prepareCopy(areaId: string, context: CopyItemContext): string | number {
+    if (this.preparedCopy !== null) {
+      throw new SortableError('INVALID_OPTION');
+    }
+    const binding = this.requireBinding(areaId);
+    const sourceItem = binding.getItems()[context.source.index];
+    if (
+      context.source.areaId !== areaId
+      || sourceItem === undefined
+      || binding.getItemId(sourceItem) !== context.itemId
+      || binding.copyItem === undefined
+    ) {
+      throw new SortableError('INVALID_OPTION');
+    }
+    const item = binding.copyItem(context);
+    const itemId = binding.getItemId(item);
+    if (typeof itemId !== 'string' && typeof itemId !== 'number') {
+      throw new SortableError('MISSING_ITEM_ID');
+    }
+    if (this.registry.hasItemIdInGroup(binding.group, itemId)) {
+      throw new SortableError('DUPLICATE_ITEM_ID');
+    }
+    this.preparedCopy = { sourceAreaId: areaId, item, itemId };
+    return itemId;
+  }
 
   apply(change: SortableChange): FrameworkSortableChange<T> {
     const snapshots = this.snapshots(change);
@@ -34,8 +67,10 @@ export class ControlledTransaction<T> implements ControlledTransaction<T> {
     this.originals = snapshots;
 
     try {
-      for (const [index, update] of updates.entries()) {
-        const snapshot = snapshots[index];
+      for (const update of updates) {
+        const snapshot = snapshots.find(
+          (candidate) => candidate.binding.areaId === update.areaId,
+        );
         if (snapshot === undefined) {
           throw new SortableError('INVALID_OPTION');
         }
@@ -79,11 +114,13 @@ export class ControlledTransaction<T> implements ControlledTransaction<T> {
 
   finish(): void {
     this.originals = null;
+    this.preparedCopy = null;
   }
 
   rollback(): void {
     const originals = this.originals;
     this.originals = null;
+    this.preparedCopy = null;
     if (originals === null) {
       return;
     }
@@ -128,7 +165,7 @@ export class ControlledTransaction<T> implements ControlledTransaction<T> {
         source.binding.areaId,
         reorder(source.items, change.source.index, change.destination.index),
       );
-    } else {
+    } else if (change.operation === 'transfer') {
       const next = transfer(
         source.items,
         destination.items,
@@ -137,14 +174,25 @@ export class ControlledTransaction<T> implements ControlledTransaction<T> {
       );
       nextItemsByAreaId.set(source.binding.areaId, next.sourceItems);
       nextItemsByAreaId.set(destination.binding.areaId, next.destinationItems);
-    }
-
-    return change.orders.map((order) => {
-      const items = nextItemsByAreaId.get(order.areaId);
-      if (items === undefined) {
+    } else {
+      const prepared = this.preparedCopy;
+      const sourceItem = source.items[change.source.index];
+      if (
+        prepared === null
+        || prepared.sourceAreaId !== source.binding.areaId
+        || prepared.itemId !== change.itemId
+        || sourceItem === undefined
+        || source.binding.getItemId(sourceItem) !== change.sourceItemId
+      ) {
         throw new SortableError('INVALID_OPTION');
       }
-      return { areaId: order.areaId, items };
+      const nextDestinationItems = [...destination.items];
+      nextDestinationItems.splice(change.destination.index, 0, prepared.item);
+      nextItemsByAreaId.set(destination.binding.areaId, nextDestinationItems);
+    }
+
+    return [...nextItemsByAreaId].map(([areaId, items]) => {
+      return { areaId, items };
     });
   }
 

@@ -16,6 +16,11 @@ const tasks: readonly Task[] = [{ id: 'a', title: 'A' }];
     areaId="todo"
     items={tasks}
     itemKey="id"
+    group={{ name: 'tasks', pull: 'copy', put: ['tasks'] }}
+    copyItem={(item, context) => ({
+      ...item,
+      id: `${item.id}-${String(context.destination.areaId)}`,
+    })}
     onItemsChange={(next) => {
       const task: Task | undefined = next[0];
       void task;
@@ -24,6 +29,17 @@ const tasks: readonly Task[] = [{ id: 'a', title: 'A' }];
     {(item, index) => <div data-index={index}>{item.title}</div>}
   </SortableArea>
 </SortableRoot>;
+
+<SortableArea<Task>
+  areaId="invalid-copy"
+  items={tasks}
+  itemKey="id"
+  onItemsChange={() => undefined}
+  // @ts-expect-error copyItem must return the Area item type
+  copyItem={() => 'invalid'}
+>
+  {(item) => <div>{item.title}</div>}
+</SortableArea>;
 
 <SortableArea
   areaId="todo"

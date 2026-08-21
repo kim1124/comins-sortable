@@ -24,6 +24,99 @@ function transferChange() {
   };
 }
 
+function copyChange() {
+  return {
+    operation: 'copy' as const,
+    sourceItemId: 'a',
+    itemId: 'a-copy',
+    source: { areaId: 'todo', index: 0 },
+    destination: { areaId: 'done', index: 1 },
+    orders: [
+      { areaId: 'todo', itemIds: ['a'] },
+      { areaId: 'done', itemIds: ['c', 'a-copy'] },
+    ],
+  };
+}
+
+const copyContext = {
+  itemId: 'a',
+  source: { areaId: 'todo', index: 0 },
+  destination: { areaId: 'done', index: 1 },
+  pointer: {
+    type: 'mouse' as const,
+    clientX: 10,
+    clientY: 10,
+    deltaX: 10,
+    deltaY: 10,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+  },
+};
+
+test('copy prepares one typed item and updates only the destination binding', () => {
+  const registry = new BindingRegistry<{ id: string }>();
+  const source = [{ id: 'a' }];
+  let todo = source;
+  let done = [{ id: 'c' }];
+  const calls: string[] = [];
+  registry.register({
+    ...renderedArea('todo', 'tasks', todo),
+    getItems: () => todo,
+    setItems: (items) => {
+      todo = items as { id: string }[];
+      calls.push('todo:set');
+    },
+    copyItem: (context) => ({ id: `${String(context.itemId)}-copy` }),
+  });
+  registry.register({
+    ...renderedArea('done', 'tasks', done),
+    getItems: () => done,
+    setItems: (items) => {
+      done = items as { id: string }[];
+      calls.push(`done:${ids(items).join(',')}`);
+    },
+  });
+  const transaction = new ControlledTransaction(registry, (change) => {
+    calls.push(`root:${change.operation}`);
+  });
+
+  assert.equal(transaction.prepareCopy('todo', copyContext), 'a-copy');
+  const enhanced = transaction.apply(copyChange());
+
+  assert.equal(todo, source);
+  assert.deepEqual(done, [{ id: 'c' }, { id: 'a-copy' }]);
+  assert.deepEqual(calls, ['done:c,a-copy', 'root:copy']);
+  assert.deepEqual(enhanced.updates, [{ areaId: 'done', items: done }]);
+});
+
+test('missing, throwing, and duplicate copy factories do not mutate bindings', () => {
+  for (const copyItem of [
+    undefined,
+    () => { throw new Error('copy failed'); },
+    () => ({ id: 'c' }),
+  ]) {
+    const registry = new BindingRegistry<{ id: string }>();
+    const todo = [{ id: 'a' }];
+    const done = [{ id: 'c' }];
+    const calls: string[] = [];
+    registry.register({
+      ...renderedArea('todo', 'tasks', todo),
+      ...(copyItem === undefined ? {} : { copyItem }),
+      setItems: () => calls.push('todo:set'),
+    });
+    registry.register({
+      ...renderedArea('done', 'tasks', done),
+      setItems: () => calls.push('done:set'),
+    });
+    const transaction = new ControlledTransaction(registry, () => calls.push('root'));
+
+    assert.throws(() => transaction.prepareCopy('todo', copyContext));
+    assert.deepEqual(calls, []);
+  }
+});
+
 test('transfer updates both affected areas once in change order and emits one enhanced change', () => {
   const calls: string[] = [];
   const fixture = controlledFixture({

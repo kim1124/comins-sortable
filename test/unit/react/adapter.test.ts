@@ -104,6 +104,38 @@ test('a Root transfer batches two controlled setters and one change', () => {
   ]);
 });
 
+test('controller exposes the Area copy factory through Core preparation', () => {
+  let registeredOptions: import('../../../src/core.js').SortableAreaOptions | undefined;
+  const controller = createReactSortableController<Task>({
+    getRootProps: () => ({}),
+    createScope: () => ({
+      registerArea(_element, options) {
+        registeredOptions = options;
+        return () => undefined;
+      },
+      updateArea: () => undefined,
+      cancel: () => undefined,
+      destroy: () => undefined,
+    }),
+  });
+  const binding = {
+    ...renderedArea('todo', 'tasks', [{ id: 'a' }]),
+    copyItem: () => ({ id: 'a-copy' }),
+  };
+  controller.registerArea({} as Element, binding, {
+    areaId: 'todo',
+    group: { name: 'tasks', pull: 'copy' },
+    item: ':scope > *',
+  });
+
+  assert.equal(registeredOptions?.prepareCopy?.({
+    ...dragContext(),
+    itemId: 'a',
+    destination: { areaId: 'done', index: 0 },
+  }), 'a-copy');
+  controller.destroy();
+});
+
 test('a non-drop result restores controlled arrays before the consumer callback', () => {
   const callbackStates: (readonly Task[])[] = [];
   const harness = reactAdapterHarness<Task>();
@@ -220,6 +252,7 @@ test('shared lifecycle binding reads the latest item key and items callback', ()
   const element = fakeElement('DIV');
   const firstUpdates: (readonly Task[])[] = [];
   const latestUpdates: (readonly Task[])[] = [];
+  const copyCalls: string[] = [];
   const lifecycle = createReactAreaLifecycle({
     controller,
     props: {
@@ -228,6 +261,10 @@ test('shared lifecycle binding reads the latest item key and items callback', ()
       items: [{ id: 'a' }],
       itemKey: () => 'first',
       onItemsChange: (items) => firstUpdates.push(items),
+      copyItem: () => {
+        copyCalls.push('first');
+        return { id: 'first-copy' };
+      },
     },
   });
 
@@ -238,6 +275,10 @@ test('shared lifecycle binding reads the latest item key and items callback', ()
     items: [{ id: 'a' }],
     itemKey: 'id',
     onItemsChange: (items) => latestUpdates.push(items),
+    copyItem: (item) => {
+      copyCalls.push('latest');
+      return { id: `${item.id}-copy` };
+    },
   });
   const binding = registration.binding;
   if (binding === undefined) {
@@ -247,8 +288,14 @@ test('shared lifecycle binding reads the latest item key and items callback', ()
 
   assert.equal(binding.getItemId({ id: 'a' }), 'a');
   binding.setItems(nextItems);
+  assert.deepEqual(binding.copyItem?.({
+    ...dragContext(),
+    itemId: 'a',
+    destination: { areaId: 'done', index: 0 },
+  }), { id: 'a-copy' });
   assert.deepEqual(firstUpdates, []);
   assert.deepEqual(latestUpdates, [nextItems]);
+  assert.deepEqual(copyCalls, ['latest']);
 });
 
 test('shared lifecycle unregisters the old area ID before registering its replacement', () => {

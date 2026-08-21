@@ -28,6 +28,11 @@ h(SortableRoot<Task>, {
     areaId: 'todo',
     modelValue: tasks,
     itemKey: 'id',
+    group: { name: 'tasks', pull: 'copy', put: ['tasks'] },
+    copyItem: (item, context) => ({
+      ...item,
+      id: `${item.id}-${context.destination.areaId}`,
+    }),
     'onUpdate:modelValue': (next) => {
       const task: Task | undefined = next[0];
       void task;
@@ -52,6 +57,15 @@ const missingItemKey: VueSortableAreaProps<Task> = {
   modelValue: tasks,
 };
 void missingItemKey;
+
+const invalidCopy: VueSortableAreaProps<Task> = {
+  areaId: 'invalid-copy',
+  modelValue: tasks,
+  itemKey: 'id',
+  // @ts-expect-error copyItem must return Task
+  copyItem: () => 'invalid',
+};
+void invalidCopy;
 
 // @ts-expect-error index callbacks are not a supported ItemKey shape
 const indexKey: ItemKey<Task> = (_item, index: number) => index;

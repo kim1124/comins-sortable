@@ -117,6 +117,73 @@ test('a shared Scope applies transfer setters before one enhanced change callbac
   scope.destroy();
 });
 
+test('a shared Scope prepares and applies the latest typed copy to only its destination', () => {
+  let coreCallbacks: import('../../../src/core.js').SortableScopeOptions = {};
+  const areaOptions = new Map<string, import('../../../src/core.js').SortableAreaOptions>();
+  const calls: string[] = [];
+  const scope = createSvelteSortableScope<Task>({
+    onChange: (change) => calls.push(`change:${change.operation}`),
+  }, (callbacks) => {
+    coreCallbacks = callbacks;
+    return {
+      registerArea(_element, options) {
+        areaOptions.set(options.areaId, options);
+        return () => areaOptions.delete(options.areaId);
+      },
+      updateArea: () => undefined,
+      cancel: () => undefined,
+      destroy: () => undefined,
+    };
+  });
+  const todoAction = sortable(fakeElement('UL') as unknown as HTMLElement, options({
+    scope,
+    items: [{ id: 'a' }],
+    copyItem: (item) => ({ id: `${item.id}-copy` }),
+    onItemsChange: () => calls.push('todo:set'),
+  }));
+  const doneAction = sortable(fakeElement('UL') as unknown as HTMLElement, options({
+    scope,
+    areaId: 'done',
+    items: [{ id: 'c' }],
+    onItemsChange: (items) => calls.push(`done:${items.map((item) => item.id).join(',')}`),
+  }));
+  const context = {
+    itemId: 'a',
+    source: { areaId: 'todo', index: 0 },
+    destination: { areaId: 'done', index: 1 },
+    pointer: {
+      type: 'mouse' as const,
+      clientX: 0,
+      clientY: 0,
+      deltaX: 0,
+      deltaY: 0,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+    },
+  };
+
+  assert.equal(areaOptions.get('todo')?.prepareCopy?.(context), 'a-copy');
+  coreCallbacks.onChange?.({
+    operation: 'copy',
+    sourceItemId: 'a',
+    itemId: 'a-copy',
+    source: context.source,
+    destination: context.destination,
+    orders: [
+      { areaId: 'todo', itemIds: ['a'] },
+      { areaId: 'done', itemIds: ['c', 'a-copy'] },
+    ],
+  });
+
+  assert.deepEqual(calls, ['done:c,a-copy', 'change:copy']);
+  coreCallbacks.onAfterDrag?.({ status: 'dropped', reason: 'drop' });
+  todoAction.destroy();
+  doneAction.destroy();
+  scope.destroy();
+});
+
 test('shared scopes remain usable after one action is destroyed', () => {
   const platform = fakePlatform();
   const scope = createSortableScope<Task>();

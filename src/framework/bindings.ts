@@ -1,5 +1,5 @@
 import { SortableError } from '../core/errors.js';
-import type { SortableId } from '../core/model.js';
+import type { CopyItemContext, SortableId } from '../core/model.js';
 
 export interface FrameworkAreaBinding<T> {
   areaId: string;
@@ -8,6 +8,7 @@ export interface FrameworkAreaBinding<T> {
   getItemId(item: T): SortableId;
   setItems(items: readonly T[]): void;
   getElement(): Element | null;
+  copyItem?(context: CopyItemContext): T;
 }
 
 export interface BindingSnapshot<T> {
@@ -76,6 +77,16 @@ export class BindingRegistry<T> {
         throw new SortableError('INVALID_ELEMENT');
       }
     }
+  }
+
+  hasItemIdInGroup(group: string, itemId: SortableId): boolean {
+    const itemsByBinding = this.scanGroups(new Set([group]));
+    for (const [binding, items] of itemsByBinding) {
+      if (items.some((item) => this.itemId(binding, item) === itemId)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private scanGroups(
