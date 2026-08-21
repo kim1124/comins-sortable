@@ -23,6 +23,12 @@ test('invalid routes fail closed to the simple React example', () => {
     playgroundPath({ adapterId: 'svelte', exampleId: 'two-lists' }),
     '/examples/two-lists/svelte',
   );
+  for (const exampleId of ['clone', 'custom-clone', 'modifier-copy'] as const) {
+    assert.deepEqual(resolvePlaygroundRoute(`/examples/${exampleId}/vanilla`), {
+      adapterId: 'vanilla',
+      exampleId,
+    });
+  }
 });
 
 test('locale persistence accepts only ko and en', () => {

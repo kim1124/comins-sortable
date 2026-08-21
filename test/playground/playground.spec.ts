@@ -47,6 +47,62 @@ for (const adapter of adapters) {
 }
 
 for (const adapter of adapters) {
+  test(`${adapter} clone route preserves its source and inserts one copied item`, async ({ page }) => {
+    await page.goto(`/examples/clone/${adapter}`);
+    await waitForRuntime(page);
+
+    await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+
+    await expect.poll(async () => (await model(page)).todo)
+      .toEqual(['research', 'design', 'build']);
+    await expect.poll(async () => (await model(page)).done)
+      .toEqual(['design-copy-1', 'review']);
+    await expect(page.getByLabel('마지막 작업')).toContainText('copy');
+    await expect(page.getByLabel('이벤트 타임라인').getByText('change', { exact: true }))
+      .toHaveCount(1);
+    await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
+  });
+
+  test(`${adapter} custom clone route renders the customized copied item`, async ({ page }) => {
+    await page.goto(`/examples/custom-clone/${adapter}`);
+    await waitForRuntime(page);
+
+    await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+
+    await expect.poll(async () => (await model(page)).done)
+      .toEqual(['design-copy-1', 'review']);
+    const copy = page.locator('[data-comins-sortable-area="done"] > [data-sortable-id="design-copy-1"]');
+    await expect(copy).toContainText('Design Copy');
+    await expect(copy).toContainText('Customized clone');
+  });
+
+  test(`${adapter} modifier route copies with Alt and moves without it`, async ({ page }) => {
+    await page.goto(`/examples/modifier-copy/${adapter}`);
+    await waitForRuntime(page);
+
+    await page.keyboard.down('Alt');
+    try {
+      await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+    } finally {
+      await page.keyboard.up('Alt');
+    }
+    await expect.poll(async () => (await model(page)).todo)
+      .toEqual(['research', 'design', 'build']);
+    await expect.poll(async () => (await model(page)).done)
+      .toEqual(['design-copy-1', 'review']);
+    await expect(page.getByLabel('마지막 작업')).toContainText('copy');
+    await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
+
+    await page.getByRole('button', { name: '데이터 초기화' }).click();
+    await expect.poll(async () => (await model(page)).done).toEqual(['review']);
+    await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+    await expect.poll(async () => (await model(page)).todo).toEqual(['research', 'build']);
+    await expect.poll(async () => (await model(page)).done).toEqual(['design', 'review']);
+    await expect(page.getByLabel('마지막 작업')).toContainText('transfer');
+  });
+}
+
+for (const adapter of adapters) {
   test(`${adapter} empty example keeps the remaining single card at the standard height`, async ({ page }) => {
     await page.goto(`/examples/empty/${adapter}`);
     await waitForRuntime(page);

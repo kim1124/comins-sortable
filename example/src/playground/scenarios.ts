@@ -29,6 +29,36 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
     controls: [resetControl],
   },
   {
+    id: 'clone',
+    title: { ko: '복제', en: 'Clone' },
+    description: {
+      ko: '원본 목록을 유지하면서 대상 목록에 새 ID의 항목을 복제합니다.',
+      en: 'Copy an item with a new ID while preserving the source list.',
+    },
+    api: ['group.pull', 'copyItem', 'copyElement'],
+    controls: [resetControl],
+  },
+  {
+    id: 'custom-clone',
+    title: { ko: '사용자 정의 복제', en: 'Custom clone' },
+    description: {
+      ko: '복제 factory에서 새 항목의 표시 데이터와 ID를 함께 구성합니다.',
+      en: 'Customize the copied item presentation and ID in the clone factory.',
+    },
+    api: ['copyItem', 'copyElement', 'itemKey'],
+    controls: [resetControl],
+  },
+  {
+    id: 'modifier-copy',
+    title: { ko: '보조키 복제', en: 'Clone on control' },
+    description: {
+      ko: 'Alt/Option을 누른 드래그는 복제하고 일반 드래그는 이동합니다.',
+      en: 'Hold Alt/Option to copy; drag normally to move.',
+    },
+    api: ['group.pull', 'pointer.altKey', 'copyItem'],
+    controls: [resetControl],
+  },
+  {
     id: 'handle',
     title: { ko: '드래그 핸들', en: 'Drag handle' },
     description: {

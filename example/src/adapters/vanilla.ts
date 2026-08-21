@@ -3,8 +3,10 @@ import type { AfterDragResult, SortableChange } from '../../../src/core.js';
 import type { PlaygroundDemoModule } from '../playground/types.js';
 import {
   createDemoState,
+  copyDemoItem,
   demoModel,
   hasSecondArea,
+  isCopyExample,
   playgroundOperation,
   type DemoItem,
 } from './demo-data.js';
@@ -58,6 +60,8 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
     let sortable: Sortable | null = null;
     let allowed = true;
     let destroyed = false;
+    let copySequence = 0;
+    let itemsById = new Map<string, DemoItem>();
 
     const publishModel = (): void => {
       const read = (areaId: string): string[] => Array.from(
@@ -76,6 +80,10 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
     const render = (): void => {
       sortable?.destroy();
       const state = createDemoState(input.exampleId);
+      copySequence = 0;
+      itemsById = new Map(
+        [...state.todo, ...state.done].map((item) => [item.id, item]),
+      );
       allowed = true;
       container.replaceChildren();
 
@@ -102,8 +110,24 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
       const todoList = todo.querySelector<HTMLElement>('[data-demo-area="todo"]')!;
       sortable = createSortable(todoList, {
         areaId: 'todo',
-        group: 'playground',
+        group: input.exampleId === 'clone' || input.exampleId === 'custom-clone'
+          ? { name: 'playground', pull: 'copy' }
+          : input.exampleId === 'modifier-copy'
+            ? {
+                name: 'playground',
+                pull: (context) => context.pointer.altKey ? 'copy' : 'move',
+              }
+            : 'playground',
         item: '.cs-demo-card',
+        copyElement: isCopyExample(input.exampleId)
+          ? (source) => {
+              const sourceItem = itemsById.get(source.getAttribute('data-sortable-id') ?? '');
+              if (sourceItem === undefined) throw new Error('Unknown demo copy source');
+              const copy = copyDemoItem(sourceItem, input.exampleId, ++copySequence);
+              itemsById.set(copy.id, copy);
+              return card(copy, false);
+            }
+          : undefined,
         handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
         autoScroll: input.exampleId === 'auto-scroll',
         onBeforeDragStart: () => event('beforeDragStart'),

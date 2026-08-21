@@ -1,6 +1,8 @@
 import {
   StrictMode,
   useEffect,
+  useMemo,
+  useRef,
   useState,
   type ReactElement,
 } from 'react';
@@ -18,8 +20,10 @@ import type {
 } from '../playground/types.js';
 import {
   createDemoState,
+  copyDemoItem,
   demoModel,
   hasSecondArea,
+  isCopyExample,
   playgroundOperation,
   type DemoItem,
   type DemoState,
@@ -57,7 +61,20 @@ function Demo({
 }): ReactElement {
   const [state, setState] = useState<DemoState>(() => createDemoState(input.exampleId));
   const [allowed, setAllowed] = useState(true);
+  const copySequence = useRef(0);
   const secondArea = hasSecondArea(input.exampleId);
+  const todoGroup = useMemo(() => (
+    input.exampleId === 'clone' || input.exampleId === 'custom-clone'
+      ? { name: 'playground', pull: 'copy' as const }
+      : input.exampleId === 'modifier-copy'
+        ? {
+            name: 'playground',
+            pull: (context: import('../../../src/core.js').DragContext) => (
+              context.pointer.altKey ? 'copy' as const : 'move' as const
+            ),
+          }
+        : 'playground'
+  ), [input.exampleId]);
   const setItems = (areaId: 'todo' | 'done', items: readonly DemoItem[]): void => {
     setState((current) => ({ ...current, [areaId]: [...items] }));
   };
@@ -75,6 +92,7 @@ function Demo({
         if (controlId === 'accept-destination' && typeof value === 'boolean') setAllowed(value);
       },
       reset() {
+        copySequence.current = 0;
         setAllowed(true);
         setState(createDemoState(input.exampleId));
         bridge.publishOperation(null);
@@ -89,13 +107,16 @@ function Demo({
       <div role="list" className="cs-demo-list-shell">
         <SortableArea
           areaId={areaId}
-          group="playground"
+          group={areaId === 'todo' ? todoGroup : 'playground'}
           items={items}
           itemKey="id"
           handle={input.exampleId === 'handle' ? '.cs-demo-handle' : undefined}
           autoScroll={input.exampleId === 'auto-scroll'}
           emptyInsertThreshold={areaId === 'done' && input.exampleId === 'empty' ? 42 : undefined}
           accept={areaId === 'done' && input.exampleId === 'accept' ? () => allowed : undefined}
+          copyItem={areaId === 'todo' && isCopyExample(input.exampleId)
+            ? (item) => copyDemoItem(item, input.exampleId, ++copySequence.current)
+            : undefined}
           onItemsChange={(nextItems) => setItems(areaId, nextItems)}
         >
           {(item) => <ItemCard item={item} withHandle={input.exampleId === 'handle'} />}

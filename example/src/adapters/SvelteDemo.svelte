@@ -3,7 +3,7 @@
   import { createSortableScope, sortable } from '../../../src/svelte.js';
   import type { AfterDragResult, FrameworkSortableChange } from '../../../src/core.js';
   import type { PlaygroundBridge, PlaygroundDemoInput } from '../playground/types.js';
-  import { createDemoState, demoModel, hasSecondArea, playgroundOperation, type DemoItem } from './demo-data.js';
+  import { copyDemoItem, createDemoState, demoModel, hasSecondArea, isCopyExample, playgroundOperation, type DemoItem } from './demo-data.js';
 
   interface DemoCommands {
     dispatch(controlId: string, value?: string | number | boolean): void;
@@ -17,7 +17,18 @@
 
   let state = createDemoState(input.exampleId);
   let allowed = true;
+  let copySequence = 0;
   const secondArea = hasSecondArea(input.exampleId);
+  const todoGroup = input.exampleId === 'clone' || input.exampleId === 'custom-clone'
+    ? { name: 'playground', pull: 'copy' as const }
+    : input.exampleId === 'modifier-copy'
+      ? {
+          name: 'playground',
+          pull: (context: import('../../../src/core.js').DragContext) => (
+            context.pointer.altKey ? 'copy' as const : 'move' as const
+          ),
+        }
+      : 'playground';
   const event = (name: string, result?: AfterDragResult) => {
     bridge.publishEvent({ name, status: result?.status, reason: result?.reason });
   };
@@ -36,6 +47,7 @@
     state = { ...state, [areaId]: [...items] };
   };
   const reset = () => {
+    copySequence = 0;
     allowed = true;
     state = createDemoState(input.exampleId);
     bridge.publishOperation(null);
@@ -54,11 +66,14 @@
   $: todoOptions = {
     scope,
     areaId: 'todo',
-    group: 'playground',
+    group: todoGroup,
     items: state.todo,
     itemKey: 'id' as const,
     handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
     autoScroll: input.exampleId === 'auto-scroll',
+    copyItem: isCopyExample(input.exampleId)
+      ? (item: DemoItem) => copyDemoItem(item, input.exampleId, ++copySequence)
+      : undefined,
     onItemsChange: (items: readonly DemoItem[]) => setItems('todo', items),
   };
   $: doneOptions = {

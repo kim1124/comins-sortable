@@ -56,6 +56,20 @@ export function createDemoState(exampleId: PlaygroundExampleId): DemoState {
   };
 }
 
+export function copyDemoItem(
+  source: DemoItem,
+  exampleId: PlaygroundExampleId,
+  sequence: number,
+): DemoItem {
+  const copy = {
+    ...source,
+    id: `${source.id}-copy-${sequence}`,
+  };
+  return exampleId === 'custom-clone'
+    ? { ...copy, title: `${source.title} Copy`, detail: 'Customized clone' }
+    : copy;
+}
+
 export function applyDemoChange(state: DemoState, change: SortableChange): DemoState {
   const itemById = new Map(
     [...state.todo, ...state.done].map((item) => [item.id, item] as const),
@@ -64,6 +78,14 @@ export function applyDemoChange(state: DemoState, change: SortableChange): DemoS
     todo: [...state.todo],
     done: [...state.done],
   };
+  if (change.operation === 'copy') {
+    const source = itemById.get(String(change.sourceItemId));
+    if (source === undefined) throw new Error('Unknown demo source item');
+    itemById.set(String(change.itemId), {
+      ...source,
+      id: String(change.itemId),
+    });
+  }
 
   for (const order of change.orders) {
     if (order.areaId !== 'todo' && order.areaId !== 'done') continue;
@@ -94,5 +116,16 @@ export function playgroundOperation(change: SortableChange): PlaygroundOperation
 }
 
 export function hasSecondArea(exampleId: PlaygroundExampleId): boolean {
-  return exampleId === 'two-lists' || exampleId === 'empty' || exampleId === 'accept';
+  return exampleId === 'two-lists'
+    || exampleId === 'clone'
+    || exampleId === 'custom-clone'
+    || exampleId === 'modifier-copy'
+    || exampleId === 'empty'
+    || exampleId === 'accept';
+}
+
+export function isCopyExample(exampleId: PlaygroundExampleId): boolean {
+  return exampleId === 'clone'
+    || exampleId === 'custom-clone'
+    || exampleId === 'modifier-copy';
 }

@@ -178,8 +178,8 @@ export function PlaygroundApp(): ReactElement {
           </div>
           <div className="cs-playground__parity-note">
             <strong>Vue.Draggable parity</strong>
-            <span>6 / 17 examples</span>
-            <small>{locale === 'ko' ? 'Clone · Table · Nested 구현 예정' : 'Clone · Table · Nested next'}</small>
+            <span>9 / 17 examples</span>
+            <small>{locale === 'ko' ? 'Transition · Table · Nested 구현 예정' : 'Transition · Table · Nested next'}</small>
           </div>
         </aside>
 

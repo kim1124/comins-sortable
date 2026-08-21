@@ -19,8 +19,10 @@ import type {
 } from '../playground/types.js';
 import {
   createDemoState,
+  copyDemoItem,
   demoModel,
   hasSecondArea,
+  isCopyExample,
   playgroundOperation,
   type DemoItem,
   type DemoState,
@@ -55,7 +57,18 @@ export const vueDemoModule: PlaygroundDemoModule = {
       setup() {
         const state = ref<DemoState>(createDemoState(input.exampleId));
         const allowed = ref(true);
+        let copySequence = 0;
         const secondArea = hasSecondArea(input.exampleId);
+        const todoGroup = input.exampleId === 'clone' || input.exampleId === 'custom-clone'
+          ? { name: 'playground', pull: 'copy' as const }
+          : input.exampleId === 'modifier-copy'
+            ? {
+                name: 'playground',
+                pull: (context: import('../../../src/core.js').DragContext) => (
+                  context.pointer.altKey ? 'copy' as const : 'move' as const
+                ),
+              }
+            : 'playground';
         const event = (name: string, result?: AfterDragResult): void => {
           bridge.publishEvent({ name, status: result?.status, reason: result?.reason });
         };
@@ -68,6 +81,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
             if (controlId === 'accept-destination' && typeof value === 'boolean') allowed.value = value;
           },
           reset() {
+            copySequence = 0;
             allowed.value = true;
             state.value = createDemoState(input.exampleId);
             bridge.publishOperation(null);
@@ -84,13 +98,16 @@ export const vueDemoModule: PlaygroundDemoModule = {
             h('div', { class: 'cs-demo-list-shell', role: 'list' }, [
               h(SortableArea<DemoItem>, {
                 areaId,
-                group: 'playground',
+                group: areaId === 'todo' ? todoGroup : 'playground',
                 modelValue: items,
                 itemKey: 'id',
                 handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
                 autoScroll: input.exampleId === 'auto-scroll',
                 emptyInsertThreshold: areaId === 'done' && input.exampleId === 'empty' ? 42 : undefined,
                 accept: areaId === 'done' && input.exampleId === 'accept' ? () => allowed.value : undefined,
+                copyItem: areaId === 'todo' && isCopyExample(input.exampleId)
+                  ? (item: DemoItem) => copyDemoItem(item, input.exampleId, ++copySequence)
+                  : undefined,
                 'onUpdate:modelValue': (nextItems: readonly DemoItem[]) => setItems(areaId, nextItems),
               }, {
                 item: ({ item }: { item: DemoItem }) => itemCard(item, input.exampleId === 'handle'),

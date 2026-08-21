@@ -2,6 +2,9 @@ export const adapterIds = ['vanilla', 'react', 'vue', 'svelte'] as const;
 export const exampleIds = [
   'simple',
   'two-lists',
+  'clone',
+  'custom-clone',
+  'modifier-copy',
   'handle',
   'empty',
   'accept',
