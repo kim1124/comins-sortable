@@ -54,8 +54,13 @@ export async function movePointerToDropTarget(
   let lastState: unknown = null;
   try {
     await expect.poll(async () => {
-      await destination.hover({ position });
-      await destination.hover({ position });
+      if (destinationBox.width === 0 || destinationBox.height === 0) {
+        await page.mouse.move(point.x, point.y);
+        await page.mouse.move(point.x, point.y);
+      } else {
+        await destination.hover({ position });
+        await destination.hover({ position });
+      }
       await waitForPointerFrame(page);
       const location = await placeholder.count() === 1
         ? await placeholder.evaluate((element) => ({
