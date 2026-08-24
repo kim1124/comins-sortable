@@ -34,6 +34,12 @@ export function item(page: Page, areaId: string, itemId: string): Locator {
   return area(page, areaId).locator(`[data-sortable-id="${itemId}"]`);
 }
 
+async function waitForPointerFrame(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  }));
+}
+
 export async function movePointerToDropTarget(
   page: Page,
   point: { x: number; y: number },
@@ -44,6 +50,7 @@ export async function movePointerToDropTarget(
   let attempt = 0;
   await expect.poll(async () => {
     await page.mouse.move(point.x + (attempt++ % 2), point.y, { steps: 2 });
+    await waitForPointerFrame(page);
     if (await placeholder.count() !== 1) return null;
     return placeholder.evaluate((element, expectedBeforeId) => ({
       areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
@@ -62,6 +69,7 @@ export async function movePointerOutside(page: Page): Promise<void> {
   let attempt = 0;
   await expect.poll(async () => {
     await page.mouse.move(4 + (attempt++ % 2), 4, { steps: 2 });
+    await waitForPointerFrame(page);
     return over.count();
   }).toBe(0);
 }
@@ -100,6 +108,7 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
         await expect.poll(async () => {
           const x = destinationPoint.x + (attempt++ % 2);
           await page.mouse.move(x, destinationPoint.y, { steps: 2 });
+          await waitForPointerFrame(page);
           const actual = await dragging.evaluate((element) => {
             const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
             return { x: matrix.e, y: matrix.f };
