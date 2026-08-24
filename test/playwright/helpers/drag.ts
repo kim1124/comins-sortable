@@ -72,14 +72,18 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
         : item(page, destinationAreaId, beforeId);
       const destinationBox = await destination.boundingBox();
       if (destinationBox === null) throw new Error(`Missing destination: ${destinationAreaId}/${beforeId ?? 'empty'}`);
-      const previousTransform = await page.locator('[data-comins-sortable-dragging]').evaluate(
-        (element) => (element as HTMLElement).style.transform,
-      );
-      await page.mouse.move(destinationBox.x + 8, destinationBox.y + 8);
-      await expect.poll(() => page.locator('[data-comins-sortable-dragging]').evaluate(
-        (element) => (element as HTMLElement).style.transform,
-      )).not.toBe(previousTransform);
-      if (accepted) await waitForDropTarget(page, destinationAreaId, beforeId);
+      const dragging = page.locator('[data-comins-sortable-dragging]');
+      const previousTransform = accepted
+        ? null
+        : await dragging.evaluate((element) => (element as HTMLElement).style.transform);
+      await page.mouse.move(destinationBox.x + 8, destinationBox.y + 8, { steps: 4 });
+      if (accepted) {
+        await waitForDropTarget(page, destinationAreaId, beforeId);
+      } else {
+        await expect.poll(() => dragging.evaluate(
+          (element) => (element as HTMLElement).style.transform,
+        )).not.toBe(previousTransform);
+      }
     },
     async drop(): Promise<void> {
       await page.mouse.up();
