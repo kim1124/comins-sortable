@@ -48,33 +48,37 @@ export async function movePointerToDropTarget(
 ): Promise<void> {
   const placeholder = page.locator('[data-comins-sortable-placeholder]');
   let attempt = 0;
-  await expect.poll(async () => {
-    const x = point.x + (attempt++ % 2);
-    await page.mouse.move(x, point.y, { steps: 2 });
-    await waitForPointerFrame(page);
-    if (await placeholder.count() !== 1) return null;
-    const location = await placeholder.evaluate((element, expectedBeforeId) => ({
-      areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
-      ...(expectedBeforeId === undefined ? {} : {
-        beforeId: element.nextElementSibling?.getAttribute('data-sortable-id') ?? null,
-      }),
-    }), beforeId);
-    const diagnostics = await page.evaluate(({ clientX, clientY }) => ({
-      point: { x: clientX, y: clientY },
-      viewport: { width: innerWidth, height: innerHeight },
-      scroll: { x: scrollX, y: scrollY },
-      hitAreaIds: [...new Set(document.elementsFromPoint(clientX, clientY)
-        .map((element) => element.closest('[data-comins-sortable-area]')
-          ?.getAttribute('data-comins-sortable-area'))
-        .filter((areaId): areaId is string => areaId !== undefined && areaId !== null))],
-      transform: (document.querySelector('[data-comins-sortable-dragging]') as HTMLElement | null)
-        ?.style.transform ?? null,
-    }), { clientX: x, clientY: point.y });
-    return { ...location, diagnostics };
-  }).toMatchObject({
-    areaId: destinationAreaId,
-    ...(beforeId === undefined ? {} : { beforeId }),
-  });
+  let lastState: unknown = null;
+  try {
+    await expect.poll(async () => {
+      const x = point.x + (attempt++ % 2);
+      await page.mouse.move(x, point.y, { steps: 2 });
+      await waitForPointerFrame(page);
+      const location = await placeholder.count() === 1
+        ? await placeholder.evaluate((element) => ({
+            areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
+            beforeId: element.nextElementSibling?.getAttribute('data-sortable-id') ?? null,
+          }))
+        : null;
+      const diagnostics = await page.evaluate(({ clientX, clientY }) => ({
+        point: { x: clientX, y: clientY },
+        viewport: { width: innerWidth, height: innerHeight },
+        scroll: { x: scrollX, y: scrollY },
+        hitAreaIds: [...new Set(document.elementsFromPoint(clientX, clientY)
+          .map((element) => element.closest('[data-comins-sortable-area]')
+            ?.getAttribute('data-comins-sortable-area'))
+          .filter((areaId): areaId is string => areaId !== undefined && areaId !== null))],
+        transform: (document.querySelector('[data-comins-sortable-dragging]') as HTMLElement | null)
+          ?.style.transform ?? null,
+      }), { clientX: x, clientY: point.y });
+      lastState = { location, diagnostics };
+      return location?.areaId === destinationAreaId
+        && (beforeId === undefined || location.beforeId === beforeId);
+    }).toBe(true);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`${message}\nLast drag state: ${JSON.stringify(lastState)}`);
+  }
 }
 
 export async function movePointerOutside(page: Page): Promise<void> {
