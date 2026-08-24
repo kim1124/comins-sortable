@@ -51,22 +51,18 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts Contract v1.6 without inventing a package boundary', () => {
+test('references Contract v1.7 without copying policy or inventing a package boundary', () => {
   const agents = read('AGENTS.md');
   const readme = read('README.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /managed-start contract=v1\.6/);
-  assert.match(readme, /Contract v1\.6/);
-  assert.match(
-    agents,
-    /license compliance; security and sensitive data; Comins common rules;/,
-  );
-  assert.match(agents, /`OSS_LICENSE_POLICY\.md` and `SENSITIVE_DATA_STANDARD\.md`/);
-  assert.match(agents, /module owns its checker commands and CI implementation/);
-  assert.match(agents, /`codex-<short-feature-name>`/);
-  assert.match(agents, /append `-2`,\s+`-3`, and so on/);
+  assert.match(agents, /managed-start contract=v1\.7/);
+  assert.match(readme, /Contract v1\.7/);
+  assert.match(agents, /comins-governance\/blob\/main\/COMINS_CONTRACT\.md/);
+  assert.match(agents, /Governance is the only\s+common-policy owner/i);
+  assert.match(agents, /module owns their CI implementation/i);
+  assert.doesNotMatch(agents, /`codex-<short-feature-name>`|same-commit evidence/i);
   assert.match(
     agents,
     /node scripts\/check-licenses\.mjs && node --test test\/\*\.node\.mjs/,
