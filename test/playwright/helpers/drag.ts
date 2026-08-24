@@ -41,7 +41,7 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2 + 12);
-  await page.waitForTimeout(20);
+  await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
   return {
     async moveBefore(destinationAreaId: string, beforeId?: string): Promise<void> {
       const destination = beforeId === undefined
@@ -60,14 +60,13 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
     },
     async moveOutside(): Promise<void> {
       await page.mouse.move(4, 4);
-      await page.waitForTimeout(20);
+      await expect(page.locator('[data-comins-sortable-over]')).toHaveCount(0);
     },
     async moveToScrollEdge(): Promise<void> {
       const scroll = page.locator('[data-test-scroll]');
       const scrollBox = await scroll.boundingBox();
       if (scrollBox === null) throw new Error('Missing scroll container');
       await page.mouse.move(scrollBox.x + scrollBox.width / 2, scrollBox.y + scrollBox.height - 4);
-      await page.waitForTimeout(80);
     },
   };
 }

@@ -20,6 +20,9 @@ for (const adapter of ['vanilla', 'react', 'vue', 'svelte'] as const) {
     const drag = await beginDrag(page, 'todo', 'b');
     await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
     await drag.moveToScrollEdge();
+    await expect.poll(() => page.locator('[data-test-scroll]').evaluate((element) => (
+      (element as HTMLElement).scrollTop
+    ))).toBeGreaterThan(baseline.inner);
     const positions = await page.evaluate(() => ({ inner: document.querySelector<HTMLElement>('[data-test-scroll]')?.scrollTop ?? 0, page: window.scrollY }));
     expect(positions.inner).toBeGreaterThan(baseline.inner);
     expect(positions.page).toBe(baseline.page);
