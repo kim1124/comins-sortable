@@ -104,6 +104,20 @@ test('adopts the approved private package boundary under Contract v1.6', () => {
   assert.equal(existsSync(join(root, '.github/workflows/publish.yml')), false);
 });
 
+test('runs browser gates after security and package verification', () => {
+  const verify = read('.github/workflows/verify.yml');
+  const browserJob = verify.match(/\n  browser:\n[\s\S]*$/)?.[0];
+
+  assert.ok(browserJob);
+  assert.match(browserJob, /needs:\n\s+- security\n\s+- verify/);
+  assert.equal((browserJob.match(/playwright install/g) ?? []).length, 1);
+  assert.match(
+    browserJob,
+    /npx --no-install playwright install --with-deps chromium firefox webkit[\s\S]*npm run verify:e2e[\s\S]*npm run verify:playground/,
+  );
+  assert.doesNotMatch(browserJob, /- run: npm run verify$/m);
+});
+
 test('pins shared Gitleaks, hooks, and the credential-free workflow', () => {
   const config = read('.gitleaks.toml');
   const preCommit = read('.githooks/pre-commit');
