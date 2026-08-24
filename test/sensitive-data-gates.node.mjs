@@ -51,22 +51,18 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts the approved private package boundary under Contract v1.6', () => {
+test('adopts the approved private package boundary under Contract v1.7', () => {
   const agents = read('AGENTS.md');
   const readme = read('README.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /managed-start contract=v1\.6/);
-  assert.match(readme, /Contract v1\.6/);
-  assert.match(
-    agents,
-    /license compliance; security and sensitive data; Comins common rules;/,
-  );
-  assert.match(agents, /`OSS_LICENSE_POLICY\.md` and `SENSITIVE_DATA_STANDARD\.md`/);
-  assert.match(agents, /module owns its checker commands and CI implementation/);
-  assert.match(agents, /`codex-<short-feature-name>`/);
-  assert.match(agents, /append `-2`,\s+`-3`, and so on/);
+  assert.match(agents, /managed-start contract=v1\.7/);
+  assert.match(readme, /Contract v1\.7/);
+  assert.match(agents, /comins-governance\/blob\/main\/COMINS_CONTRACT\.md/);
+  assert.match(agents, /Governance is the only\s+common-policy owner/i);
+  assert.match(agents, /module owns their CI implementation/i);
+  assert.doesNotMatch(agents, /`codex-<short-feature-name>`|same-commit evidence/i);
   assert.match(agents, /validate with `npm run verify`/);
   assert.match(agents, /Vanilla JavaScript,\n  React, Vue, and Svelte/);
   assert.match(security, /credential\/PII incident/i);
