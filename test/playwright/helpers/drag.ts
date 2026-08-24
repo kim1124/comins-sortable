@@ -34,23 +34,27 @@ export function item(page: Page, areaId: string, itemId: string): Locator {
   return area(page, areaId).locator(`[data-sortable-id="${itemId}"]`);
 }
 
-export async function waitForDropTarget(
+export async function movePointerToDropTarget(
   page: Page,
+  point: { x: number; y: number },
   destinationAreaId: string,
   beforeId?: string,
 ): Promise<void> {
   const placeholder = page.locator('[data-comins-sortable-placeholder]');
+  let attempt = 0;
   await expect.poll(async () => {
+    await page.mouse.move(point.x + (attempt++ % 2), point.y, { steps: 2 });
     if (await placeholder.count() !== 1) return null;
-    return placeholder.evaluate((element) => (
-      element.parentElement?.getAttribute('data-comins-sortable-area') ?? null
-    ));
-  }).toBe(destinationAreaId);
-  if (beforeId !== undefined) {
-    await expect.poll(() => placeholder.evaluate((element) => (
-      element.nextElementSibling?.getAttribute('data-sortable-id') ?? null
-    ))).toBe(beforeId);
-  }
+    return placeholder.evaluate((element, expectedBeforeId) => ({
+      areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
+      ...(expectedBeforeId === undefined ? {} : {
+        beforeId: element.nextElementSibling?.getAttribute('data-sortable-id') ?? null,
+      }),
+    }), beforeId);
+  }).toEqual({
+    areaId: destinationAreaId,
+    ...(beforeId === undefined ? {} : { beforeId }),
+  });
 }
 
 export async function beginDrag(page: Page, areaId: string, itemId: string) {
@@ -76,13 +80,23 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
       const previousTransform = accepted
         ? null
         : await dragging.evaluate((element) => (element as HTMLElement).style.transform);
-      await page.mouse.move(destinationBox.x + 8, destinationBox.y + 8, { steps: 4 });
       if (accepted) {
-        await waitForDropTarget(page, destinationAreaId, beforeId);
+        await movePointerToDropTarget(
+          page,
+          { x: destinationBox.x + 8, y: destinationBox.y + 8 },
+          destinationAreaId,
+          beforeId,
+        );
       } else {
-        await expect.poll(() => dragging.evaluate(
-          (element) => (element as HTMLElement).style.transform,
-        )).not.toBe(previousTransform);
+        let attempt = 0;
+        await expect.poll(async () => {
+          await page.mouse.move(
+            destinationBox.x + 8 + (attempt++ % 2),
+            destinationBox.y + 8,
+            { steps: 2 },
+          );
+          return dragging.evaluate((element) => (element as HTMLElement).style.transform);
+        }).not.toBe(previousTransform);
       }
     },
     async drop(): Promise<void> {
