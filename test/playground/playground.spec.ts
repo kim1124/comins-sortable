@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { dragItem, movePointerOutside, movePointerToDropTarget } from '../playwright/helpers/drag.js';
+import { dragItem, movePointerToDropTarget } from '../playwright/helpers/drag.js';
 
 type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
 const adapters: readonly Adapter[] = ['vanilla', 'react', 'vue', 'svelte'];
@@ -145,7 +145,6 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.mouse.down();
   await page.mouse.move(handleBox.x + handleBox.width / 2 + 12, handleBox.y + handleBox.height / 2 + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
-  await movePointerOutside(page);
   await movePointerToDropTarget(
     page,
     { x: currentTargetBox.x + 8, y: currentTargetBox.y + 8 },

@@ -66,22 +66,6 @@ export async function movePointerOutside(page: Page): Promise<void> {
   }).toBe(0);
 }
 
-async function isDropTarget(
-  page: Page,
-  destinationAreaId: string,
-  beforeId?: string,
-): Promise<boolean> {
-  const placeholder = page.locator('[data-comins-sortable-placeholder]');
-  if (await placeholder.count() !== 1) return false;
-  return placeholder.evaluate((element, expected) => (
-    element.parentElement?.getAttribute('data-comins-sortable-area') === expected.areaId
-    && (
-      expected.beforeId === undefined
-      || element.nextElementSibling?.getAttribute('data-sortable-id') === expected.beforeId
-    )
-  ), { areaId: destinationAreaId, beforeId });
-}
-
 export async function beginDrag(page: Page, areaId: string, itemId: string) {
   const source = item(page, areaId, itemId);
   const box = await source.boundingBox();
@@ -102,11 +86,6 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
         : item(page, destinationAreaId, beforeId);
       const destinationBox = await destination.boundingBox();
       if (destinationBox === null) throw new Error(`Missing destination: ${destinationAreaId}/${beforeId ?? 'empty'}`);
-      const stageDestinationEntry = !accepted
-        || !(await isDropTarget(page, destinationAreaId, beforeId));
-      if (stageDestinationEntry) {
-        await movePointerOutside(page);
-      }
       const destinationPoint = { x: destinationBox.x + 8, y: destinationBox.y + 8 };
       if (accepted) {
         await movePointerToDropTarget(
