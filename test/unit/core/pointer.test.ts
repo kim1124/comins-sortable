@@ -126,6 +126,32 @@ test('pointer activates at four CSS pixels and captures the active pointer', () 
   assert.deepEqual(item.capturedPointers, [1]);
 });
 
+test('pointer can capture a stable ancestor without changing its source boundary', () => {
+  const { events, platform, sensor } = sensorFixture();
+  const area = fakeElement('UL');
+  const item = fakeElement('LI', { parentElement: area });
+
+  assert.equal(sensor.pointerDown(pointer({ target: item }), item, area), true);
+  sensor.pointerMove(pointer({ clientX: 4, target: item }));
+  platform.flushFrame();
+
+  assert.deepEqual(events, ['activate']);
+  assert.deepEqual(item.capturedPointers, []);
+  assert.deepEqual(area.capturedPointers, [1]);
+
+  sensor.pointerUp(pointer({ target: item }));
+  assert.deepEqual(area.releasedPointers, [1]);
+});
+
+test('pointer rejects a capture element outside its source ancestry', () => {
+  const { platform, sensor } = sensorFixture();
+  const area = fakeElement('UL');
+  const item = fakeElement('LI');
+
+  assert.equal(sensor.pointerDown(pointer({ target: item }), item, area), false);
+  assert.equal(platform.listenerCount(), 0);
+});
+
 test('pointer movement is coalesced to the latest coordinates once per frame', () => {
   const { events, platform, sensor, snapshots } = sensorFixture();
   const item = fakeElement('LI');
