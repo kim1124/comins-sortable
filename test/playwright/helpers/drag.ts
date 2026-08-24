@@ -40,6 +40,22 @@ async function waitForPointerFrame(page: Page): Promise<void> {
   }));
 }
 
+export async function waitForActivePointerInput(
+  page: Page,
+  origin: { x: number; y: number },
+): Promise<void> {
+  const dragging = page.locator('[data-comins-sortable-dragging]');
+  let attempt = 0;
+  await expect.poll(async () => {
+    await page.mouse.move(origin.x + 13 + (attempt++ % 2), origin.y + 12);
+    await waitForPointerFrame(page);
+    return dragging.evaluate((element) => {
+      const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+      return Math.abs(matrix.e) > 0.5 || Math.abs(matrix.f) > 0.5;
+    });
+  }).toBe(true);
+}
+
 export async function movePointerToDropTarget(
   page: Page,
   point: { x: number; y: number },
@@ -100,7 +116,7 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
   await page.mouse.down();
   await page.mouse.move(origin.x + 12, origin.y + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
-  await waitForFrameworkRender(page);
+  await waitForActivePointerInput(page, origin);
   return {
     async moveBefore(
       destinationAreaId: string,
