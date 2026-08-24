@@ -3,7 +3,6 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   dragItem,
   movePointerToDropTarget,
-  waitForActivePointerInput,
 } from '../playwright/helpers/drag.js';
 
 type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
@@ -143,19 +142,14 @@ test('handle, empty destination, and rejection scenarios change only through pro
 
   const handle = page.locator('[data-sortable-id="design"] .cs-demo-handle');
   const handleBox = await handle.boundingBox();
-  const currentTargetBox = await targetCard.boundingBox();
-  if (handleBox === null || currentTargetBox === null) throw new Error('Missing accessible handle');
+  if (handleBox === null) throw new Error('Missing accessible handle');
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(handleBox.x + handleBox.width / 2 + 12, handleBox.y + handleBox.height / 2 + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
-  await waitForActivePointerInput(page, {
-    x: handleBox.x + handleBox.width / 2,
-    y: handleBox.y + handleBox.height / 2,
-  });
   await movePointerToDropTarget(
     page,
-    { x: currentTargetBox.x + 8, y: currentTargetBox.y + 8 },
+    targetCard,
     'todo',
     'research',
   );
