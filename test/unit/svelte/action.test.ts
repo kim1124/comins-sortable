@@ -43,6 +43,32 @@ test('action updates items and options without creating another registration', (
   assert.equal(harness.area('todo')?.disabled, true);
 });
 
+test('action exposes committed items before refreshing changed Core options', () => {
+  const platform = fakePlatform();
+  const scope = createSvelteSortableScope<Task>(
+    {},
+    (scopeOptions) => createSortableScopeInternal(scopeOptions, platform),
+  );
+  const area = sortableArea(platform, 0, ['a', 'b']);
+  const action = sortable(area as unknown as HTMLElement, options({
+    scope,
+    accept: () => true,
+  }));
+
+  const removed = area.fixtureChildren[1];
+  assert.ok(removed);
+  area.removeChild(removed);
+
+  assert.doesNotThrow(() => action.update(options({
+    scope,
+    items: [{ id: 'a' }],
+    accept: () => true,
+  })));
+
+  action.destroy();
+  scope.destroy();
+});
+
 test('action destroys an action-owned scope idempotently', () => {
   const harness = svelteActionHarness<Task>();
   const action = harness.privateAction();

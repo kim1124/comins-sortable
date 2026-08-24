@@ -138,11 +138,18 @@ function updateAction<T>(state: ActionState<T>, nextOptions: SvelteSortableOptio
     return;
   }
   const nextAreaOptions = areaOptionsFor(state, nextOptions);
-  if (state.registeredOptions !== null && !sameOptions(state.registeredOptions, nextAreaOptions)) {
-    controllerForScope(requireScope(state.scope)).updateArea(currentOptions.areaId, nextAreaOptions);
-    state.registeredOptions = nextAreaOptions;
-  }
+  const areaOptionsChanged = state.registeredOptions !== null
+    && !sameOptions(state.registeredOptions, nextAreaOptions);
   state.options = nextOptions;
+  if (areaOptionsChanged) {
+    try {
+      controllerForScope(requireScope(state.scope)).updateArea(currentOptions.areaId, nextAreaOptions);
+      state.registeredOptions = nextAreaOptions;
+    } catch (error) {
+      state.options = currentOptions;
+      throw error;
+    }
+  }
 }
 
 function transition<T>(

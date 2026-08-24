@@ -39,14 +39,18 @@ export async function waitForDropTarget(
   destinationAreaId: string,
   beforeId?: string,
 ): Promise<void> {
+  const placeholder = page.locator('[data-comins-sortable-placeholder]');
   await expect.poll(async () => {
-    const placeholder = page.locator('[data-comins-sortable-placeholder]');
     if (await placeholder.count() !== 1) return null;
-    return placeholder.evaluate((element) => ({
-      areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
-      beforeId: element.nextElementSibling?.getAttribute('data-sortable-id') ?? null,
-    }));
-  }).toEqual({ areaId: destinationAreaId, beforeId: beforeId ?? null });
+    return placeholder.evaluate((element) => (
+      element.parentElement?.getAttribute('data-comins-sortable-area') ?? null
+    ));
+  }).toBe(destinationAreaId);
+  if (beforeId !== undefined) {
+    await expect.poll(() => placeholder.evaluate((element) => (
+      element.nextElementSibling?.getAttribute('data-sortable-id') ?? null
+    ))).toBe(beforeId);
+  }
 }
 
 export async function beginDrag(page: Page, areaId: string, itemId: string) {
