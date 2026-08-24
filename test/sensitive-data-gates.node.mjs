@@ -65,6 +65,8 @@ test('adopts the approved private package boundary under Contract v1.6', () => {
   );
   assert.match(agents, /`OSS_LICENSE_POLICY\.md` and `SENSITIVE_DATA_STANDARD\.md`/);
   assert.match(agents, /module owns its checker commands and CI implementation/);
+  assert.match(agents, /`codex-<short-feature-name>`/);
+  assert.match(agents, /append `-2`,\s+`-3`, and so on/);
   assert.match(agents, /validate with `npm run verify`/);
   assert.match(agents, /Vanilla JavaScript,\n  React, Vue, and Svelte/);
   assert.match(security, /credential\/PII incident/i);
