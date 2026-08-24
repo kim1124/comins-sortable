@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: 'test/playground',
   testMatch: 'playground.spec.ts',
   fullyParallel: true,
+  workers: process.env.CI ? 1 : undefined,
   retries: 0,
   use: {
     baseURL: 'http://127.0.0.1:4003',
