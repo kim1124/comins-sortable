@@ -49,16 +49,29 @@ export async function movePointerToDropTarget(
   const placeholder = page.locator('[data-comins-sortable-placeholder]');
   let attempt = 0;
   await expect.poll(async () => {
-    await page.mouse.move(point.x + (attempt++ % 2), point.y, { steps: 2 });
+    const x = point.x + (attempt++ % 2);
+    await page.mouse.move(x, point.y, { steps: 2 });
     await waitForPointerFrame(page);
     if (await placeholder.count() !== 1) return null;
-    return placeholder.evaluate((element, expectedBeforeId) => ({
+    const location = await placeholder.evaluate((element, expectedBeforeId) => ({
       areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
       ...(expectedBeforeId === undefined ? {} : {
         beforeId: element.nextElementSibling?.getAttribute('data-sortable-id') ?? null,
       }),
     }), beforeId);
-  }).toEqual({
+    const diagnostics = await page.evaluate(({ clientX, clientY }) => ({
+      point: { x: clientX, y: clientY },
+      viewport: { width: innerWidth, height: innerHeight },
+      scroll: { x: scrollX, y: scrollY },
+      hitAreaIds: [...new Set(document.elementsFromPoint(clientX, clientY)
+        .map((element) => element.closest('[data-comins-sortable-area]')
+          ?.getAttribute('data-comins-sortable-area'))
+        .filter((areaId): areaId is string => areaId !== undefined && areaId !== null))],
+      transform: (document.querySelector('[data-comins-sortable-dragging]') as HTMLElement | null)
+        ?.style.transform ?? null,
+    }), { clientX: x, clientY: point.y });
+    return { ...location, diagnostics };
+  }).toMatchObject({
     areaId: destinationAreaId,
     ...(beforeId === undefined ? {} : { beforeId }),
   });
