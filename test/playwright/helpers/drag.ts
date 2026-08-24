@@ -92,7 +92,6 @@ export async function movePointerOutside(page: Page): Promise<void> {
 }
 
 export async function beginDrag(page: Page, areaId: string, itemId: string) {
-  await waitForFrameworkRender(page);
   const source = item(page, areaId, itemId);
   const box = await source.boundingBox();
   if (box === null) throw new Error(`Missing sortable item: ${areaId}/${itemId}`);
@@ -101,6 +100,7 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
   await page.mouse.down();
   await page.mouse.move(origin.x + 12, origin.y + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
+  await waitForFrameworkRender(page);
   return {
     async moveBefore(
       destinationAreaId: string,

@@ -140,7 +140,6 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.mouse.move(targetBox.x + 8, targetBox.y + 8);
   await page.mouse.up();
   await expect.poll(async () => (await model(page)).todo).toEqual(initial);
-  await waitForFrameworkRender(page);
 
   const handle = page.locator('[data-sortable-id="design"] .cs-demo-handle');
   const handleBox = await handle.boundingBox();
@@ -150,6 +149,7 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.mouse.down();
   await page.mouse.move(handleBox.x + handleBox.width / 2 + 12, handleBox.y + handleBox.height / 2 + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
+  await waitForFrameworkRender(page);
   await movePointerToDropTarget(
     page,
     { x: currentTargetBox.x + 8, y: currentTargetBox.y + 8 },
