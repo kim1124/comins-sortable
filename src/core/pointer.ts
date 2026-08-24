@@ -39,7 +39,7 @@ export interface PointerSensorOptions {
 }
 
 export interface PointerSensor {
-  pointerDown(input: PointerInput, sourceElement?: Element, captureElement?: Element): boolean;
+  pointerDown(input: PointerInput, sourceElement?: Element): boolean;
   pointerMove(input: PointerInput): void;
   pointerUp(input: PointerInput): void;
   pointerCancel(input: PointerInput): void;
@@ -162,10 +162,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       }
       pointer.active = true;
       try {
-        if (
-          pointer.pointerType !== 'mouse'
-          && typeof pointer.captureTarget.setPointerCapture === 'function'
-        ) {
+        if (typeof pointer.captureTarget.setPointerCapture === 'function') {
           pointer.captureTarget.setPointerCapture(pointer.pointerId);
         }
         if (options.onActivate(nextSnapshot) === false) {
@@ -233,21 +230,13 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
   const pointerDown = (
     input: PointerInput,
     sourceElement?: Element,
-    captureElement?: Element,
   ): boolean => {
     if (destroyed || current !== null || !canStartPointer(input)) {
       return false;
     }
     const target = asElement(input.target);
     const source = sourceElement ?? target;
-    const captureTarget = captureElement ?? source;
-    if (
-      target === null
-      || source === null
-      || captureTarget === null
-      || !source.contains(target)
-      || !captureTarget.contains(source)
-    ) {
+    if (target === null || source === null || !source.contains(target)) {
       return false;
     }
     const handle = options.handle === undefined
@@ -273,7 +262,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       latest: latestInput(input),
       frameId: null,
       active: false,
-      captureTarget,
+      captureTarget: source,
       abortController,
     };
 

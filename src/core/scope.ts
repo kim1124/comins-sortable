@@ -701,7 +701,7 @@ export function createSortableScopeInternal(
       },
     });
     attempt = { area, sourceElement, sensor };
-    if (!sensor.pointerDown(event, sourceElement, area.element)) {
+    if (!sensor.pointerDown(event, sourceElement)) {
       attempt = null;
       session.abandon();
     }

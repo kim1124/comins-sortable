@@ -73,7 +73,7 @@ test('activation callback can reject a pending attempt without cancellation', ()
 
   assert.deepEqual(events, ['activate', 'end']);
   assert.equal(platform.listenerCount(), 0);
-  assert.deepEqual(item.releasedPointers, []);
+  assert.deepEqual(item.releasedPointers, [1]);
 });
 
 test('explicit handle takes precedence over the ignore selector', () => {
@@ -99,7 +99,7 @@ test('explicit handle takes precedence over the ignore selector', () => {
   assert.deepEqual(events, ['activate']);
 });
 
-test('mouse activates at four CSS pixels without explicit pointer capture', () => {
+test('pointer activates at four CSS pixels and captures the active pointer', () => {
   const { events, platform, sensor, snapshots } = sensorFixture();
   const item = fakeElement('LI');
 
@@ -123,33 +123,7 @@ test('mouse activates at four CSS pixels without explicit pointer capture', () =
     metaKey: false,
     shiftKey: false,
   }]);
-  assert.deepEqual(item.capturedPointers, []);
-});
-
-test('touch pointer can capture a stable ancestor without changing its source boundary', () => {
-  const { events, platform, sensor } = sensorFixture();
-  const area = fakeElement('UL');
-  const item = fakeElement('LI', { parentElement: area });
-
-  assert.equal(sensor.pointerDown(pointer({ pointerType: 'touch', target: item }), item, area), true);
-  sensor.pointerMove(pointer({ clientX: 4, pointerType: 'touch', target: item }));
-  platform.flushFrame();
-
-  assert.deepEqual(events, ['activate']);
-  assert.deepEqual(item.capturedPointers, []);
-  assert.deepEqual(area.capturedPointers, [1]);
-
-  sensor.pointerUp(pointer({ pointerType: 'touch', target: item }));
-  assert.deepEqual(area.releasedPointers, [1]);
-});
-
-test('pointer rejects a capture element outside its source ancestry', () => {
-  const { platform, sensor } = sensorFixture();
-  const area = fakeElement('UL');
-  const item = fakeElement('LI');
-
-  assert.equal(sensor.pointerDown(pointer({ target: item }), item, area), false);
-  assert.equal(platform.listenerCount(), 0);
+  assert.deepEqual(item.capturedPointers, [1]);
 });
 
 test('pointer movement is coalesced to the latest coordinates once per frame', () => {
@@ -209,11 +183,11 @@ test('pointer snapshots preserve the latest keyboard modifiers', () => {
 test('pointerup releases an active drag and clears capture and resources', () => {
   const { events, platform, sensor } = sensorFixture();
   const item = fakeElement('LI');
-  sensor.pointerDown(pointer({ pointerType: 'touch', target: item }), item);
-  sensor.pointerMove(pointer({ clientX: 4, pointerType: 'touch', target: item }));
+  sensor.pointerDown(pointer({ target: item }), item);
+  sensor.pointerMove(pointer({ clientX: 4, target: item }));
   platform.flushFrame();
 
-  platform.dispatchDocument('pointerup', pointer({ clientX: 5, pointerType: 'touch', target: item }));
+  platform.dispatchDocument('pointerup', pointer({ clientX: 5, target: item }));
 
   assert.deepEqual(events, ['activate', 'release']);
   assert.deepEqual(item.releasedPointers, [1]);
@@ -227,8 +201,8 @@ test('pointer capture failure aborts activation and reports after cleanup', () =
   item.setPointerCapture = () => {
     throw new Error('capture failed');
   };
-  sensor.pointerDown(pointer({ pointerType: 'touch', target: item }), item);
-  sensor.pointerMove(pointer({ clientX: 4, pointerType: 'touch', target: item }));
+  sensor.pointerDown(pointer({ target: item }), item);
+  sensor.pointerMove(pointer({ clientX: 4, target: item }));
 
   assert.doesNotThrow(() => platform.flushFrame());
   assert.deepEqual(events, []);
@@ -239,14 +213,14 @@ test('pointer capture failure aborts activation and reports after cleanup', () =
 test('lost pointer capture cannot block release cleanup or the release callback', () => {
   const { events, platform, sensor } = sensorFixture();
   const item = fakeElement('LI');
-  sensor.pointerDown(pointer({ pointerType: 'touch', target: item }), item);
-  sensor.pointerMove(pointer({ clientX: 4, pointerType: 'touch', target: item }));
+  sensor.pointerDown(pointer({ target: item }), item);
+  sensor.pointerMove(pointer({ clientX: 4, target: item }));
   platform.flushFrame();
   item.releasePointerCapture = () => {
     throw new Error('capture already lost');
   };
 
-  assert.doesNotThrow(() => sensor.pointerUp(pointer({ pointerType: 'touch', target: item })));
+  assert.doesNotThrow(() => sensor.pointerUp(pointer({ target: item })));
   assert.deepEqual(events, ['activate', 'release']);
   assert.equal(platform.reports.length, 1);
   assert.equal(platform.listenerCount(), 0);

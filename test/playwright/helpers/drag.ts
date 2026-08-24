@@ -49,43 +49,6 @@ export async function movePointerToDropTarget(
   const placeholder = page.locator('[data-comins-sortable-placeholder]');
   let attempt = 0;
   let lastState: unknown = null;
-  await page.evaluate(() => {
-    type EventRecord = { x: number; y: number; buttons: number; pointerId?: number };
-    type Diagnostics = {
-      controller: AbortController;
-      state: {
-        mouseMoves: number;
-        pointerMoves: number;
-        lastMouse: EventRecord | null;
-        lastPointer: EventRecord | null;
-      };
-    };
-    const diagnosticsWindow = window as typeof window & {
-      __cominsDragDiagnostics?: Diagnostics;
-    };
-    diagnosticsWindow.__cominsDragDiagnostics?.controller.abort();
-    const controller = new AbortController();
-    const state: Diagnostics['state'] = {
-      mouseMoves: 0,
-      pointerMoves: 0,
-      lastMouse: null,
-      lastPointer: null,
-    };
-    document.addEventListener('pointermove', (event) => {
-      state.pointerMoves += 1;
-      state.lastPointer = {
-        x: event.clientX,
-        y: event.clientY,
-        buttons: event.buttons,
-        pointerId: event.pointerId,
-      };
-    }, { capture: true, signal: controller.signal });
-    document.addEventListener('mousemove', (event) => {
-      state.mouseMoves += 1;
-      state.lastMouse = { x: event.clientX, y: event.clientY, buttons: event.buttons };
-    }, { capture: true, signal: controller.signal });
-    diagnosticsWindow.__cominsDragDiagnostics = { controller, state };
-  });
   try {
     await expect.poll(async () => {
       const x = point.x + (attempt++ % 2);
@@ -107,9 +70,6 @@ export async function movePointerToDropTarget(
           .filter((areaId): areaId is string => areaId !== undefined && areaId !== null))],
         transform: (document.querySelector('[data-comins-sortable-dragging]') as HTMLElement | null)
           ?.style.transform ?? null,
-        events: (window as typeof window & {
-          __cominsDragDiagnostics?: { state: unknown };
-        }).__cominsDragDiagnostics?.state ?? null,
       }), { clientX: x, clientY: point.y });
       lastState = { location, diagnostics };
       return location?.areaId === destinationAreaId
@@ -118,14 +78,6 @@ export async function movePointerToDropTarget(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`${message}\nLast drag state: ${JSON.stringify(lastState)}`);
-  } finally {
-    await page.evaluate(() => {
-      const diagnosticsWindow = window as typeof window & {
-        __cominsDragDiagnostics?: { controller: AbortController };
-      };
-      diagnosticsWindow.__cominsDragDiagnostics?.controller.abort();
-      delete diagnosticsWindow.__cominsDragDiagnostics;
-    }).catch(() => undefined);
   }
 }
 
@@ -140,6 +92,7 @@ export async function movePointerOutside(page: Page): Promise<void> {
 }
 
 export async function beginDrag(page: Page, areaId: string, itemId: string) {
+  await waitForFrameworkRender(page);
   const source = item(page, areaId, itemId);
   const box = await source.boundingBox();
   if (box === null) throw new Error(`Missing sortable item: ${areaId}/${itemId}`);

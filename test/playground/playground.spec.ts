@@ -1,6 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { dragItem, movePointerToDropTarget } from '../playwright/helpers/drag.js';
+import {
+  dragItem,
+  movePointerToDropTarget,
+  waitForFrameworkRender,
+} from '../playwright/helpers/drag.js';
 
 type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
 const adapters: readonly Adapter[] = ['vanilla', 'react', 'vue', 'svelte'];
@@ -136,6 +140,7 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.mouse.move(targetBox.x + 8, targetBox.y + 8);
   await page.mouse.up();
   await expect.poll(async () => (await model(page)).todo).toEqual(initial);
+  await waitForFrameworkRender(page);
 
   const handle = page.locator('[data-sortable-id="design"] .cs-demo-handle');
   const handleBox = await handle.boundingBox();
