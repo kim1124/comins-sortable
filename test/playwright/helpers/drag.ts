@@ -72,11 +72,20 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
         : item(page, destinationAreaId, beforeId);
       const destinationBox = await destination.boundingBox();
       if (destinationBox === null) throw new Error(`Missing destination: ${destinationAreaId}/${beforeId ?? 'empty'}`);
-      await page.mouse.move(destinationBox.x + 8, destinationBox.y + 8, { steps: 4 });
+      await page.mouse.move(4, 4);
+      await expect(page.locator('[data-comins-sortable-over]')).toHaveCount(0);
+      const outsideTransform = accepted
+        ? null
+        : await page.locator('[data-comins-sortable-dragging]').evaluate(
+          (element) => (element as HTMLElement).style.transform,
+        );
+      await page.mouse.move(destinationBox.x + 8, destinationBox.y + 8);
       if (accepted) {
         await waitForDropTarget(page, destinationAreaId, beforeId);
       } else {
-        await expect(page.locator('[data-comins-sortable-over]')).toHaveCount(0);
+        await expect.poll(() => page.locator('[data-comins-sortable-dragging]').evaluate(
+          (element) => (element as HTMLElement).style.transform,
+        )).not.toBe(outsideTransform);
       }
     },
     async drop(): Promise<void> {

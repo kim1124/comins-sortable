@@ -145,6 +145,8 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.mouse.down();
   await page.mouse.move(handleBox.x + handleBox.width / 2 + 12, handleBox.y + handleBox.height / 2 + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
+  await page.mouse.move(4, 4);
+  await expect(page.locator('[data-comins-sortable-over]')).toHaveCount(0);
   await page.mouse.move(currentTargetBox.x + 8, currentTargetBox.y + 8);
   await waitForDropTarget(page, 'todo', 'research');
   await page.mouse.up();
