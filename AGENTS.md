@@ -16,6 +16,12 @@
 
 ## Module Guidance
 
-- This module is planned for sortable interactions in React applications.
-- Its public API, runtime dependency, package configuration, and first-release scope are not defined; do not establish those boundaries without an explicit maintainer request.
-- Until a package boundary exists, use `node scripts/check-licenses.mjs && node --test test/*.node.mjs` as the repository validation command; do not invent npm package or publish gates.
+- The approved v1 scope provides sortable interactions for Vanilla JavaScript,
+  React, Vue, and Svelte over one Vanilla TypeScript Core.
+- The approved private development boundary has zero runtime dependencies;
+  optional React, React DOM, Vue, and Svelte peers; and exact ESM exports `.`,
+  `./core`, `./react`, `./vue`, `./svelte`, and `./styles.css`. Publishing,
+  release versions, tags, and Releases remain separately maintainer-gated.
+- The implemented private package boundary must validate with `npm run verify`.
+  Browser and artifact gates apply only when their corresponding implementation
+  tasks add them; do not invent publish gates.

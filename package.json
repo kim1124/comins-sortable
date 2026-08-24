@@ -1,0 +1,101 @@
+{
+  "name": "comins-sortable",
+  "version": "0.0.0-development",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kim1124/comins-sortable.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kim1124/comins-sortable/issues"
+  },
+  "homepage": "https://github.com/kim1124/comins-sortable#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./dist/styles.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
+    },
+    "./svelte": {
+      "types": "./dist/svelte.d.ts",
+      "import": "./dist/svelte.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "scripts": {
+    "build": "node scripts/build-package.mjs",
+    "dev": "vite --config vite.example.config.ts",
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "lint": "npm run typecheck",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/run-unit-tests.mjs",
+    "test:run": "node scripts/run-unit-tests.mjs",
+    "test:policy": "node --test --test-concurrency=1 test/*.node.mjs",
+    "test:types": "tsc -p test/types/tsconfig.json --noEmit",
+    "example:build": "node scripts/build-browser-fixtures.mjs",
+    "example:serve": "node scripts/serve-browser-fixtures.mjs",
+    "playground:build": "vite build --config vite.example.config.ts",
+    "playground:preview": "vite preview --config vite.example.config.ts",
+    "test:e2e": "playwright test --config=playwright.config.ts",
+    "test:playground": "playwright test --config=playwright.playground.config.ts",
+    "verify:e2e": "npm run test:e2e",
+    "verify:playground": "npm run playground:build && npm run test:playground",
+    "verify:full": "npm run verify && npm run verify:e2e",
+    "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types"
+  },
+  "peerDependencies": {
+    "react": ">=18.2 <20",
+    "react-dom": ">=18.2 <20",
+    "svelte": ">=5 <6",
+    "vue": ">=3.5 <4"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "esbuild": "^0.28.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "svelte": "^5.56.8",
+    "tsx": "^4.23.10",
+    "typescript": "^7.0.2",
+    "vite": "^7.3.6",
+    "vue": "^3.5.41"
+  }
+}

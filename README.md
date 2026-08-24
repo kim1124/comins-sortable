@@ -1,10 +1,21 @@
 # Comins Sortable
 
-Comins Sortable is a planned independent npm frontend module for sortable interaction in React applications.
+Comins Sortable is an independent npm frontend module that will provide sortable
+interaction for Vanilla JavaScript, React, Vue, and Svelte over one Vanilla
+TypeScript Core.
 
 ## Status
 
-This repository currently establishes project ownership, security reporting, and release policy. Its public API, runtime dependency choice, package configuration, and first release scope have not been defined.
+The repository has an approved private development package boundary. Its
+Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
+reorder, transfer, and copy interactions with commit verification and rollback.
+The Playground currently provides 9 of 17 planned parity routes. Runtime
+dependencies are not allowed. React, React DOM, Vue, and Svelte are optional
+peers.
+
+The development package is `private` and uses version
+`0.0.0-development`. Publishing, release versions, tags, and GitHub Releases
+require separate maintainer approval.
 
 ## Governance
 
@@ -15,20 +26,19 @@ This repository currently establishes project ownership, security reporting, and
 
 ## Verification
 
-Run the repository baseline with:
+Install the reviewed lockfile without lifecycle scripts and run the package
+gate:
 
 ```sh
-node scripts/check-licenses.mjs
-node --test test/*.node.mjs
+npm ci --ignore-scripts
+npm run verify
 ```
 
-`LICENSE_SCOPE.json` records the reviewed pre-package state. The license checker
-compares it with Git-tracked dependency manifests, copied or generated code
-paths, and repository assets. The current inventory is empty, so any newly
-detected material fails closed until an evidence-aware change records its exact
-source, version or revision, SPDX classification, use surface, obligations,
-notices, and any required scoped approval.
+`npm run verify` checks the package-aware license scope, security policy tests,
+TypeScript, unit tests, the ES2020 ESM build, and public type fixtures.
 
-Sortable still has no approved package boundary. Do not add `package.json`, npm
-commands, package archives, or publish automation; package and exact-artifact
-gates remain not applicable until that boundary is separately approved.
+`LICENSE_SCOPE.json` records the reviewed runtime, peer, copied/generated, and
+asset surfaces. The license checker verifies the manifest and lockfile root,
+requires every lock entry to have a routine SPDX classification, and fails
+closed for missing or unreviewed material. A manual-review result exposes only
+the package name, SPDX expression, and use surface.

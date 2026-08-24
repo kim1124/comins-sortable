@@ -1,8 +1,14 @@
 {
-  "schemaVersion": 1,
-  "packageBoundary": false,
+  "schemaVersion": 2,
+  "packageBoundary": true,
+  "runtimeDependencies": [],
+  "peerDependencies": {
+    "react": ">=18.2 <20",
+    "react-dom": ">=18.2 <20",
+    "svelte": ">=5 <6",
+    "vue": ">=3.5 <4"
+  },
   "trackedMaterial": {
-    "dependencies": [],
     "copiedOrGeneratedCode": [],
     "assets": []
   }
