@@ -81,7 +81,7 @@ jobs:
       - name: Check tracked third-party material
         run: node scripts/check-licenses.mjs
       - name: Run security contract tests
-        run: node --test test/*.node.mjs
+        run: node --test test/license-gates.node.mjs test/sensitive-data-gates.node.mjs
       - name: Check reviewed diff
         run: git diff --check "$BASE_SHA..$HEAD_SHA"
 

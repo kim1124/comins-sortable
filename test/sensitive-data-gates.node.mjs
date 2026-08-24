@@ -148,7 +148,10 @@ test('pins shared Gitleaks, hooks, and the credential-free workflow', () => {
   assert.match(verify, /persist-credentials: false/);
   assert.match(verify, /check-public-identities\.mjs "\$BASE_SHA" "\$HEAD_SHA"/);
   assert.match(verify, /--log-opts="\$BASE_SHA\.\.\$HEAD_SHA"/);
-  assert.match(verify, /node --test test\/\*\.node\.mjs/);
+  assert.match(
+    verify,
+    /node --test test\/license-gates\.node\.mjs test\/sensitive-data-gates\.node\.mjs/,
+  );
 });
 
 test('accepts a matching public noreply identity', () => {
