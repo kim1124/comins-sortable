@@ -32,7 +32,7 @@ test('every visible scenario returns fresh data and a sanitized model', () => {
   first.todo.pop();
 
   assert.deepEqual(demoModel(second), {
-    todo: ['research', 'design', 'build'],
+    todo: ['research', 'design'],
     done: [],
   });
   assert.notDeepEqual(first, second);

@@ -45,7 +45,7 @@ export function createDemoState(exampleId: PlaygroundExampleId): DemoState {
     };
   }
   if (exampleId === 'empty') {
-    return { todo: items('research', 'design', 'build'), done: [] };
+    return { todo: items('research', 'design'), done: [] };
   }
   if (exampleId === 'accept') {
     return { todo: items('research', 'design', 'build'), done: items('review') };

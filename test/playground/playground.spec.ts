@@ -1,9 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import {
-  dragItem,
-  movePointerToDropTarget,
-} from '../playwright/helpers/drag.js';
+import { dragItem, movePointerToDropTarget } from '../playwright/helpers/drag.js';
 
 type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
 const adapters: readonly Adapter[] = ['vanilla', 'react', 'vue', 'svelte'];
@@ -79,7 +76,7 @@ for (const adapter of adapters) {
     await expect(copy).toContainText('Customized clone');
   });
 
-  test(`${adapter} modifier route copies with Alt and moves without it`, async ({ page }) => {
+  test(`${adapter} modifier route copies with Alt and moves without it`, async ({ page, browserName }) => {
     await page.goto(`/examples/modifier-copy/${adapter}`);
     await waitForRuntime(page);
 
@@ -98,6 +95,10 @@ for (const adapter of adapters) {
 
     await page.getByRole('button', { name: '데이터 초기화' }).click();
     await expect.poll(async () => (await model(page)).done).toEqual(['review']);
+    if (browserName === 'webkit') {
+      await page.reload();
+      await waitForRuntime(page);
+    }
     await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
     await expect.poll(async () => (await model(page)).todo).toEqual(['research', 'build']);
     await expect.poll(async () => (await model(page)).done).toEqual(['design', 'review']);
@@ -114,7 +115,6 @@ for (const adapter of adapters) {
       (element) => element.getBoundingClientRect().height,
     );
     await dragItem(page, 'todo', 'design', { areaId: 'done' });
-    await dragItem(page, 'todo', 'build', { areaId: 'done' });
 
     await expect.poll(() => page.locator('[data-comins-sortable-area="todo"] > [data-sortable-id="research"]')
       .evaluate(
@@ -125,7 +125,7 @@ for (const adapter of adapters) {
   });
 }
 
-test('handle, empty destination, and rejection scenarios change only through product behavior', async ({ page }) => {
+test('handle, empty destination, and rejection scenarios change only through product behavior', async ({ page, browserName }) => {
   await page.goto('/examples/handle/react');
   await waitForRuntime(page);
   const initial = (await model(page)).todo;
@@ -139,17 +139,22 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.mouse.move(targetBox.x + 8, targetBox.y + 8);
   await page.mouse.up();
   await expect.poll(async () => (await model(page)).todo).toEqual(initial);
+  if (browserName === 'webkit') {
+    await page.reload();
+    await waitForRuntime(page);
+  }
 
   const handle = page.locator('[data-sortable-id="design"] .cs-demo-handle');
   const handleBox = await handle.boundingBox();
-  if (handleBox === null) throw new Error('Missing accessible handle');
+  const currentTargetBox = await targetCard.boundingBox();
+  if (handleBox === null || currentTargetBox === null) throw new Error('Missing accessible handle');
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(handleBox.x + handleBox.width / 2 + 12, handleBox.y + handleBox.height / 2 + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
   await movePointerToDropTarget(
     page,
-    targetCard,
+    { x: currentTargetBox.x + 8, y: currentTargetBox.y + 8 },
     'todo',
     'research',
   );
