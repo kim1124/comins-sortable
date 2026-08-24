@@ -34,23 +34,36 @@ export function item(page: Page, areaId: string, itemId: string): Locator {
   return area(page, areaId).locator(`[data-sortable-id="${itemId}"]`);
 }
 
-export async function waitForDropTarget(
+export async function movePointerToDropTarget(
   page: Page,
+  point: { x: number; y: number },
   destinationAreaId: string,
   beforeId?: string,
 ): Promise<void> {
   const placeholder = page.locator('[data-comins-sortable-placeholder]');
+  let attempt = 0;
   await expect.poll(async () => {
+    await page.mouse.move(point.x + (attempt++ % 2), point.y, { steps: 2 });
     if (await placeholder.count() !== 1) return null;
-    return placeholder.evaluate((element) => (
-      element.parentElement?.getAttribute('data-comins-sortable-area') ?? null
-    ));
-  }).toBe(destinationAreaId);
-  if (beforeId !== undefined) {
-    await expect.poll(() => placeholder.evaluate((element) => (
-      element.nextElementSibling?.getAttribute('data-sortable-id') ?? null
-    ))).toBe(beforeId);
-  }
+    return placeholder.evaluate((element, expectedBeforeId) => ({
+      areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
+      ...(expectedBeforeId === undefined ? {} : {
+        beforeId: element.nextElementSibling?.getAttribute('data-sortable-id') ?? null,
+      }),
+    }), beforeId);
+  }).toEqual({
+    areaId: destinationAreaId,
+    ...(beforeId === undefined ? {} : { beforeId }),
+  });
+}
+
+export async function movePointerOutside(page: Page): Promise<void> {
+  const over = page.locator('[data-comins-sortable-over]');
+  let attempt = 0;
+  await expect.poll(async () => {
+    await page.mouse.move(4 + (attempt++ % 2), 4, { steps: 2 });
+    return over.count();
+  }).toBe(0);
 }
 
 async function isDropTarget(
@@ -73,9 +86,10 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
   const source = item(page, areaId, itemId);
   const box = await source.boundingBox();
   if (box === null) throw new Error(`Missing sortable item: ${areaId}/${itemId}`);
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const origin = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await page.mouse.move(origin.x, origin.y);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2 + 12);
+  await page.mouse.move(origin.x + 12, origin.y + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
   return {
     async moveBefore(
@@ -91,21 +105,29 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
       const stageDestinationEntry = !accepted
         || !(await isDropTarget(page, destinationAreaId, beforeId));
       if (stageDestinationEntry) {
-        await page.mouse.move(4, 4);
-        await expect(page.locator('[data-comins-sortable-over]')).toHaveCount(0);
+        await movePointerOutside(page);
       }
-      const outsideTransform = accepted
-        ? null
-        : await page.locator('[data-comins-sortable-dragging]').evaluate(
-          (element) => (element as HTMLElement).style.transform,
-        );
-      await page.mouse.move(destinationBox.x + 8, destinationBox.y + 8);
+      const destinationPoint = { x: destinationBox.x + 8, y: destinationBox.y + 8 };
       if (accepted) {
-        await waitForDropTarget(page, destinationAreaId, beforeId);
+        await movePointerToDropTarget(
+          page,
+          destinationPoint,
+          destinationAreaId,
+          beforeId,
+        );
       } else {
-        await expect.poll(() => page.locator('[data-comins-sortable-dragging]').evaluate(
-          (element) => (element as HTMLElement).style.transform,
-        )).not.toBe(outsideTransform);
+        const dragging = page.locator('[data-comins-sortable-dragging]');
+        let attempt = 0;
+        await expect.poll(async () => {
+          const x = destinationPoint.x + (attempt++ % 2);
+          await page.mouse.move(x, destinationPoint.y, { steps: 2 });
+          const actual = await dragging.evaluate((element) => {
+            const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+            return { x: matrix.e, y: matrix.f };
+          });
+          return Math.abs(actual.x - (x - origin.x)) <= 1
+            && Math.abs(actual.y - (destinationPoint.y - origin.y)) <= 1;
+        }).toBe(true);
       }
     },
     async drop(): Promise<void> {
@@ -114,8 +136,7 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
       await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCount(0);
     },
     async moveOutside(): Promise<void> {
-      await page.mouse.move(4, 4);
-      await expect(page.locator('[data-comins-sortable-over]')).toHaveCount(0);
+      await movePointerOutside(page);
     },
     async moveToScrollEdge(): Promise<void> {
       const scroll = page.locator('[data-test-scroll]');
