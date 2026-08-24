@@ -70,7 +70,7 @@ for (const adapter of adapters) {
           await control(page, reason);
         } else if (reason === 'reject') {
           await control(page, reason);
-          await drag.moveBefore('done');
+          await drag.moveBefore('done', undefined, false);
           await drag.drop();
         } else if (reason === 'unmount') {
           await drag.moveBefore('done');

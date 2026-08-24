@@ -34,6 +34,21 @@ export function item(page: Page, areaId: string, itemId: string): Locator {
   return area(page, areaId).locator(`[data-sortable-id="${itemId}"]`);
 }
 
+export async function waitForDropTarget(
+  page: Page,
+  destinationAreaId: string,
+  beforeId?: string,
+): Promise<void> {
+  await expect.poll(async () => {
+    const placeholder = page.locator('[data-comins-sortable-placeholder]');
+    if (await placeholder.count() !== 1) return null;
+    return placeholder.evaluate((element) => ({
+      areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
+      beforeId: element.nextElementSibling?.getAttribute('data-sortable-id') ?? null,
+    }));
+  }).toEqual({ areaId: destinationAreaId, beforeId: beforeId ?? null });
+}
+
 export async function beginDrag(page: Page, areaId: string, itemId: string) {
   const source = item(page, areaId, itemId);
   const box = await source.boundingBox();
@@ -43,20 +58,29 @@ export async function beginDrag(page: Page, areaId: string, itemId: string) {
   await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2 + 12);
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
   return {
-    async moveBefore(destinationAreaId: string, beforeId?: string): Promise<void> {
+    async moveBefore(
+      destinationAreaId: string,
+      beforeId?: string,
+      accepted = true,
+    ): Promise<void> {
       const destination = beforeId === undefined
         ? area(page, destinationAreaId)
         : item(page, destinationAreaId, beforeId);
       const destinationBox = await destination.boundingBox();
       if (destinationBox === null) throw new Error(`Missing destination: ${destinationAreaId}/${beforeId ?? 'empty'}`);
+      const previousTransform = await page.locator('[data-comins-sortable-dragging]').evaluate(
+        (element) => (element as HTMLElement).style.transform,
+      );
       await page.mouse.move(destinationBox.x + 8, destinationBox.y + 8);
-      await page.evaluate(async () => {
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      });
+      await expect.poll(() => page.locator('[data-comins-sortable-dragging]').evaluate(
+        (element) => (element as HTMLElement).style.transform,
+      )).not.toBe(previousTransform);
+      if (accepted) await waitForDropTarget(page, destinationAreaId, beforeId);
     },
     async drop(): Promise<void> {
       await page.mouse.up();
+      await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(0);
+      await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCount(0);
     },
     async moveOutside(): Promise<void> {
       await page.mouse.move(4, 4);
@@ -75,10 +99,10 @@ export async function dragItem(
   page: Page,
   sourceAreaId: string,
   itemId: string,
-  target: { areaId: string; beforeId?: string },
+  target: { areaId: string; beforeId?: string; accepted?: boolean },
 ): Promise<void> {
   const drag = await beginDrag(page, sourceAreaId, itemId);
-  await drag.moveBefore(target.areaId, target.beforeId);
+  await drag.moveBefore(target.areaId, target.beforeId, target.accepted);
   await drag.drop();
 }
 

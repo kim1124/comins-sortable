@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { dragItem } from '../playwright/helpers/drag.js';
+import { dragItem, waitForDropTarget } from '../playwright/helpers/drag.js';
 
 type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
 const adapters: readonly Adapter[] = ['vanilla', 'react', 'vue', 'svelte'];
@@ -144,13 +144,12 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
   await page.mouse.move(handleBox.x + handleBox.width / 2 + 12, handleBox.y + handleBox.height / 2 + 12);
-  await page.waitForTimeout(20);
+  await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
   await page.mouse.move(currentTargetBox.x + 8, currentTargetBox.y + 8);
-  await page.evaluate(async () => {
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-  });
+  await waitForDropTarget(page, 'todo', 'research');
   await page.mouse.up();
+  await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(0);
+  await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCount(0);
   await expect.poll(async () => (await model(page)).todo).not.toEqual(initial);
 
   await page.goto('/examples/empty/svelte');
@@ -161,7 +160,7 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.goto('/examples/accept/vue');
   await waitForRuntime(page);
   await page.getByRole('button', { name: '대상 이동 허용' }).click();
-  await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+  await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review', accepted: false });
   await expect.poll(async () => (await model(page)).done).toEqual(['review']);
   await expect(page.getByLabel('이벤트 타임라인')).toContainText('not-accepted');
 });
@@ -180,7 +179,7 @@ for (const adapter of adapters) {
     await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
     await page.mouse.down();
     await page.mouse.move(sourceBox.x + sourceBox.width / 2 + 12, sourceBox.y + sourceBox.height / 2 + 12);
-    await page.waitForTimeout(20);
+    await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
     await page.mouse.move(boardBox.x + boardBox.width / 2, boardBox.y + boardBox.height - 4);
     await expect.poll(() => board.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     await page.mouse.up();
