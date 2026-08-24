@@ -162,7 +162,10 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       }
       pointer.active = true;
       try {
-        if (typeof pointer.captureTarget.setPointerCapture === 'function') {
+        if (
+          pointer.pointerType !== 'mouse'
+          && typeof pointer.captureTarget.setPointerCapture === 'function'
+        ) {
           pointer.captureTarget.setPointerCapture(pointer.pointerId);
         }
         if (options.onActivate(nextSnapshot) === false) {
