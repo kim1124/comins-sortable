@@ -512,7 +512,7 @@ test('public components SSR-render only a provider and one direct area div witho
     ),
   );
 
-  assert.equal(markup, '<div data-comins-sortable-area="todo"><span>a</span></div>');
+  assert.equal(markup, '<div data-comins-sortable-area="todo"><span data-comins-sortable-item="">a</span></div>');
 });
 
 function lifecycleController(calls: string[]): ReactSortableController<Task> {

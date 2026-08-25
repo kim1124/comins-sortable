@@ -32,7 +32,7 @@ test('declares the approved private package boundary', () => {
   assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
   assert.deepEqual(manifest.peerDependencies, peers);
   assert.deepEqual(manifest.peerDependenciesMeta, peerMeta);
-  assert.deepEqual(manifest.files, ['dist', 'README.md', 'LICENSE']);
+  assert.deepEqual(manifest.files, ['dist', 'README.md', 'CHANGELOG.md', 'LICENSE']);
   assert.deepEqual(manifest.sideEffects, ['./dist/styles.css']);
   assert.deepEqual(manifest.exports, {
     '.': {

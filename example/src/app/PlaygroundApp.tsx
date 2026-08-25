@@ -134,7 +134,9 @@ export function PlaygroundApp(): ReactElement {
         runtimeHost.current?.dispatch(controlId, value);
         return { ...current, [controlId]: value };
       });
+      return;
     }
+    runtimeHost.current?.dispatch(controlId);
   };
 
   return (
@@ -182,8 +184,8 @@ export function PlaygroundApp(): ReactElement {
             <strong>Vue.Draggable parity</strong>
             <span>{parityExampleIds.length} / {plannedParityExampleCount} examples</span>
             <small>{locale === 'ko'
-              ? `전체 route ${playgroundScenarios.length}개 · Transition · Table · Nested 구현 예정`
-              : `${playgroundScenarios.length} total routes · Transition · Table · Nested next`}</small>
+              ? `전체 route ${playgroundScenarios.length}개 · 데스크톱 parity 완료`
+              : `${playgroundScenarios.length} total routes · desktop parity complete`}</small>
           </div>
         </aside>
 

@@ -19,8 +19,8 @@ test('normalizes routes, keeps locale on navigation, and renders actual source',
   await expect(page).toHaveURL('/examples/simple/react');
   await waitForRuntime(page);
   await expect(page.getByRole('heading', { name: '기본 정렬' })).toBeVisible();
-  await expect(page.locator('.cs-playground__parity-note')).toContainText('6 / 17 examples');
-  await expect(page.locator('.cs-playground__parity-note')).toContainText('전체 route 9개');
+  await expect(page.locator('.cs-playground__parity-note')).toContainText('17 / 17 examples');
+  await expect(page.locator('.cs-playground__parity-note')).toContainText('전체 route 20개');
 
   await page.getByRole('button', { name: 'Switch to English' }).click();
   await expect(page).toHaveURL('/examples/simple/react');
@@ -45,6 +45,73 @@ for (const adapter of adapters) {
     await expect.poll(() => page.locator('[data-comins-sortable-area="done"] > [data-sortable-id]').evaluateAll(
       (elements) => elements.map((element) => element.getAttribute('data-sortable-id')),
     )).toEqual(['design', 'review']);
+  });
+}
+
+for (const adapter of adapters) {
+  test(`${adapter} exposes the remaining desktop parity routes as live behavior`, async ({ page }) => {
+    await page.addInitScript(() => {
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function patchedAnimate(...args) {
+        const root = document.documentElement;
+        root.dataset.sortableAnimationCalls = String(Number(root.dataset.sortableAnimationCalls ?? 0) + 1);
+        return original.apply(this, args);
+      };
+    });
+
+    for (const route of ['transition', 'transitions'] as const) {
+      await page.goto(`/examples/${route}/${adapter}`);
+      await waitForRuntime(page);
+      const before = Number(await page.locator('html').getAttribute('data-sortable-animation-calls') ?? 0);
+      await page.getByRole('button', { name: '순서 뒤집기' }).click();
+      await expect.poll(async () => (await model(page)).todo)
+        .toEqual(['build', 'design', 'research']);
+      await expect.poll(async () => Number(
+        await page.locator('html').getAttribute('data-sortable-animation-calls') ?? 0,
+      )).toBeGreaterThan(before);
+    }
+
+    for (const route of ['table', 'table-column', 'third-party', 'footer-slot', 'header-slot'] as const) {
+      await page.goto(`/examples/${route}/${adapter}`);
+      await waitForRuntime(page);
+      if (route === 'third-party') {
+        await expect(page.locator('[data-demo-component-host]')).toHaveCount(1);
+      }
+      if (route === 'footer-slot') {
+        await expect(page.locator('[data-demo-slot="footer"]')).toHaveCount(1);
+      }
+      if (route === 'header-slot') {
+        await expect(page.locator('[data-demo-slot="header"]')).toHaveCount(1);
+      }
+      await dragItem(page, 'todo', 'design', { areaId: 'todo', beforeId: 'research' });
+      await expect.poll(async () => (await model(page)).todo)
+        .toEqual(['design', 'research', 'build']);
+    }
+
+    await page.goto(`/examples/two-list-slots/${adapter}`);
+    await waitForRuntime(page);
+    await expect(page.locator('[data-demo-slot="header"]')).toHaveCount(2);
+    await expect(page.locator('[data-demo-slot="footer"]')).toHaveCount(2);
+    await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+    await expect.poll(async () => (await model(page)).done).toEqual(['design', 'review']);
+    await expect(page.locator('[data-demo-slot]')).toHaveCount(4);
+
+    await page.goto(`/examples/nested/${adapter}`);
+    await waitForRuntime(page);
+    await dragItem(page, 'todo', 'design', { areaId: 'child', beforeId: 'review' });
+    await expect.poll(async () => (await model(page)).todo).toEqual(['research', 'build']);
+    await expect.poll(async () => (await model(page)).child).toEqual(['design', 'review', 'release']);
+
+    await page.goto(`/examples/nested-controlled/${adapter}`);
+    await waitForRuntime(page);
+    await page.getByRole('button', { name: '자식 순서 뒤집기' }).click();
+    await expect.poll(async () => (await model(page)).child).toEqual(['release', 'review']);
+
+    await page.goto(`/examples/functional-third-party/${adapter}`);
+    await waitForRuntime(page);
+    await expect(page.locator('[data-demo-component-host]')).toHaveCount(2);
+    await dragItem(page, 'todo', 'build', { areaId: 'child', beforeId: 'review' });
+    await expect.poll(async () => (await model(page)).child).toEqual(['build', 'review', 'release']);
   });
 }
 

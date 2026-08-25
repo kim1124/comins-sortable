@@ -25,6 +25,9 @@ const options: SvelteSortableOptions<Task> = {
   items: tasks,
   itemKey: 'id',
   group: { name: 'tasks', pull: 'copy', put: ['tasks'] },
+  item: '.task',
+  animation: { duration: 180, easing: 'ease-out' },
+  parent: { areaId: 'root', itemId: 'parent' },
   copyItem: (item, context) => ({
     ...item,
     id: `${item.id}-${context.destination.areaId}`,

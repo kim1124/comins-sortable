@@ -8,6 +8,7 @@ export interface FrameworkAreaBinding<T> {
   getItemId(item: T): SortableId;
   setItems(items: readonly T[]): void;
   getElement(): Element | null;
+  getItemElements?(): readonly Element[];
   copyItem?(context: CopyItemContext): T;
 }
 
@@ -70,9 +71,7 @@ export class BindingRegistry<T> {
       if (element === null) {
         throw new SortableError('INVALID_ELEMENT');
       }
-      const directChildren = Array.from(element.children).filter(
-        (child) => !child.hasAttribute('data-comins-sortable-placeholder'),
-      );
+      const directChildren = renderedItemElements(record.binding, element);
       if (directChildren.length !== items.length) {
         throw new SortableError('INVALID_ELEMENT');
       }
@@ -144,4 +143,13 @@ export class BindingRegistry<T> {
     }
     return record;
   }
+}
+
+export function renderedItemElements<T>(
+  binding: FrameworkAreaBinding<T>,
+  element: Element,
+): readonly Element[] {
+  return binding.getItemElements?.() ?? Array.from(element.children).filter(
+    (child) => !child.hasAttribute('data-comins-sortable-placeholder'),
+  );
 }

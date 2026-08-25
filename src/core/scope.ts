@@ -1,4 +1,6 @@
 import { createAutoScroller } from './auto-scroll.js';
+import { createLayoutAnimator, normalizeAnimation } from './animation.js';
+import type { SortableLayoutAnimator } from './animation.js';
 import {
   findAreaAtPoint,
   insertionIndex,
@@ -52,10 +54,12 @@ import type {
   PointerSnapshot,
   SortableAreaOptions,
   SortableAreaPatch,
+  SortableAnimation,
   SortableChange,
   SortableDirection,
   SortableId,
   SortableLocation,
+  SortableParentLocation,
   SortableScope,
   SortableScopeOptions,
   SortableTransferMode,
@@ -74,6 +78,8 @@ interface NormalizedAreaOptions {
   activationDistance: number;
   emptyInsertThreshold: number;
   autoScroll: boolean;
+  animation: SortableAnimation;
+  parent?: SortableParentLocation;
   accept(context: DragContext): boolean;
   pull(context: DragContext): false | SortableTransferMode;
   put(context: DragContext, sourceGroup: string): boolean;
@@ -89,6 +95,7 @@ interface ScopeArea {
   pointerDown: EventListener;
   hadAreaAttribute: boolean;
   areaAttribute: string | null;
+  animator: SortableLayoutAnimator;
   disposed: boolean;
 }
 
@@ -99,7 +106,7 @@ interface ActiveDrag {
   sourceIndex: number;
   context: DragContext;
   feedback: SortableFeedback | null;
-  lastRejection: 'disabled' | 'not-accepted' | null;
+  lastRejection: 'disabled' | 'not-accepted' | 'nested-cycle' | null;
   overArea: ScopeArea | null;
   transferMode: false | SortableTransferMode;
 }
@@ -169,6 +176,9 @@ function createScopeWithVerificationFrames(
     },
     updateArea(areaId, patch) {
       requireInternal().updateArea(areaId, patch);
+    },
+    refreshArea(areaId) {
+      requireInternal().refreshArea?.(areaId);
     },
     cancel() {
       internal?.cancel();
@@ -299,10 +309,16 @@ export function createSortableScopeInternal(
     if (finishing.overArea !== null) {
       finishing.overArea.element.removeAttribute('data-comins-sortable-over');
     }
+    const animatedAreas = new Set<ScopeArea>([
+      finishing.sourceArea,
+      ...(finishing.overArea === null ? [] : [finishing.overArea]),
+    ]);
     if (reason === 'drop') {
       finishing.feedback?.destroy();
+      for (const area of animatedAreas) area.animator.play();
     } else {
       finishing.feedback?.rollback();
+      for (const area of animatedAreas) area.animator.cancel(true);
     }
 
     if (session.state.status === 'dragging') {
@@ -446,6 +462,11 @@ export function createSortableScopeInternal(
           || (scrolled as Element).contains(target.element)
         ));
       invalidateTargets(affected, 'scroll');
+      for (const area of areas.values()) {
+        if (affected.some((target) => target.element === area.element)) {
+          area.animator.cancel(true);
+        }
+      }
       geometry.refreshDirty(affected);
       autoScrollFrame = platform.requestFrame(() => {
         autoScrollFrame = null;
@@ -507,6 +528,7 @@ export function createSortableScopeInternal(
           ...(previousArea === null ? [] : [previousArea]),
         ]);
         invalidateTargets([...affectedAreas].flatMap(areaTargets), 'placeholder');
+        for (const area of affectedAreas) area.animator.play();
         options.onInsertDragArea?.({
           ...dragging.context,
           previousDestination,
@@ -597,6 +619,7 @@ export function createSortableScopeInternal(
         throw new SortableError('INVALID_ELEMENT');
       }
       geometry.clear();
+      for (const candidate of areas.values()) candidate.animator.cancel(true);
       geometry.refreshAtActivation(allTargets());
       const feedback = createFeedback(sourceElement, platform);
       feedback.place(parent, sourceElement);
@@ -733,6 +756,12 @@ export function createSortableScopeInternal(
       pointerDown: (() => {}) as EventListener,
       hadAreaAttribute,
       areaAttribute,
+      animator: createLayoutAnimator(
+        element,
+        normalized.item,
+        normalized.animation,
+        platform.window,
+      ),
       disposed: false,
     };
     area.pointerDown = ((event: PointerEvent) => startAttempt(area, event)) as EventListener;
@@ -757,6 +786,7 @@ export function createSortableScopeInternal(
         }
       }
       element.removeEventListener('pointerdown', area.pointerDown);
+      area.animator.destroy();
       area.disposeRegistry();
       if (areas.get(normalized.areaId) === area) {
         areas.delete(normalized.areaId);
@@ -794,6 +824,7 @@ export function createSortableScopeInternal(
       area.options = next;
       area.rawOptions = nextRaw;
       area.registered = nextRegistered;
+      area.animator.update(next.item, next.animation);
       invalidateTargets(areaTargets(area), 'framework');
       const disablesDrag = (
         next.disabled
@@ -809,6 +840,14 @@ export function createSortableScopeInternal(
           finish('disabled');
         }
       }
+    },
+    refreshArea(areaId) {
+      const area = areas.get(areaId);
+      if (area === undefined || area.disposed) {
+        throw new SortableError('INVALID_ELEMENT');
+      }
+      area.animator.play();
+      invalidateTargets(areaTargets(area), 'framework');
     },
     cancel() {
       if (attempt !== null) {
@@ -840,6 +879,7 @@ export function createSortableScopeInternal(
     }
     area.disposed = true;
     area.element.removeEventListener('pointerdown', area.pointerDown);
+    area.animator.destroy();
     area.disposeRegistry();
     if (area.hadAreaAttribute) {
       area.element.setAttribute(
@@ -868,6 +908,7 @@ function normalizeAreaOptions(
   }
   const activationDistance = finiteNonNegative(options.activationDistance ?? 4);
   const emptyInsertThreshold = finiteNonNegative(options.emptyInsertThreshold ?? 8);
+  const animation = normalizeAnimation(options.animation) ?? false;
   const getItemId = options.getItemId ?? ((element: Element) => (
     element.getAttribute('data-sortable-id') as SortableId
   ));
@@ -885,11 +926,26 @@ function normalizeAreaOptions(
     activationDistance,
     emptyInsertThreshold,
     autoScroll: options.autoScroll ?? true,
+    animation,
+    ...(options.parent === undefined ? {} : { parent: normalizeParent(options.parent) }),
     accept: options.accept ?? (() => true),
     pull: group.pull,
     put: group.put,
     ...(options.prepareCopy === undefined ? {} : { prepareCopy: options.prepareCopy }),
   };
+}
+
+function normalizeParent(parent: SortableParentLocation): SortableParentLocation {
+  if (
+    typeof parent !== 'object'
+    || parent === null
+    || typeof parent.areaId !== 'string'
+    || parent.areaId.length === 0
+    || (typeof parent.itemId !== 'string' && typeof parent.itemId !== 'number')
+  ) {
+    throw new SortableError('INVALID_OPTION');
+  }
+  return { areaId: parent.areaId, itemId: parent.itemId };
 }
 
 function normalizeGroup(
@@ -1005,7 +1061,7 @@ function locateDestination(
   rectFor: (element: Element) => RectSnapshot,
 ): {
   destination?: LocatedDestination;
-  rejection: 'disabled' | 'not-accepted' | null;
+  rejection: 'disabled' | 'not-accepted' | 'nested-cycle' | null;
 } {
   const context = { ...dragging.context, pointer };
   const directAreas = uniqueAreasFromHits(hits, registry, areas);
@@ -1062,8 +1118,11 @@ function locateDestination(
     acceptance.set(area, accepted);
     return accepted;
   };
-  let rejection: 'disabled' | 'not-accepted' | null = null;
+  let rejection: 'disabled' | 'not-accepted' | 'nested-cycle' | null = null;
   for (const area of directAreas) {
+    if (createsNestedCycle(dragging, area, areas)) {
+      return { rejection: 'nested-cycle' };
+    }
     if (area.options.disabled) {
       rejection = 'disabled';
       break;
@@ -1103,6 +1162,27 @@ function locateDestination(
     rejection: null,
     destination: destinationFor(scopeArea),
   };
+}
+
+function createsNestedCycle(
+  dragging: ActiveDrag,
+  destination: ScopeArea,
+  areas: ReadonlyMap<string, ScopeArea>,
+): boolean {
+  let parent = destination.options.parent;
+  const visited = new Set<string>();
+  while (parent !== undefined) {
+    if (
+      parent.areaId === dragging.sourceArea.options.areaId
+      && parent.itemId === dragging.itemId
+    ) {
+      return true;
+    }
+    if (visited.has(parent.areaId)) return true;
+    visited.add(parent.areaId);
+    parent = areas.get(parent.areaId)?.options.parent;
+  }
+  return false;
 }
 
 function uniqueAreasFromHits(
@@ -1211,6 +1291,7 @@ function resultStatus(reason: AfterDragReason): AfterDragResult['status'] {
   }
   return reason === 'disabled'
     || reason === 'not-accepted'
+    || reason === 'nested-cycle'
     || reason === 'state-not-committed'
     ? 'rejected'
     : 'cancelled';

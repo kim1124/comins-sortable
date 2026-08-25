@@ -37,6 +37,16 @@ test('outside and rejected destinations preserve original DOM with stable status
   assert.deepEqual(rejected.results, [{ status: 'rejected', reason: 'not-accepted' }]);
 });
 
+test('a parent item cannot move into its own nested descendant area', () => {
+  const nested = scopeFixture({ parentDone: { areaId: 'todo', itemId: 'a' } });
+
+  nested.drop('todo', 0, 'done', 0);
+
+  assert.deepEqual(nested.results, [{ status: 'rejected', reason: 'nested-cycle' }]);
+  assert.deepEqual(nested.ids('todo'), ['a', 'b']);
+  assert.deepEqual(nested.ids('done'), ['c', 'd']);
+});
+
 test('disabled source is rejected and idle cancel remains a no-op', () => {
   const fixture = scopeFixture({ disabledTodo: true });
   fixture.scope.cancel();
