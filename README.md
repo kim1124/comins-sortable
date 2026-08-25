@@ -9,9 +9,10 @@ TypeScript Core.
 The repository has an approved private development package boundary. Its
 Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
 reorder, transfer, and copy interactions with commit verification and rollback.
-The Playground currently provides 9 of 17 planned parity routes. Runtime
-dependencies are not allowed. React, React DOM, Vue, and Svelte are optional
-peers.
+The Playground currently provides 9 routes. Six implement the 17 planned
+Vue.Draggable parity contracts; Empty Destination, Accept/Reject, and Auto
+Scroll are additional Comins examples. Runtime dependencies are not allowed.
+React, React DOM, Vue, and Svelte are optional peers.
 
 The development package is `private` and uses version
 `0.0.0-development`. Publishing, release versions, tags, and GitHub Releases
@@ -42,3 +43,10 @@ asset surfaces. The license checker verifies the manifest and lockfile root,
 requires every lock entry to have a routine SPDX classification, and fails
 closed for missing or unreviewed material. A manual-review result exposes only
 the package name, SPDX expression, and use surface.
+
+## Browser evidence
+
+The automated browser gate covers Chromium, Firefox, and Playwright WebKit.
+Playwright WebKit is engine-compatibility evidence, not Safari certification.
+Actual Safari and physical touch or pen input remain uncertified until they are
+verified on the corresponding browser and devices.

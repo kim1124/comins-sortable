@@ -7,6 +7,8 @@ import {
 
 import {
   adapterIds,
+  parityExampleIds,
+  plannedParityExampleCount,
   playgroundPath,
   resolvePlaygroundRoute,
   type PlaygroundRoute,
@@ -178,8 +180,10 @@ export function PlaygroundApp(): ReactElement {
           </div>
           <div className="cs-playground__parity-note">
             <strong>Vue.Draggable parity</strong>
-            <span>9 / 17 examples</span>
-            <small>{locale === 'ko' ? 'Transition · Table · Nested 구현 예정' : 'Transition · Table · Nested next'}</small>
+            <span>{parityExampleIds.length} / {plannedParityExampleCount} examples</span>
+            <small>{locale === 'ko'
+              ? `전체 route ${playgroundScenarios.length}개 · Transition · Table · Nested 구현 예정`
+              : `${playgroundScenarios.length} total routes · Transition · Table · Nested next`}</small>
           </div>
         </aside>
 

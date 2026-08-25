@@ -11,6 +11,17 @@ export const exampleIds = [
   'auto-scroll',
 ] as const;
 
+export const parityExampleIds = [
+  'simple',
+  'two-lists',
+  'clone',
+  'custom-clone',
+  'modifier-copy',
+  'handle',
+] as const satisfies readonly (typeof exampleIds)[number][];
+
+export const plannedParityExampleCount = 17;
+
 export type PlaygroundAdapterId = (typeof adapterIds)[number];
 export type PlaygroundExampleId = (typeof exampleIds)[number];
 

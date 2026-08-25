@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  exampleIds,
+  parityExampleIds,
+  plannedParityExampleCount,
   playgroundPath,
   resolvePlaygroundRoute,
 } from '../../../example/src/app/navigation.js';
@@ -29,6 +32,18 @@ test('invalid routes fail closed to the simple React example', () => {
       exampleId,
     });
   }
+});
+
+test('parity count excludes Comins-only routes', () => {
+  const implementedParityExamples = new Set<string>(parityExampleIds);
+
+  assert.equal(exampleIds.length, 9);
+  assert.equal(parityExampleIds.length, 6);
+  assert.equal(plannedParityExampleCount, 17);
+  assert.deepEqual(
+    exampleIds.filter((exampleId) => !implementedParityExamples.has(exampleId)),
+    ['empty', 'accept', 'auto-scroll'],
+  );
 });
 
 test('locale persistence accepts only ko and en', () => {

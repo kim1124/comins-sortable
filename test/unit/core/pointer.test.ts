@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { createPointerSensor } from '../../../src/core/pointer.js';
+import type { PointerSnapshot } from '../../../src/core/model.js';
 import {
   fakeElement,
   fakePlatform,
@@ -14,7 +15,7 @@ function sensorFixture(options: {
 } = {}) {
   const platform = fakePlatform();
   const events: string[] = [];
-  const snapshots: Array<{ clientX: number; clientY: number }> = [];
+  const snapshots: PointerSnapshot[] = [];
   const sensor = createPointerSensor({
     activationDistance: 4,
     platform,
@@ -124,6 +125,26 @@ test('pointer activates at four CSS pixels and captures the active pointer', () 
     shiftKey: false,
   }]);
   assert.deepEqual(item.capturedPointers, [1]);
+});
+
+test('primary touch and pen pointers share the activation and release lifecycle', () => {
+  for (const pointerType of ['touch', 'pen'] as const) {
+    const { events, platform, sensor, snapshots } = sensorFixture();
+    const item = fakeElement('LI');
+
+    assert.equal(sensor.pointerDown(pointer({ pointerType, button: -1, target: item }), item), true);
+    sensor.pointerMove(pointer({ pointerType, button: -1, clientX: 4, target: item }));
+    platform.flushFrame();
+    sensor.pointerMove(pointer({ pointerType, button: -1, clientX: 8, clientY: 2, target: item }));
+    platform.flushFrame();
+    sensor.pointerUp(pointer({ pointerType, button: -1, clientX: 8, clientY: 2, target: item }));
+
+    assert.deepEqual(events, ['activate', 'move', 'release']);
+    assert.deepEqual(snapshots.map((snapshot) => snapshot.type), [pointerType, pointerType]);
+    assert.deepEqual(item.capturedPointers, [1]);
+    assert.deepEqual(item.releasedPointers, [1]);
+    assert.equal(platform.listenerCount(), 0);
+  }
 });
 
 test('pointer movement is coalesced to the latest coordinates once per frame', () => {

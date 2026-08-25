@@ -19,6 +19,8 @@ test('normalizes routes, keeps locale on navigation, and renders actual source',
   await expect(page).toHaveURL('/examples/simple/react');
   await waitForRuntime(page);
   await expect(page.getByRole('heading', { name: '기본 정렬' })).toBeVisible();
+  await expect(page.locator('.cs-playground__parity-note')).toContainText('6 / 17 examples');
+  await expect(page.locator('.cs-playground__parity-note')).toContainText('전체 route 9개');
 
   await page.getByRole('button', { name: 'Switch to English' }).click();
   await expect(page).toHaveURL('/examples/simple/react');
