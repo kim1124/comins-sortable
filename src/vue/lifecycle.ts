@@ -4,9 +4,11 @@ import type {
   DragContext,
   ItemKey,
   SortableAreaOptions,
+  SortableAnimation,
   SortableDirection,
   SortableGroup,
   SortableId,
+  SortableParentLocation,
 } from '../core/model.js';
 import type { FrameworkAreaBinding } from '../framework/bindings.js';
 import { resolveItemId } from '../framework/item-key.js';
@@ -26,11 +28,13 @@ export interface VueAreaLifecycleProps<T> {
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
+  animation?: SortableAnimation;
+  parent?: SortableParentLocation;
 }
 
 export interface VueAreaLifecycle<T> {
   update(props: VueAreaLifecycleProps<T>): void;
-  setElement(element: HTMLDivElement | null): void;
+  setElement(element: HTMLElement | null): void;
   dispose(): void;
 }
 
@@ -41,7 +45,7 @@ export function createVueAreaLifecycle<T>(options: {
   emitModelValue(items: readonly T[]): void;
 }): VueAreaLifecycle<T> {
   let props = options.props();
-  let element: HTMLDivElement | null = null;
+  let element: HTMLElement | null = null;
   let controller = options.controller ?? null;
   let ownsController = false;
   let unregister: (() => void) | null = null;
@@ -77,9 +81,13 @@ export function createVueAreaLifecycle<T>(options: {
         return;
       }
       const nextOptions = areaOptions(props, itemIdForElement(() => element, () => props));
-      if (unregister !== null && registeredOptions !== null && !sameOptions(registeredOptions, nextOptions)) {
-        ensureController().updateArea(props.areaId, nextOptions);
-        registeredOptions = nextOptions;
+      if (unregister !== null && registeredOptions !== null) {
+        if (!sameOptions(registeredOptions, nextOptions)) {
+          ensureController().updateArea(props.areaId, nextOptions);
+          registeredOptions = nextOptions;
+        } else if (nextOptions.animation !== false && nextOptions.animation !== undefined) {
+          ensureController().refreshArea?.(props.areaId);
+        }
       }
       register();
     },
@@ -103,7 +111,7 @@ export function createVueAreaLifecycle<T>(options: {
 
 function createBinding<T>(
   getProps: () => VueAreaLifecycleProps<T>,
-  getElement: () => HTMLDivElement | null,
+  getElement: () => HTMLElement | null,
   emitModelValue: (items: readonly T[]) => void,
 ): FrameworkAreaBinding<T> {
   const initial = getProps();
@@ -117,6 +125,12 @@ function createBinding<T>(
     getItemId: (item) => resolveItemId(item, getProps().itemKey),
     setItems: emitModelValue,
     getElement,
+    getItemElements: () => {
+      const area = getElement();
+      return area === null ? [] : Array.from(area.children).filter(
+        (child) => child.hasAttribute('data-comins-sortable-item'),
+      );
+    },
     copyItem: (context) => {
       const current = getProps();
       const item = current.modelValue[context.source.index];
@@ -129,7 +143,7 @@ function createBinding<T>(
 }
 
 export function itemIdForElement<T>(
-  getArea: () => HTMLDivElement | null,
+  getArea: () => HTMLElement | null,
   getProps: () => VueAreaLifecycleProps<T>,
 ): (element: Element) => SortableId {
   return (element) => {
@@ -137,7 +151,7 @@ export function itemIdForElement<T>(
     const props = getProps();
     if (area === null || element.parentElement !== area) throw new SortableError('INVALID_ELEMENT');
     const children = Array.from(area.children).filter(
-      (child) => !child.hasAttribute('data-comins-sortable-placeholder'),
+      (child) => child.hasAttribute('data-comins-sortable-item'),
     );
     if (children.length !== props.modelValue.length) throw new SortableError('INVALID_ELEMENT');
     const index = children.indexOf(element);
@@ -152,10 +166,10 @@ function areaOptions<T>(
   getItemId: (element: Element) => SortableId,
 ): SortableAreaOptions {
   return {
-    areaId: props.areaId, group: props.group, item: ':scope > *', getItemId,
+    areaId: props.areaId, group: props.group, item: '[data-comins-sortable-item]', getItemId,
     direction: props.direction, disabled: props.disabled, handle: props.handle, ignore: props.ignore,
     activationDistance: props.activationDistance, emptyInsertThreshold: props.emptyInsertThreshold,
-    autoScroll: props.autoScroll, accept: props.accept,
+    autoScroll: props.autoScroll, animation: props.animation, parent: props.parent, accept: props.accept,
   };
 }
 
@@ -164,5 +178,16 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && left.disabled === right.disabled && left.handle === right.handle && left.ignore === right.ignore
     && left.activationDistance === right.activationDistance
     && left.emptyInsertThreshold === right.emptyInsertThreshold && left.autoScroll === right.autoScroll
+    && sameAnimation(left.animation, right.animation)
+    && left.parent?.areaId === right.parent?.areaId && left.parent?.itemId === right.parent?.itemId
     && left.accept === right.accept;
+}
+
+function sameAnimation(
+  left: SortableAreaOptions['animation'],
+  right: SortableAreaOptions['animation'],
+): boolean {
+  if (left === right) return true;
+  if (typeof left !== 'object' || left === null || typeof right !== 'object' || right === null) return false;
+  return left.duration === right.duration && left.easing === right.easing;
 }

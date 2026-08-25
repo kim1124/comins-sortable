@@ -73,3 +73,22 @@ test('custom clone derives presentation without mutating its catalog item', () =
   assert.equal(source.title, 'Design');
   assert.equal(source.detail, 'Interaction system');
 });
+
+test('nested transfers update root and child collections immutably', () => {
+  const state = createDemoState('nested-controlled');
+  const next = applyDemoChange(state, {
+    operation: 'transfer',
+    itemId: 'design',
+    source: { areaId: 'todo', index: 1 },
+    destination: { areaId: 'child', index: 1 },
+    orders: [
+      { areaId: 'todo', itemIds: ['research', 'build'] },
+      { areaId: 'child', itemIds: ['review', 'design', 'release'] },
+    ],
+  });
+
+  assert.deepEqual(next.todo.map((item) => item.id), ['research', 'build']);
+  assert.deepEqual(next.child.map((item) => item.id), ['review', 'design', 'release']);
+  assert.deepEqual(state.todo.map((item) => item.id), ['research', 'design', 'build']);
+  assert.deepEqual(state.child.map((item) => item.id), ['review', 'release']);
+});

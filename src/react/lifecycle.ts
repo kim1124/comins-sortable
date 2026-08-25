@@ -4,9 +4,11 @@ import type {
   DragContext,
   ItemKey,
   SortableAreaOptions,
+  SortableAnimation,
   SortableDirection,
   SortableGroup,
   SortableId,
+  SortableParentLocation,
 } from '../core/model.js';
 import type { FrameworkAreaBinding } from '../framework/bindings.js';
 import { resolveItemId } from '../framework/item-key.js';
@@ -27,11 +29,13 @@ export interface ReactAreaLifecycleProps<T> {
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
+  animation?: SortableAnimation;
+  parent?: SortableParentLocation;
 }
 
 export interface ReactAreaLifecycle<T> {
   update(props: ReactAreaLifecycleProps<T>): void;
-  setElement(element: HTMLDivElement | null): void;
+  setElement(element: HTMLElement | null): void;
   dispose(): void;
 }
 
@@ -41,7 +45,7 @@ export function createReactAreaLifecycle<T>(options: {
   props: ReactAreaLifecycleProps<T>;
 }): ReactAreaLifecycle<T> {
   let props = options.props;
-  let element: HTMLDivElement | null = null;
+  let element: HTMLElement | null = null;
   let controller = options.controller ?? null;
   let ownsController = false;
   let unregister: (() => void) | null = null;
@@ -78,6 +82,7 @@ export function createReactAreaLifecycle<T>(options: {
   return {
     update(nextProps) {
       const areaChanged = props.areaId !== nextProps.areaId;
+      const itemsChanged = props.items !== nextProps.items;
       props = nextProps;
       if (areaChanged) {
         disposeRegistration();
@@ -85,9 +90,14 @@ export function createReactAreaLifecycle<T>(options: {
         return;
       }
       const nextOptions = areaOptions(props, itemIdForElement(() => element, () => props));
-      if (unregister !== null && registeredOptions !== null && !sameOptions(registeredOptions, nextOptions)) {
-        ensureController().updateArea(props.areaId, nextOptions);
-        registeredOptions = nextOptions;
+      if (unregister !== null && registeredOptions !== null) {
+        if (!sameOptions(registeredOptions, nextOptions)) {
+          ensureController().updateArea(props.areaId, nextOptions);
+          registeredOptions = nextOptions;
+        } else if (itemsChanged && nextOptions.animation !== false && nextOptions.animation !== undefined) {
+          const currentController = ensureController();
+          currentController.refreshArea?.(props.areaId);
+        }
       }
       register();
     },
@@ -113,7 +123,7 @@ export function createReactAreaLifecycle<T>(options: {
 
 function createBinding<T>(
   getProps: () => ReactAreaLifecycleProps<T>,
-  getElement: () => HTMLDivElement | null,
+  getElement: () => HTMLElement | null,
 ): FrameworkAreaBinding<T> {
   const initial = getProps();
   return {
@@ -126,6 +136,12 @@ function createBinding<T>(
     getItemId: (item) => resolveItemId(item, getProps().itemKey),
     setItems: (items) => getProps().onItemsChange(items),
     getElement,
+    getItemElements: () => {
+      const area = getElement();
+      return area === null ? [] : Array.from(area.children).filter(
+        (child) => child.hasAttribute('data-comins-sortable-item'),
+      );
+    },
     copyItem: (context) => {
       const current = getProps();
       const item = current.items[context.source.index];
@@ -138,7 +154,7 @@ function createBinding<T>(
 }
 
 export function itemIdForElement<T>(
-  getArea: () => HTMLDivElement | null,
+  getArea: () => HTMLElement | null,
   getProps: () => ReactAreaLifecycleProps<T>,
 ): (element: Element) => SortableId {
   return (element) => {
@@ -148,7 +164,7 @@ export function itemIdForElement<T>(
       throw new SortableError('INVALID_ELEMENT');
     }
     const directChildren = Array.from(area.children).filter(
-      (child) => !child.hasAttribute('data-comins-sortable-placeholder'),
+      (child) => child.hasAttribute('data-comins-sortable-item'),
     );
     if (directChildren.length !== props.items.length) {
       throw new SortableError('INVALID_ELEMENT');
@@ -169,7 +185,7 @@ function areaOptions<T>(
   return {
     areaId: props.areaId,
     group: props.group,
-    item: ':scope > *',
+    item: '[data-comins-sortable-item]',
     getItemId,
     direction: props.direction,
     disabled: props.disabled,
@@ -178,6 +194,8 @@ function areaOptions<T>(
     activationDistance: props.activationDistance,
     emptyInsertThreshold: props.emptyInsertThreshold,
     autoScroll: props.autoScroll,
+    animation: props.animation,
+    parent: props.parent,
     accept: props.accept,
   };
 }
@@ -192,5 +210,19 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && left.activationDistance === right.activationDistance
     && left.emptyInsertThreshold === right.emptyInsertThreshold
     && left.autoScroll === right.autoScroll
+    && sameAnimation(left.animation, right.animation)
+    && left.parent?.areaId === right.parent?.areaId
+    && left.parent?.itemId === right.parent?.itemId
     && left.accept === right.accept;
+}
+
+function sameAnimation(
+  left: SortableAreaOptions['animation'],
+  right: SortableAreaOptions['animation'],
+): boolean {
+  if (left === right) return true;
+  if (typeof left !== 'object' || left === null || typeof right !== 'object' || right === null) {
+    return false;
+  }
+  return left.duration === right.duration && left.easing === right.easing;
 }

@@ -25,6 +25,7 @@ export interface Sortable {
     options: VanillaSortableAreaOptions,
   ): () => void;
   updateArea(areaId: string, patch: VanillaSortableAreaPatch): void;
+  refreshArea(areaId: string): void;
   cancel(): void;
   destroy(): void;
 }

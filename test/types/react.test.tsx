@@ -13,6 +13,10 @@ const tasks: readonly Task[] = [{ id: 'a', title: 'A' }];
   void itemId;
 }}>
   <SortableArea
+    as="section"
+    areaProps={{ className: 'task-list' }}
+    header={<header>Tasks</header>}
+    footer={<footer>{tasks.length} total</footer>}
     areaId="todo"
     items={tasks}
     itemKey="id"
@@ -21,6 +25,8 @@ const tasks: readonly Task[] = [{ id: 'a', title: 'A' }];
       ...item,
       id: `${item.id}-${String(context.destination.areaId)}`,
     })}
+    animation={{ duration: 180, easing: 'ease-out' }}
+    parent={{ areaId: 'root', itemId: 'parent' }}
     onItemsChange={(next) => {
       const task: Task | undefined = next[0];
       void task;

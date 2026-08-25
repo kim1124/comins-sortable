@@ -15,6 +15,7 @@ export interface DemoItem {
 export interface DemoState {
   todo: DemoItem[];
   done: DemoItem[];
+  child: DemoItem[];
 }
 
 const catalog: Readonly<Record<string, DemoItem>> = {
@@ -33,7 +34,10 @@ const items = (...ids: string[]): DemoItem[] => ids.map((id) => ({ ...catalog[id
 
 export function createDemoState(exampleId: PlaygroundExampleId): DemoState {
   if (exampleId === 'simple' || exampleId === 'handle') {
-    return { todo: items('research', 'design', 'build', 'review'), done: [] };
+    return { todo: items('research', 'design', 'build', 'review'), done: [], child: [] };
+  }
+  if (isNestedExample(exampleId)) {
+    return { todo: items('research', 'design', 'build'), done: [], child: items('review', 'release') };
   }
   if (exampleId === 'auto-scroll') {
     return {
@@ -42,17 +46,19 @@ export function createDemoState(exampleId: PlaygroundExampleId): DemoState {
         'document', 'observe', 'measure', 'improve',
       ),
       done: [],
+      child: [],
     };
   }
   if (exampleId === 'empty') {
-    return { todo: items('research', 'design'), done: [] };
+    return { todo: items('research', 'design'), done: [], child: [] };
   }
   if (exampleId === 'accept') {
-    return { todo: items('research', 'design', 'build'), done: items('review') };
+    return { todo: items('research', 'design', 'build'), done: items('review'), child: [] };
   }
   return {
     todo: items('research', 'design', 'build'),
     done: items('review'),
+    child: [],
   };
 }
 
@@ -72,11 +78,12 @@ export function copyDemoItem(
 
 export function applyDemoChange(state: DemoState, change: SortableChange): DemoState {
   const itemById = new Map(
-    [...state.todo, ...state.done].map((item) => [item.id, item] as const),
+    [...state.todo, ...state.done, ...state.child].map((item) => [item.id, item] as const),
   );
   const next: DemoState = {
     todo: [...state.todo],
     done: [...state.done],
+    child: [...state.child],
   };
   if (change.operation === 'copy') {
     const source = itemById.get(String(change.sourceItemId));
@@ -88,7 +95,7 @@ export function applyDemoChange(state: DemoState, change: SortableChange): DemoS
   }
 
   for (const order of change.orders) {
-    if (order.areaId !== 'todo' && order.areaId !== 'done') continue;
+    if (order.areaId !== 'todo' && order.areaId !== 'done' && order.areaId !== 'child') continue;
     next[order.areaId] = order.itemIds.map((itemId) => {
       const item = itemById.get(String(itemId));
       if (item === undefined) throw new Error('Unknown demo item');
@@ -103,6 +110,7 @@ export function demoModel(state: DemoState, includeDone = true): PlaygroundModel
     todo: state.todo.map((item) => item.id),
   };
   if (includeDone) model.done = state.done.map((item) => item.id);
+  if (state.child.length > 0) model.child = state.child.map((item) => item.id);
   return model;
 }
 
@@ -120,8 +128,19 @@ export function hasSecondArea(exampleId: PlaygroundExampleId): boolean {
     || exampleId === 'clone'
     || exampleId === 'custom-clone'
     || exampleId === 'modifier-copy'
+    || exampleId === 'two-list-slots'
     || exampleId === 'empty'
     || exampleId === 'accept';
+}
+
+export function isNestedExample(exampleId: PlaygroundExampleId): boolean {
+  return exampleId === 'nested'
+    || exampleId === 'nested-controlled'
+    || exampleId === 'functional-third-party';
+}
+
+export function isAnimationExample(exampleId: PlaygroundExampleId): boolean {
+  return exampleId === 'transition' || exampleId === 'transitions';
 }
 
 export function isCopyExample(exampleId: PlaygroundExampleId): boolean {

@@ -1,18 +1,26 @@
 import {
   cloneElement,
+  createElement,
   useCallback,
   useContext,
   useMemo,
   useLayoutEffect,
 } from 'react';
-import type { ReactElement } from 'react';
+import type {
+  ElementType,
+  HTMLAttributes,
+  ReactElement,
+  ReactNode,
+} from 'react';
 
 import type {
   CopyItem,
   DragContext,
   ItemKey,
+  SortableAnimation,
   SortableDirection,
   SortableGroup,
+  SortableParentLocation,
 } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
 import {
@@ -38,6 +46,12 @@ export interface SortableAreaProps<T> {
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
+  animation?: SortableAnimation;
+  parent?: SortableParentLocation;
+  as?: ElementType;
+  areaProps?: HTMLAttributes<HTMLElement>;
+  header?: ReactNode;
+  footer?: ReactNode;
 }
 
 export function SortableArea<T>(props: SortableAreaProps<T>): ReactElement {
@@ -51,21 +65,27 @@ export function SortableArea<T>(props: SortableAreaProps<T>): ReactElement {
     lifecycle.update(props);
   }, [lifecycle, props]);
   const setAreaElement = useCallback(
-    (element: HTMLDivElement | null) => lifecycle.setElement(element),
+    (element: HTMLElement | null) => lifecycle.setElement(element),
     [lifecycle],
   );
 
   const children = props.items.map((item, index) => {
     const rendered = props.children(item, index);
-    return cloneElement(rendered, { key: resolveItemId(item, props.itemKey) });
+    return cloneElement(rendered as ReactElement<Record<string, unknown>>, {
+      key: resolveItemId(item, props.itemKey),
+      'data-comins-sortable-item': '',
+    });
   });
 
-  return (
-    <div
-      ref={setAreaElement}
-      data-comins-sortable-area={props.areaId}
-    >
-      {children}
-    </div>
+  return createElement(
+    props.as ?? 'div',
+    {
+      ...props.areaProps,
+      ref: setAreaElement,
+      'data-comins-sortable-area': props.areaId,
+    },
+    props.header,
+    ...children,
+    props.footer,
   );
 }

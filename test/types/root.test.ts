@@ -26,5 +26,6 @@ const sortable: Sortable = createSortable(area, options);
 
 sortable.registerArea(area, areaOptions);
 sortable.updateArea('todo', { disabled: true });
+sortable.refreshArea('todo');
 sortable.cancel();
 sortable.destroy();

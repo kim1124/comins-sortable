@@ -1,10 +1,13 @@
 import {
   StrictMode,
+  forwardRef,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type HTMLAttributes,
   type ReactElement,
+  type ReactNode,
 } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -24,6 +27,7 @@ import {
   demoModel,
   hasSecondArea,
   isCopyExample,
+  isNestedExample,
   playgroundOperation,
   type DemoItem,
   type DemoState,
@@ -36,9 +40,25 @@ interface DemoCommands {
   reset(): void;
 }
 
-function ItemCard({ item, withHandle }: { item: DemoItem; withHandle: boolean }): ReactElement {
+const ComponentHost = forwardRef<HTMLElement, HTMLAttributes<HTMLElement>>(
+  function ComponentHost(props, ref) {
+    return <section {...props} ref={ref} data-demo-component-host="react" />;
+  },
+);
+
+function ItemCard({
+  item,
+  withHandle,
+  children,
+  ...itemProps
+}: {
+  item: DemoItem;
+  withHandle: boolean;
+  children?: ReactNode;
+} & HTMLAttributes<HTMLElement>): ReactElement {
   return (
     <article
+      {...itemProps}
       className={`cs-demo-card cs-demo-card--${item.tone}`}
       data-sortable-id={item.id}
       role="listitem"
@@ -46,6 +66,7 @@ function ItemCard({ item, withHandle }: { item: DemoItem; withHandle: boolean })
     >
       {withHandle && <button type="button" className="cs-demo-handle" aria-label={`Drag ${item.title}`}>⠿</button>}
       <span className="cs-demo-card__copy"><strong>{item.title}</strong><small>{item.detail}</small></span>
+      {children}
     </article>
   );
 }
@@ -75,7 +96,7 @@ function Demo({
           }
         : 'playground'
   ), [input.exampleId]);
-  const setItems = (areaId: 'todo' | 'done', items: readonly DemoItem[]): void => {
+  const setItems = (areaId: 'todo' | 'done' | 'child', items: readonly DemoItem[]): void => {
     setState((current) => ({ ...current, [areaId]: [...items] }));
   };
   const event = (name: string, result?: AfterDragResult): void => {
@@ -90,6 +111,8 @@ function Demo({
     expose({
       dispatch(controlId, value) {
         if (controlId === 'accept-destination' && typeof value === 'boolean') setAllowed(value);
+        if (controlId === 'reverse-items') setState((current) => ({ ...current, todo: [...current.todo].reverse() }));
+        if (controlId === 'reverse-child') setState((current) => ({ ...current, child: [...current.child].reverse() }));
       },
       reset() {
         copySequence.current = 0;
@@ -101,17 +124,57 @@ function Demo({
     return () => expose(null);
   }, [bridge, expose, input.exampleId]);
 
+  const animation = input.exampleId === 'transition'
+    ? 180
+    : input.exampleId === 'transitions'
+      ? { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }
+      : false;
+  const itemCard = (item: DemoItem, nested = false): ReactElement => (
+    <ItemCard item={item} withHandle={input.exampleId === 'handle'}>
+      {nested && item.id === 'research' ? childArea() : undefined}
+    </ItemCard>
+  );
+  function childArea(): ReactElement {
+    return (
+      <div className="cs-demo-nested-shell">
+        <strong>Research children</strong>
+        <SortableArea
+          as={input.exampleId === 'functional-third-party' ? ComponentHost : 'div'}
+          areaProps={{ className: 'cs-demo-list cs-demo-list--nested', role: 'list', 'data-demo-area': 'child' } as HTMLAttributes<HTMLElement>}
+          areaId="child"
+          group="playground"
+          parent={{ areaId: 'todo', itemId: 'research' }}
+          items={state.child}
+          itemKey="id"
+          animation={160}
+          onItemsChange={(items) => setItems('child', items)}
+        >
+          {(item) => <ItemCard item={item} withHandle={false} />}
+        </SortableArea>
+      </div>
+    );
+  }
+
   const area = (areaId: 'todo' | 'done', items: readonly DemoItem[]): ReactElement => (
     <section className="cs-demo-column" data-demo-column={areaId}>
       <header><div><strong>{areaId === 'todo' ? 'To do' : 'Done'}</strong><small>{items.length} items</small></div></header>
       <div role="list" className="cs-demo-list-shell">
         <SortableArea
+          as={input.exampleId === 'third-party' || input.exampleId === 'functional-third-party' ? ComponentHost : 'div'}
+          areaProps={{ className: 'cs-demo-list', role: 'list', 'data-demo-area': areaId } as HTMLAttributes<HTMLElement>}
           areaId={areaId}
           group={areaId === 'todo' ? todoGroup : 'playground'}
           items={items}
           itemKey="id"
           handle={input.exampleId === 'handle' ? '.cs-demo-handle' : undefined}
           autoScroll={input.exampleId === 'auto-scroll'}
+          animation={animation}
+          header={input.exampleId === 'header-slot' || input.exampleId === 'two-list-slots'
+            ? <div className="cs-demo-slot" data-demo-slot="header">Pinned header</div>
+            : undefined}
+          footer={input.exampleId === 'footer-slot' || input.exampleId === 'two-list-slots'
+            ? <div className="cs-demo-slot" data-demo-slot="footer">Pinned footer</div>
+            : undefined}
           emptyInsertThreshold={areaId === 'done' && input.exampleId === 'empty' ? 42 : undefined}
           accept={areaId === 'done' && input.exampleId === 'accept' ? () => allowed : undefined}
           copyItem={areaId === 'todo' && isCopyExample(input.exampleId)
@@ -119,10 +182,45 @@ function Demo({
             : undefined}
           onItemsChange={(nextItems) => setItems(areaId, nextItems)}
         >
-          {(item) => <ItemCard item={item} withHandle={input.exampleId === 'handle'} />}
+          {(item) => itemCard(item, isNestedExample(input.exampleId) && areaId === 'todo')}
         </SortableArea>
       </div>
     </section>
+  );
+
+  const table = (): ReactElement => input.exampleId === 'table-column' ? (
+    <table className="cs-demo-table" data-demo-column="todo">
+      <thead>
+        <SortableArea
+          as="tr"
+          areaProps={{ 'data-demo-area': 'todo' } as HTMLAttributes<HTMLElement>}
+          areaId="todo"
+          items={state.todo}
+          itemKey="id"
+          direction="horizontal"
+          animation={160}
+          onItemsChange={(items) => setItems('todo', items)}
+        >
+          {(item) => <th data-sortable-id={item.id} scope="col">{item.title}</th>}
+        </SortableArea>
+      </thead>
+      <tbody><tr>{state.todo.map((item) => <td key={item.id}>{item.detail}</td>)}</tr></tbody>
+    </table>
+  ) : (
+    <table className="cs-demo-table" data-demo-column="todo">
+      <thead><tr><th>Task</th><th>Detail</th></tr></thead>
+      <SortableArea
+        as="tbody"
+        areaProps={{ 'data-demo-area': 'todo' } as HTMLAttributes<HTMLElement>}
+        areaId="todo"
+        items={state.todo}
+        itemKey="id"
+        animation={160}
+        onItemsChange={(items) => setItems('todo', items)}
+      >
+        {(item) => <tr data-sortable-id={item.id}><th scope="row">{item.title}</th><td>{item.detail}</td></tr>}
+      </SortableArea>
+    </table>
   );
 
   const onChange = (change: FrameworkSortableChange<DemoItem>): void => {
@@ -138,8 +236,10 @@ function Demo({
       onChange={onChange}
       onAfterDrag={(result) => event('afterDrag', result)}
     >
-      <div className={`cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}`}>
-        {area('todo', state.todo)}
+      <div className={`cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}`}>
+        {input.exampleId === 'table' || input.exampleId === 'table-column'
+          ? table()
+          : area('todo', state.todo)}
         {secondArea && area('done', state.done)}
       </div>
     </SortableRoot>

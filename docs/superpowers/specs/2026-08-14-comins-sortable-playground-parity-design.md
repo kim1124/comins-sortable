@@ -407,6 +407,14 @@ Playwright WebKit은 Safari 인증이 아니다. physical touch/pen과 실제 Sa
 결과는 preview로 보고할 수 있지만, 17개 parity와 추가 example 전체가 통과하기 전에는
 기능 parity 완료를 주장하지 않는다.
 
+## 10.1 구현 상태 (2026-08-25)
+
+- 17개 parity example과 3개 Comins 추가 example을 네 adapter runtime에 구현했다.
+- animation, custom/table/component host, header/footer sibling, nested 및 controlled nested
+  계약을 Core와 adapter public surface에 반영했다.
+- Chromium, Firefox, Playwright WebKit 검증을 완료 조건으로 사용한다. 실제 Safari 검증은
+  별도 evidence로 남기며, physical touch/pen과 모바일 인증은 후순위로 보류한다.
+
 ## 11. 경계
 
 - runtime dependency는 계속 0개다. Vite, React Router와 framework compiler/plugin은

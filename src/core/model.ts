@@ -8,6 +8,18 @@ export interface SortableLocation {
   index: number;
 }
 
+export interface SortableParentLocation {
+  areaId: string;
+  itemId: SortableId;
+}
+
+export interface SortableAnimationOptions {
+  duration: number;
+  easing?: string;
+}
+
+export type SortableAnimation = false | number | SortableAnimationOptions;
+
 export interface SortableOrder {
   areaId: string;
   itemIds: readonly SortableId[];
@@ -94,6 +106,7 @@ export type AfterDragReason =
   | 'blur'
   | 'disabled'
   | 'not-accepted'
+  | 'nested-cycle'
   | 'unmounted'
   | 'state-not-committed'
   | 'destroyed'
@@ -117,6 +130,8 @@ export interface SortableAreaOptions {
   activationDistance?: number;
   emptyInsertThreshold?: number;
   autoScroll?: boolean;
+  animation?: SortableAnimation;
+  parent?: SortableParentLocation;
   accept?: (context: DragContext) => boolean;
   prepareCopy?: (context: CopyItemContext) => SortableId;
 }
@@ -136,6 +151,7 @@ export interface SortableScopeOptions {
 export interface SortableScope {
   registerArea(element: Element, options: SortableAreaOptions): () => void;
   updateArea(areaId: string, patch: SortableAreaPatch): void;
+  refreshArea?(areaId: string): void;
   cancel(): void;
   destroy(): void;
 }

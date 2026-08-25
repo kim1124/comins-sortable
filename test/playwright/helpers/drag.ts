@@ -93,6 +93,7 @@ export async function movePointerOutside(page: Page): Promise<void> {
 
 export async function beginDrag(page: Page, areaId: string, itemId: string) {
   const source = item(page, areaId, itemId);
+  await source.scrollIntoViewIfNeeded();
   const box = await source.boundingBox();
   if (box === null) throw new Error(`Missing sortable item: ${areaId}/${itemId}`);
   const origin = { x: box.x + box.width / 2, y: box.y + box.height / 2 };

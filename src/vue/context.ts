@@ -24,6 +24,7 @@ export interface VueSortableController<T> {
     options: SortableAreaOptions,
   ): () => void;
   updateArea(areaId: string, patch: SortableAreaPatch): void;
+  refreshArea?(areaId: string): void;
   destroy(): void;
 }
 
@@ -87,6 +88,10 @@ export function createVueSortableController<T>(
       const binding = bindings.get(areaId);
       if (binding === undefined) throw new SortableError('INVALID_OPTION');
       scope.updateArea(areaId, withCopyPreparation(patch, binding, transaction));
+    },
+    refreshArea(areaId) {
+      if (bindings.get(areaId) === undefined) throw new SortableError('INVALID_OPTION');
+      scope.refreshArea?.(areaId);
     },
     destroy() {
       if (destroyed) return;
