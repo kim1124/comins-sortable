@@ -1,0 +1,16 @@
+body { margin: 0; font: 16px system-ui, sans-serif; color: #1f2937; }
+main { margin: 24px auto; max-width: 720px; }
+[data-test-scroll] { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-height: 280px; overflow: auto; padding: 16px; border: 1px solid #cbd5e1; }
+[data-test-scroll].scrollable { height: 120px; max-height: 120px; }
+[data-test-scroll] > [data-test-scroll-spacer] { grid-column: 1 / -1; height: 720px; pointer-events: none; }
+[data-comins-sortable-area] { min-height: 52px; display: grid; gap: 12px; padding: 8px; border: 1px solid #94a3b8; }
+[data-comins-sortable-area].horizontal { display: flex; align-items: start; gap: 24px; }
+[data-comins-sortable-area].horizontal > [data-sortable-id="a"] { width: 64px; }
+[data-comins-sortable-area].horizontal > [data-sortable-id="b"] { width: 128px; }
+[data-comins-sortable-area].horizontal.zero-primary-axis { width: 0; min-width: 0; padding: 0; border-width: 0; gap: 0; overflow: visible; }
+[data-sortable-id] { box-sizing: border-box; min-height: 36px; padding: 8px; border: 1px solid #475569; border-radius: 4px; background: #fff; cursor: grab; }
+[data-comins-sortable-placeholder] { border: 1px dashed #0284c7; background: #e0f2fe; transition: transform 120ms linear; }
+[data-comins-sortable-over] { outline: 2px solid #38bdf8; }
+button { margin-top: 16px; }
+output { display: block; margin-top: 12px; min-height: 1.2em; }
+@media (prefers-reduced-motion: reduce) { [data-comins-sortable-dragging], [data-comins-sortable-placeholder] { transition: none !important; } }

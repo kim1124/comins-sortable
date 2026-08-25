@@ -1,0 +1,15 @@
+.comins-sortable__placeholder {
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+[data-comins-sortable-dragging] {
+  cursor: grabbing;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-comins-sortable-dragging] {
+    transition: none !important;
+  }
+}

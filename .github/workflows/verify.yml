@@ -81,6 +81,41 @@ jobs:
       - name: Check tracked third-party material
         run: node scripts/check-licenses.mjs
       - name: Run security contract tests
-        run: node --test test/*.node.mjs
+        run: node --test test/license-gates.node.mjs test/sensitive-data-gates.node.mjs
       - name: Check reviewed diff
         run: git diff --check "$BASE_SHA..$HEAD_SHA"
+
+  verify:
+    name: Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run verify
+
+  browser:
+    name: Browser
+    needs:
+      - security
+      - verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install playwright install --with-deps chromium firefox webkit
+      - run: npm run verify:e2e
+      - run: npm run verify:playground
