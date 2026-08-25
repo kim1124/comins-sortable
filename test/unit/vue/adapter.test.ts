@@ -349,7 +349,7 @@ test('public components SSR-render a provider-only Root and one direct Area div'
     }, { item: ({ item }: { item: Task }) => h('span', item.id) }),
   }));
 
-  assert.equal(markup, '<!--[--><div data-comins-sortable-area="todo"><!--[--><span>a</span><!--]--></div><!--]-->');
+  assert.equal(markup, '<!--[--><div data-comins-sortable-area="todo"><span data-comins-sortable-item>a</span></div><!--]-->');
 });
 
 function binding(areaId: string, element: Element, modelValue: readonly Task[]) {

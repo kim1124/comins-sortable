@@ -9,8 +9,9 @@ TypeScript Core.
 The repository has an approved private development package boundary. Its
 Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
 reorder, transfer, and copy interactions with commit verification and rollback.
-The Playground currently provides 9 routes. Six implement the 17 planned
-Vue.Draggable parity contracts; Empty Destination, Accept/Reject, and Auto
+The Playground currently provides 20 routes. Seventeen implement the planned
+Vue.Draggable parity contracts, including animation, custom hosts, non-item
+siblings, and nested sortable areas. Empty Destination, Accept/Reject, and Auto
 Scroll are additional Comins examples. Runtime dependencies are not allowed.
 React, React DOM, Vue, and Svelte are optional peers.
 
@@ -48,5 +49,6 @@ the package name, SPDX expression, and use surface.
 
 The automated browser gate covers Chromium, Firefox, and Playwright WebKit.
 Playwright WebKit is engine-compatibility evidence, not Safari certification.
-Actual Safari and physical touch or pen input remain uncertified until they are
-verified on the corresponding browser and devices.
+Actual Safari remains uncertified until it is verified in Safari. Physical
+touch or pen certification is intentionally deferred and is not implied by the
+automated Pointer Events coverage.

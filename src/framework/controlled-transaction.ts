@@ -7,7 +7,7 @@ import type {
   SortableChange,
 } from '../core/model.js';
 import type { BindingSnapshot, FrameworkAreaBinding } from './bindings.js';
-import { BindingRegistry } from './bindings.js';
+import { BindingRegistry, renderedItemElements } from './bindings.js';
 
 export interface ControlledTransaction<T> {
   prepareCopy(areaId: string, context: CopyItemContext): string | number;
@@ -102,9 +102,7 @@ export class ControlledTransaction<T> implements ControlledTransaction<T> {
       if (!sameIds(items.map((item) => binding.getItemId(item)), order.itemIds)) {
         return false;
       }
-      const renderedItems = Array.from(element.children).filter(
-        (child) => !child.hasAttribute('data-comins-sortable-placeholder'),
-      );
+      const renderedItems = renderedItemElements(binding, element);
       if (renderedItems.length !== items.length) {
         return false;
       }

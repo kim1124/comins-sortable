@@ -7,6 +7,7 @@ import {
   demoModel,
   hasSecondArea,
   isCopyExample,
+  isNestedExample,
   playgroundOperation,
   type DemoItem,
 } from './demo-data.js';
@@ -53,6 +54,55 @@ function area(areaId: 'todo' | 'done', title: string, items: readonly DemoItem[]
   return section;
 }
 
+function slot(position: 'header' | 'footer'): HTMLElement {
+  const element = document.createElement('div');
+  element.className = 'cs-demo-slot';
+  element.dataset.demoSlot = position;
+  element.textContent = `Pinned ${position}`;
+  return element;
+}
+
+function table(items: readonly DemoItem[], columns: boolean): { table: HTMLTableElement; area: HTMLElement } {
+  const element = document.createElement('table');
+  element.className = 'cs-demo-table';
+  element.dataset.demoColumn = 'todo';
+  if (columns) {
+    const thead = element.createTHead();
+    const row = thead.insertRow();
+    row.dataset.demoArea = 'todo';
+    for (const item of items) {
+      const heading = document.createElement('th');
+      heading.className = 'cs-demo-column-header';
+      heading.dataset.sortableId = item.id;
+      heading.scope = 'col';
+      heading.textContent = item.title;
+      row.append(heading);
+    }
+    const detail = element.createTBody().insertRow();
+    for (const item of items) detail.insertCell().textContent = item.detail;
+    return { table: element, area: row };
+  }
+  const heading = element.createTHead().insertRow();
+  for (const label of ['Task', 'Detail']) {
+    const cell = document.createElement('th');
+    cell.textContent = label;
+    heading.append(cell);
+  }
+  const body = element.createTBody();
+  body.dataset.demoArea = 'todo';
+  for (const item of items) {
+    const row = body.insertRow();
+    row.className = 'cs-demo-row';
+    row.dataset.sortableId = item.id;
+    const title = document.createElement('th');
+    title.scope = 'row';
+    title.textContent = item.title;
+    row.append(title);
+    row.insertCell().textContent = item.detail;
+  }
+  return { table: element, area: body };
+}
+
 export const vanillaDemoModule: PlaygroundDemoModule = {
   adapterId: 'vanilla',
   source,
@@ -70,6 +120,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
       );
       const model: Record<string, readonly string[]> = { todo: read('todo') };
       if (hasSecondArea(input.exampleId)) model.done = read('done');
+      if (isNestedExample(input.exampleId)) model.child = read('child');
       bridge.publishModel(model);
     };
 
@@ -82,19 +133,59 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
       const state = createDemoState(input.exampleId);
       copySequence = 0;
       itemsById = new Map(
-        [...state.todo, ...state.done].map((item) => [item.id, item]),
+        [...state.todo, ...state.done, ...state.child].map((item) => [item.id, item]),
       );
       allowed = true;
       container.replaceChildren();
 
       const board = document.createElement('div');
-      board.className = `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}`;
-      const todo = area('todo', input.locale === 'ko' ? '진행할 작업' : 'To do', state.todo, input.exampleId === 'handle');
-      board.append(todo);
+      board.className = `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}`;
+      let todo: HTMLElement;
+      let todoList: HTMLElement;
+      if (input.exampleId === 'table' || input.exampleId === 'table-column') {
+        const rendered = table(state.todo, input.exampleId === 'table-column');
+        todo = rendered.table;
+        todoList = rendered.area;
+        board.append(todo);
+      } else {
+        todo = area('todo', input.locale === 'ko' ? '진행할 작업' : 'To do', state.todo, input.exampleId === 'handle');
+        todoList = todo.querySelector<HTMLElement>('[data-demo-area="todo"]')!;
+        if (input.exampleId === 'third-party' || input.exampleId === 'functional-third-party') {
+          todoList.classList.add('cs-demo-component-host');
+          todoList.dataset.demoComponentHost = 'vanilla';
+        }
+        if (input.exampleId === 'header-slot' || input.exampleId === 'two-list-slots') todoList.prepend(slot('header'));
+        if (input.exampleId === 'footer-slot' || input.exampleId === 'two-list-slots') todoList.append(slot('footer'));
+        board.append(todo);
+      }
       let done: HTMLElement | null = null;
       if (hasSecondArea(input.exampleId)) {
         done = area('done', input.locale === 'ko' ? '완료' : 'Done', state.done, input.exampleId === 'handle');
+        const doneList = done.querySelector<HTMLElement>('[data-demo-area="done"]')!;
+        if (input.exampleId === 'two-list-slots') {
+          doneList.prepend(slot('header'));
+          doneList.append(slot('footer'));
+        }
         board.append(done);
+      }
+      let childList: HTMLElement | null = null;
+      if (isNestedExample(input.exampleId)) {
+        const parent = todoList.querySelector<HTMLElement>('[data-sortable-id="research"]')!;
+        const shell = document.createElement('div');
+        shell.className = 'cs-demo-nested-shell';
+        const title = document.createElement('strong');
+        title.textContent = 'Research children';
+        childList = document.createElement('div');
+        childList.className = 'cs-demo-list cs-demo-list--nested';
+        childList.dataset.demoArea = 'child';
+        childList.setAttribute('role', 'list');
+        if (input.exampleId === 'functional-third-party') {
+          childList.classList.add('cs-demo-component-host');
+          childList.dataset.demoComponentHost = 'vanilla';
+        }
+        for (const item of state.child) childList.append(card(item, false));
+        shell.append(title, childList);
+        parent.append(shell);
       }
       container.append(board);
 
@@ -107,7 +198,6 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
         event('afterDrag', result);
         publishModel();
       };
-      const todoList = todo.querySelector<HTMLElement>('[data-demo-area="todo"]')!;
       sortable = createSortable(todoList, {
         areaId: 'todo',
         group: input.exampleId === 'clone' || input.exampleId === 'custom-clone'
@@ -118,7 +208,11 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
                 pull: (context) => context.pointer.altKey ? 'copy' : 'move',
               }
             : 'playground',
-        item: '.cs-demo-card',
+        item: input.exampleId === 'table'
+          ? '.cs-demo-row'
+          : input.exampleId === 'table-column'
+            ? '.cs-demo-column-header'
+            : '.cs-demo-card',
         copyElement: isCopyExample(input.exampleId)
           ? (source) => {
               const sourceItem = itemsById.get(source.getAttribute('data-sortable-id') ?? '');
@@ -130,6 +224,12 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           : undefined,
         handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
         autoScroll: input.exampleId === 'auto-scroll',
+        animation: input.exampleId === 'transition'
+          ? 180
+          : input.exampleId === 'transitions'
+            ? { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }
+            : false,
+        direction: input.exampleId === 'table-column' ? 'horizontal' : undefined,
         onBeforeDragStart: () => event('beforeDragStart'),
         onDragStart: () => event('dragStart'),
         onInsertDragArea: ({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId }),
@@ -145,6 +245,15 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           accept: input.exampleId === 'accept' ? () => allowed : undefined,
         });
       }
+      if (childList !== null) {
+        sortable.registerArea(childList, {
+          areaId: 'child',
+          group: 'playground',
+          item: '.cs-demo-card',
+          parent: { areaId: 'todo', itemId: 'research' },
+          animation: 160,
+        });
+      }
       bridge.publishOperation(null);
       publishModel();
     };
@@ -154,6 +263,14 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
     return {
       dispatch(controlId, value) {
         if (controlId === 'accept-destination' && typeof value === 'boolean') allowed = value;
+        const targetArea = controlId === 'reverse-child' ? 'child' : 'todo';
+        if (controlId === 'reverse-items' || controlId === 'reverse-child') {
+          const target = container.querySelector<HTMLElement>(`[data-demo-area="${targetArea}"]`);
+          const items = Array.from(target?.children ?? []).filter((element) => element.hasAttribute('data-sortable-id'));
+          for (const item of items.reverse()) target?.append(item);
+          sortable?.refreshArea(targetArea);
+          publishModel();
+        }
       },
       reset: render,
       destroy() {

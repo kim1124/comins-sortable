@@ -31,6 +31,7 @@ export interface ScopeFixtureOptions extends SortableScopeOptions {
   groupTodo?: SortableAreaOptions['group'];
   groupDone?: SortableAreaOptions['group'];
   prepareCopy?: (context: CopyItemContext) => SortableId;
+  parentDone?: SortableAreaOptions['parent'];
 }
 
 export interface ScopeFixture {
@@ -142,6 +143,7 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
       : () => true,
     autoScroll: options.autoScroll ?? false,
     prepareCopy: areaId === 'todo' ? options.prepareCopy : undefined,
+    parent: areaId === 'done' ? options.parentDone : undefined,
   });
   const unregister = {
     todo: scope.registerArea(areas.todo, itemOptions('todo')),

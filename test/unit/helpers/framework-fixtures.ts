@@ -244,6 +244,7 @@ export function reactAdapterHarness<T extends Task>(): {
       updateArea(areaId) {
         updates.set(areaId, (updates.get(areaId) ?? 0) + 1);
       },
+      refreshArea() {},
       cancel() {},
       destroy() {},
     };
@@ -474,6 +475,7 @@ export function vueAdapterHarness<T extends Task>(): {
         };
       },
       updateArea() {},
+      refreshArea() {},
       cancel() {},
       destroy() { destroys += 1; },
     };
@@ -599,6 +601,7 @@ export function svelteActionHarness<T extends Task>(): {
       const current = areas.get(areaId);
       if (current !== undefined) areas.set(areaId, { ...current, ...patch });
     },
+    refreshArea() {},
     cancel() {},
     destroy() {
       destroys += 1;

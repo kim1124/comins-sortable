@@ -97,6 +97,13 @@ const areaOptions: SortableAreaOptions = {
   getItemId: (element) => element.getAttribute('data-id') ?? 0,
   prepareCopy: (copyContext) => `${String(copyContext.itemId)}-copy`,
 };
+const nestedAnimatedArea: SortableAreaOptions = {
+  areaId: 'child',
+  item: '[data-sortable-id]',
+  animation: { duration: 180, easing: 'ease-out' },
+  parent: { areaId: 'todo', itemId: 'parent' },
+};
+void nestedAnimatedArea;
 const transferMode: SortableTransferMode = 'copy';
 const groupOptions: SortableGroupOptions = areaOptions.group as SortableGroupOptions;
 const group: SortableGroup = groupOptions;
@@ -106,6 +113,7 @@ const scopeOptions: SortableScopeOptions = {
   onChange: (sortableChange) => void sortableChange,
 };
 const scope: SortableScope = createSortableScope(scopeOptions);
+scope.refreshArea?.('todo');
 
 void [
   key,

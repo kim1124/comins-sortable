@@ -17,6 +17,9 @@ export function createReactRootLifecycle<T>(
     updateArea(areaId, patch) {
       current().updateArea(areaId, patch);
     },
+    refreshArea(areaId) {
+      current().refreshArea?.(areaId);
+    },
     destroy() {
       controller?.destroy();
       controller = null;

@@ -22,6 +22,7 @@ export interface SvelteSortableController<T> {
     options: SortableAreaOptions,
   ): () => void;
   updateArea(areaId: string, patch: SortableAreaPatch): void;
+  refreshArea?(areaId: string): void;
   cancel(): void;
   destroy(): void;
 }
@@ -125,6 +126,10 @@ export function createSvelteSortableController<T>(
       const binding = bindings.get(areaId);
       if (binding === undefined) throw new SortableError('INVALID_OPTION');
       scope.updateArea(areaId, withCopyPreparation(patch, binding, transaction));
+    },
+    refreshArea(areaId) {
+      if (bindings.get(areaId) === undefined) throw new SortableError('INVALID_OPTION');
+      scope.refreshArea?.(areaId);
     },
     cancel() {
       scope.cancel();

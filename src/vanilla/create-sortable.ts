@@ -74,6 +74,9 @@ export function createSortable(
         }
       }
     },
+    refreshArea(areaId: string): void {
+      scope.refreshArea?.(areaId);
+    },
     cancel(): void {
       scope.cancel();
     },

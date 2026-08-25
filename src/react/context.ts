@@ -28,6 +28,7 @@ export interface ReactSortableController<T> {
     options: SortableAreaOptions,
   ): () => void;
   updateArea(areaId: string, patch: SortableAreaPatch): void;
+  refreshArea?(areaId: string): void;
   destroy(): void;
 }
 
@@ -96,6 +97,12 @@ export function createReactSortableController<T>(
         throw new Error('React sortable area is not registered');
       }
       scope.updateArea(areaId, withCopyPreparation(patch, binding, transaction));
+    },
+    refreshArea(areaId) {
+      if (bindings.get(areaId) === undefined) {
+        throw new Error('React sortable area is not registered');
+      }
+      scope.refreshArea?.(areaId);
     },
     destroy() {
       if (destroyed) {

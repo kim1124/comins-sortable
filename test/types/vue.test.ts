@@ -17,6 +17,8 @@ const tasks: readonly Task[] = [{ id: 'a', title: 'A' }];
 const itemSlot: VueSortableAreaSlots<Task>['item'] = ({ item, index }) => (
   h('div', { 'data-index': index }, item.title)
 );
+const headerSlot: NonNullable<VueSortableAreaSlots<Task>['header']> = () => h('header', 'Tasks');
+const footerSlot: NonNullable<VueSortableAreaSlots<Task>['footer']> = () => h('footer', `${tasks.length} total`);
 
 h(SortableRoot<Task>, {
   onChange(change) {
@@ -33,12 +35,18 @@ h(SortableRoot<Task>, {
       ...item,
       id: `${item.id}-${context.destination.areaId}`,
     }),
+    tag: 'section',
+    componentProps: { class: 'task-list' },
+    animation: 180,
+    parent: { areaId: 'root', itemId: 'parent' },
     'onUpdate:modelValue': (next) => {
       const task: Task | undefined = next[0];
       void task;
     },
   }, {
     item: itemSlot,
+    header: headerSlot,
+    footer: footerSlot,
   }),
 });
 

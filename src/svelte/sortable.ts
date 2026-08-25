@@ -4,9 +4,11 @@ import type {
   DragContext,
   ItemKey,
   SortableAreaOptions,
+  SortableAnimation,
   SortableDirection,
   SortableGroup,
   SortableId,
+  SortableParentLocation,
 } from '../core/model.js';
 import type { FrameworkAreaBinding } from '../framework/bindings.js';
 import { resolveItemId } from '../framework/item-key.js';
@@ -35,6 +37,9 @@ export interface SvelteSortableOptions<T> {
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
+  animation?: SortableAnimation;
+  parent?: SortableParentLocation;
+  item?: string;
 }
 
 export interface SvelteActionReturn<T> {
@@ -140,6 +145,7 @@ function updateAction<T>(state: ActionState<T>, nextOptions: SvelteSortableOptio
   const nextAreaOptions = areaOptionsFor(state, nextOptions);
   const areaOptionsChanged = state.registeredOptions !== null
     && !sameOptions(state.registeredOptions, nextAreaOptions);
+  const itemsChanged = currentOptions.items !== nextOptions.items;
   state.options = nextOptions;
   if (areaOptionsChanged) {
     try {
@@ -149,6 +155,8 @@ function updateAction<T>(state: ActionState<T>, nextOptions: SvelteSortableOptio
       state.options = currentOptions;
       throw error;
     }
+  } else if (itemsChanged && nextAreaOptions.animation !== false && nextAreaOptions.animation !== undefined) {
+    controllerForScope(requireScope(state.scope)).refreshArea?.(currentOptions.areaId);
   }
 }
 
@@ -305,6 +313,13 @@ function createBinding<T>(
     getItemId: (item) => resolveItemId(item, getOptions().itemKey),
     setItems: (items) => getOptions().onItemsChange(items),
     getElement,
+    getItemElements: () => {
+      const area = getElement();
+      const selector = getOptions().item ?? ':scope > *';
+      return Array.from(area.querySelectorAll(selector)).filter(
+        (child) => child.parentElement === area && !child.hasAttribute('data-comins-sortable-placeholder'),
+      );
+    },
     copyItem: (context) => {
       const current = getOptions();
       const item = current.items[context.source.index];
@@ -324,8 +339,9 @@ export function itemIdForElement<T>(
     const area = getArea();
     const options = getOptions();
     if (element.parentElement !== area) throw new SortableError('INVALID_ELEMENT');
-    const children = Array.from(area.children).filter(
-      (child) => !child.hasAttribute('data-comins-sortable-placeholder'),
+    const selector = options.item ?? ':scope > *';
+    const children = Array.from(area.querySelectorAll(selector)).filter(
+      (child) => child.parentElement === area && !child.hasAttribute('data-comins-sortable-placeholder'),
     );
     if (children.length !== options.items.length) throw new SortableError('INVALID_ELEMENT');
     const index = children.indexOf(element);
@@ -342,7 +358,7 @@ function toAreaOptions<T>(
   return {
     areaId: options.areaId,
     group: options.group,
-    item: ':scope > *',
+    item: options.item ?? ':scope > *',
     getItemId,
     direction: options.direction,
     disabled: options.disabled,
@@ -351,6 +367,8 @@ function toAreaOptions<T>(
     activationDistance: options.activationDistance,
     emptyInsertThreshold: options.emptyInsertThreshold,
     autoScroll: options.autoScroll,
+    animation: options.animation,
+    parent: options.parent,
     accept: options.accept,
   };
 }
@@ -365,5 +383,17 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && left.activationDistance === right.activationDistance
     && left.emptyInsertThreshold === right.emptyInsertThreshold
     && left.autoScroll === right.autoScroll
+    && sameAnimation(left.animation, right.animation)
+    && left.parent?.areaId === right.parent?.areaId
+    && left.parent?.itemId === right.parent?.itemId
     && left.accept === right.accept;
+}
+
+function sameAnimation(
+  left: SortableAreaOptions['animation'],
+  right: SortableAreaOptions['animation'],
+): boolean {
+  if (left === right) return true;
+  if (typeof left !== 'object' || left === null || typeof right !== 'object' || right === null) return false;
+  return left.duration === right.duration && left.easing === right.easing;
 }

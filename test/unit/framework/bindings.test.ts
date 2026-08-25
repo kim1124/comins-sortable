@@ -77,3 +77,20 @@ test('unregister clears callbacks and cannot remove a replacement binding', () =
   assert.equal(registry.get('todo'), replacement);
   assert.equal(registry.size, 1);
 });
+
+test('custom item elements exclude non-item siblings from structural validation', () => {
+  const registry = new BindingRegistry<{ id: string }>();
+  const binding = renderedArea(
+    'todo',
+    'tasks',
+    [{ id: 'a' }, { id: 'b' }],
+    { renderedItemCount: 4 },
+  );
+
+  registry.register({
+    ...binding,
+    getItemElements: () => [{}, {}] as Element[],
+  });
+
+  assert.doesNotThrow(() => registry.validateElements());
+});
