@@ -51,7 +51,7 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('references Contract v1.7 without copying policy or inventing a package boundary', () => {
+test('adopts the approved private package boundary under Contract v1.7', () => {
   const agents = read('AGENTS.md');
   const readme = read('README.md');
   const security = read('SECURITY.md');
@@ -63,18 +63,25 @@ test('references Contract v1.7 without copying policy or inventing a package bou
   assert.match(agents, /Governance is the only\s+common-policy owner/i);
   assert.match(agents, /module owns their CI implementation/i);
   assert.doesNotMatch(agents, /`codex-<short-feature-name>`|same-commit evidence/i);
-  assert.match(
-    agents,
-    /node scripts\/check-licenses\.mjs && node --test test\/\*\.node\.mjs/,
-  );
+  assert.match(agents, /validate with `npm run verify`/);
+  assert.match(agents, /Vanilla JavaScript,\n  React, Vue, and Svelte/);
   assert.match(security, /credential\/PII incident/i);
   assert.match(security, /npm pack --json --ignore-scripts/);
-  assert.match(verify, /node scripts\/check-licenses\.mjs/);
+  assert.match(readme, /private development package boundary/);
+  assert.match(readme, /Vanilla JavaScript, React, Vue, and Svelte/);
+  assert.match(verify, /npm ci --ignore-scripts/);
+  assert.match(verify, /npm run verify/);
   assert.deepEqual(JSON.parse(read('LICENSE_SCOPE.json')), {
-    schemaVersion: 1,
-    packageBoundary: false,
+    schemaVersion: 2,
+    packageBoundary: true,
+    runtimeDependencies: [],
+    peerDependencies: {
+      react: '>=18.2 <20',
+      'react-dom': '>=18.2 <20',
+      svelte: '>=5 <6',
+      vue: '>=3.5 <4',
+    },
     trackedMaterial: {
-      dependencies: [],
       copiedOrGeneratedCode: [],
       assets: [],
     },
@@ -86,8 +93,25 @@ test('references Contract v1.7 without copying policy or inventing a package bou
   assert.equal(licenseResult.status, 0, licenseResult.stderr);
   assert.equal(licenseResult.stdout, '');
   assert.equal(licenseResult.stderr, '');
-  assert.equal(existsSync(join(root, 'package.json')), false);
+  const manifest = JSON.parse(read('package.json'));
+  assert.equal(manifest.private, true);
+  assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
+  assert.equal(existsSync(join(root, 'package-lock.json')), true);
   assert.equal(existsSync(join(root, '.github/workflows/publish.yml')), false);
+});
+
+test('runs browser gates after security and package verification', () => {
+  const verify = read('.github/workflows/verify.yml');
+  const browserJob = verify.match(/\n  browser:\n[\s\S]*$/)?.[0];
+
+  assert.ok(browserJob);
+  assert.match(browserJob, /needs:\n\s+- security\n\s+- verify/);
+  assert.equal((browserJob.match(/playwright install/g) ?? []).length, 1);
+  assert.match(
+    browserJob,
+    /npx --no-install playwright install --with-deps chromium firefox webkit[\s\S]*npm run verify:e2e[\s\S]*npm run verify:playground/,
+  );
+  assert.doesNotMatch(browserJob, /- run: npm run verify$/m);
 });
 
 test('pins shared Gitleaks, hooks, and the credential-free workflow', () => {
@@ -120,7 +144,10 @@ test('pins shared Gitleaks, hooks, and the credential-free workflow', () => {
   assert.match(verify, /persist-credentials: false/);
   assert.match(verify, /check-public-identities\.mjs "\$BASE_SHA" "\$HEAD_SHA"/);
   assert.match(verify, /--log-opts="\$BASE_SHA\.\.\$HEAD_SHA"/);
-  assert.match(verify, /node --test test\/\*\.node\.mjs/);
+  assert.match(
+    verify,
+    /node --test test\/license-gates\.node\.mjs test\/sensitive-data-gates\.node\.mjs/,
+  );
 });
 
 test('accepts a matching public noreply identity', () => {
