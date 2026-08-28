@@ -32,10 +32,10 @@ const cleanScope = {
 };
 const cleanManifest = {
   name: 'comins-sortable',
-  version: '0.0.0-development',
-  private: true,
+  version: '0.1.0',
   type: 'module',
   license: 'MIT',
+  publishConfig: { access: 'public' },
   peerDependencies: peers,
   peerDependenciesMeta: peerMeta,
 };

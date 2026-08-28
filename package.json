@@ -1,7 +1,6 @@
 {
   "name": "comins-sortable",
-  "version": "0.0.0-development",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -12,6 +11,9 @@
     "url": "https://github.com/kim1124/comins-sortable/issues"
   },
   "homepage": "https://github.com/kim1124/comins-sortable#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "README.md",
@@ -47,6 +49,7 @@
   "scripts": {
     "build": "node scripts/build-package.mjs",
     "dev": "vite --config vite.example.config.ts",
+    "check:npm-maintainer": "node scripts/check-npm-maintainer.mjs",
     "check:licenses": "node scripts/check-licenses.mjs",
     "lint": "npm run typecheck",
     "typecheck": "tsc --noEmit",
@@ -54,6 +57,7 @@
     "test:run": "node scripts/run-unit-tests.mjs",
     "test:policy": "node --test --test-concurrency=1 test/*.node.mjs",
     "test:types": "tsc -p test/types/tsconfig.json --noEmit",
+    "test:consumer": "node scripts/consumer-smoke.mjs",
     "example:build": "node scripts/build-browser-fixtures.mjs",
     "example:serve": "node scripts/serve-browser-fixtures.mjs",
     "playground:build": "vite build --config vite.example.config.ts",
@@ -62,6 +66,7 @@
     "test:playground": "playwright test --config=playwright.playground.config.ts",
     "verify:e2e": "npm run test:e2e",
     "verify:playground": "npm run playground:build && npm run test:playground",
+    "verify:package-artifact": "node scripts/verify-package-artifact.mjs",
     "verify:full": "npm run verify && npm run verify:e2e",
     "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types"
   },

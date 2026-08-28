@@ -89,6 +89,7 @@ const DATA_ASSET_NAME = /^(?:data|dataset|metadata)(?:[._-].*)?\.(?:csv|json|jso
 const ASSET_EXTENSION = /\.(?:a|apk|avif|bin|bmp|class|deb|dll|dylib|eot|exe|gif|gz|ico|jar|jpe?g|lib|mp3|mp4|node|o|ogg|otf|pdf|png|rpm|so(?:\.\d+)*|svg|tar|tgz|ttf|wav|wasm|webm|webp|whl|woff2?|zip)$/i;
 const SAFE_PACKAGE_NAME = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i;
 const SAFE_LICENSE = /^(?:UNKNOWN|[A-Za-z0-9.+()-]+(?: (?:AND|OR|WITH) [A-Za-z0-9.+()-]+)*)$/;
+const EXACT_SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 const SURFACES = new Set(['development', 'optional', 'peer', 'runtime']);
 
 class ReviewRequired extends Error {
@@ -145,6 +146,23 @@ function optionalPeerMeta() {
   );
 }
 
+function validatePublicManifest(manifest) {
+  if (!isObject(manifest)
+    || manifest.name !== 'comins-sortable'
+    || typeof manifest.version !== 'string'
+    || !EXACT_SEMVER.test(manifest.version)
+    || Object.hasOwn(manifest, 'private')
+    || manifest.type !== 'module'
+    || manifest.license !== 'MIT'
+    || !hasExactKeys(manifest.publishConfig, ['access'])
+    || manifest.publishConfig.access !== 'public'
+    || Object.hasOwn(manifest, 'dependencies')
+    || !sameJson(manifest.peerDependencies, peerRanges)
+    || !sameJson(manifest.peerDependenciesMeta, optionalPeerMeta())) {
+    throw new Error('invalid manifest');
+  }
+}
+
 function parseScope(root) {
   const scope = readJson(root, 'LICENSE_SCOPE.json');
   if (!hasExactKeys(scope, [
@@ -171,20 +189,11 @@ function parseScope(root) {
 function parsePackageBoundary(root) {
   const manifest = readJson(root, 'package.json');
   const lock = readJson(root, 'package-lock.json');
-  const expectedPeerMeta = optionalPeerMeta();
   const lockRoot = lock.packages?.[''];
 
-  if (!isObject(manifest) || !isObject(lock) || !isObject(lock.packages)
+  if (!isObject(lock) || !isObject(lock.packages)
     || !isObject(lockRoot)) throw new Error('invalid package boundary');
-  if (manifest.name !== 'comins-sortable'
-    || manifest.version !== '0.0.0-development'
-    || manifest.private !== true
-    || manifest.license !== 'MIT'
-    || Object.hasOwn(manifest, 'dependencies')
-    || !sameJson(manifest.peerDependencies, peerRanges)
-    || !sameJson(manifest.peerDependenciesMeta, expectedPeerMeta)) {
-    throw new Error('invalid manifest');
-  }
+  validatePublicManifest(manifest);
   if (lock.lockfileVersion !== 3
     || lock.name !== manifest.name
     || lock.version !== manifest.version
@@ -192,11 +201,80 @@ function parsePackageBoundary(root) {
     || lockRoot.version !== manifest.version
     || Object.hasOwn(lockRoot, 'dependencies')
     || !sameJson(lockRoot.peerDependencies, peerRanges)
-    || !sameJson(lockRoot.peerDependenciesMeta, expectedPeerMeta)) {
+    || !sameJson(lockRoot.peerDependenciesMeta, optionalPeerMeta())) {
     throw new Error('invalid lock root');
   }
 
   return lock.packages;
+}
+
+function readPackedFile(filename, path) {
+  return execFileSync('tar', ['-xOzf', filename, `package/${path}`], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+}
+
+function checkArtifact(root, filename) {
+  if (typeof filename !== 'string'
+    || basename(filename) !== filename
+    || !/^[a-z0-9._-]+\.tgz$/i.test(filename)) {
+    throw new Error('invalid artifact');
+  }
+  const sourceManifest = readJson(root, 'package.json');
+  const packedManifest = JSON.parse(readPackedFile(filename, 'package.json'));
+  validatePublicManifest(sourceManifest);
+  validatePublicManifest(packedManifest);
+  for (const key of [
+    'name',
+    'version',
+    'license',
+    'type',
+    'files',
+    'sideEffects',
+    'exports',
+    'peerDependencies',
+    'peerDependenciesMeta',
+    'publishConfig',
+  ]) {
+    if (!sameJson(packedManifest[key], sourceManifest[key])) {
+      throw new Error('artifact manifest drift');
+    }
+  }
+  if (readPackedFile(filename, 'LICENSE') !== readFileSync(join(root, 'LICENSE'), 'utf8')) {
+    throw new Error('license drift');
+  }
+
+  const entries = execFileSync('tar', ['-tzf', filename], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).split('\n').filter(Boolean);
+  if (entries.length === 0
+    || entries.some((entry) => !entry.startsWith('package/') || /(^|\/)node_modules\//.test(entry))) {
+    throw new Error('invalid artifact contents');
+  }
+  for (const entry of entries.filter((path) => /^package\/dist\/.*\.js$/.test(path))) {
+    const source = readPackedFile(filename, entry.slice('package/'.length));
+    if (/(?:^|\n)\/\/#region node_modules\//.test(source)) {
+      throw new Error('bundled third-party source');
+    }
+  }
+  for (const entry of entries.filter((path) => /^package\/dist\/.*\.js\.map$/.test(path))) {
+    const sourceMap = JSON.parse(readPackedFile(filename, entry.slice('package/'.length)));
+    const sources = Array.isArray(sourceMap.sources) ? sourceMap.sources : [];
+    if (sourceMap.sourceRoot !== ''
+      || (Array.isArray(sourceMap.sourcesContent)
+        && sourceMap.sourcesContent.some((source) => typeof source === 'string' && source !== ''))
+      || sources.some((source) => {
+        const normalized = String(source).replaceAll('\\', '/');
+        return normalized.startsWith('/')
+          || /^[A-Za-z]:\//.test(normalized)
+          || normalized.startsWith('file:')
+          || /(^|\/)node_modules\//.test(normalized);
+      })) {
+      throw new Error('unsafe source map');
+    }
+  }
 }
 
 function trackedPaths(root) {
@@ -264,22 +342,28 @@ function safeReview(error) {
 }
 
 try {
-  if (process.argv.length !== 2) throw new Error('invalid arguments');
+  const args = process.argv.slice(2);
   const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
   if (root === '') throw new Error('missing root');
 
-  parseScope(root);
-  const packages = parsePackageBoundary(root);
-  const paths = trackedPaths(root);
-  if (paths.some((path) => (
-    (isDependency(path) && !REVIEWED_DEPENDENCY_FILES.has(path))
-    || isCopiedOrGenerated(path)
-    || isAsset(path)
-  ))) throw new Error('tracked material requires review');
-  checkLockLicenses(packages);
+  if (args.length === 0) {
+    parseScope(root);
+    const packages = parsePackageBoundary(root);
+    const paths = trackedPaths(root);
+    if (paths.some((path) => (
+      (isDependency(path) && !REVIEWED_DEPENDENCY_FILES.has(path))
+      || isCopiedOrGenerated(path)
+      || isAsset(path)
+    ))) throw new Error('tracked material requires review');
+    checkLockLicenses(packages);
+  } else if (args.length === 2 && args[0] === '--artifact') {
+    checkArtifact(root, args[1]);
+  } else {
+    throw new Error('invalid arguments');
+  }
 } catch (error) {
   if (safeReview(error)) {
     process.stderr.write(

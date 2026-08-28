@@ -1,12 +1,12 @@
 # Comins Sortable
 
-Comins Sortable is an independent npm frontend module that will provide sortable
+Comins Sortable is an independent npm frontend module that provides sortable
 interaction for Vanilla JavaScript, React, Vue, and Svelte over one Vanilla
 TypeScript Core.
 
 ## Status
 
-The repository has an approved private development package boundary. Its
+The public package is `comins-sortable@0.1.0`. Its
 Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
 reorder, transfer, and copy interactions with commit verification and rollback.
 The Playground currently provides 20 routes. Seventeen implement the planned
@@ -15,9 +15,14 @@ siblings, and nested sortable areas. Empty Destination, Accept/Reject, and Auto
 Scroll are additional Comins examples. Runtime dependencies are not allowed.
 React, React DOM, Vue, and Svelte are optional peers.
 
-The development package is `private` and uses version
-`0.0.0-development`. Publishing, release versions, tags, and GitHub Releases
-require separate maintainer approval.
+Version `0.1.0` is the initial public release. Tags and GitHub Releases remain
+separately maintainer-gated.
+
+## Installation
+
+```sh
+npm install comins-sortable
+```
 
 ## Governance
 

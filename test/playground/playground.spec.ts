@@ -14,13 +14,22 @@ async function model(page: Page): Promise<Record<string, string[]>> {
   return JSON.parse(await page.locator('[data-playground-model]').innerText()) as Record<string, string[]>;
 }
 
+async function lastOperation(page: Page): Promise<string | null> {
+  const raw = await page.locator('[data-playground-operation]').innerText();
+  const operation = JSON.parse(raw) as { operation: string } | null;
+  return operation?.operation ?? null;
+}
+
 test('normalizes routes, keeps locale on navigation, and renders actual source', async ({ page }) => {
   await page.goto('/unknown');
   await expect(page).toHaveURL('/examples/simple/react');
   await waitForRuntime(page);
+  await expect(page.locator('.cs-playground__brand-mark')).toHaveText('co');
   await expect(page.getByRole('heading', { name: '기본 정렬' })).toBeVisible();
-  await expect(page.locator('.cs-playground__parity-note')).toContainText('17 / 17 examples');
-  await expect(page.locator('.cs-playground__parity-note')).toContainText('전체 route 20개');
+  await expect(page.getByRole('tab', { name: '기본 정렬', exact: true })).toBeVisible();
+  await expect(page.getByText('17 / 17 examples')).toHaveCount(0);
+  await expect(page.getByLabel('제어 모델')).toHaveCount(0);
+  await expect(page.getByLabel('마지막 작업')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Switch to English' }).click();
   await expect(page).toHaveURL('/examples/simple/react');
@@ -40,7 +49,7 @@ for (const adapter of adapters) {
 
     await expect.poll(async () => (await model(page)).todo).toEqual(['research', 'build']);
     await expect.poll(async () => (await model(page)).done).toEqual(['design', 'review']);
-    await expect(page.getByLabel('마지막 작업')).toContainText('transfer');
+    await expect.poll(() => lastOperation(page)).toBe('transfer');
     await expect(page.getByLabel('이벤트 타임라인')).toContainText('afterDrag');
     await expect.poll(() => page.locator('[data-comins-sortable-area="done"] > [data-sortable-id]').evaluateAll(
       (elements) => elements.map((element) => element.getAttribute('data-sortable-id')),
@@ -126,7 +135,7 @@ for (const adapter of adapters) {
       .toEqual(['research', 'design', 'build']);
     await expect.poll(async () => (await model(page)).done)
       .toEqual(['design-copy-1', 'review']);
-    await expect(page.getByLabel('마지막 작업')).toContainText('copy');
+    await expect.poll(() => lastOperation(page)).toBe('copy');
     await expect(page.getByLabel('이벤트 타임라인').getByText('change', { exact: true }))
       .toHaveCount(1);
     await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
@@ -159,7 +168,7 @@ for (const adapter of adapters) {
       .toEqual(['research', 'design', 'build']);
     await expect.poll(async () => (await model(page)).done)
       .toEqual(['design-copy-1', 'review']);
-    await expect(page.getByLabel('마지막 작업')).toContainText('copy');
+    await expect.poll(() => lastOperation(page)).toBe('copy');
     await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
 
     await page.getByRole('button', { name: '데이터 초기화' }).click();
@@ -171,7 +180,7 @@ for (const adapter of adapters) {
     await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
     await expect.poll(async () => (await model(page)).todo).toEqual(['research', 'build']);
     await expect.poll(async () => (await model(page)).done).toEqual(['design', 'review']);
-    await expect(page.getByLabel('마지막 작업')).toContainText('transfer');
+    await expect.poll(() => lastOperation(page)).toBe('transfer');
   });
 }
 

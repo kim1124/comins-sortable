@@ -51,7 +51,7 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts the approved private package boundary under Contract v1.7', () => {
+test('adopts the approved public package boundary under Contract v1.7', () => {
   const agents = read('AGENTS.md');
   const readme = read('README.md');
   const security = read('SECURITY.md');
@@ -67,7 +67,7 @@ test('adopts the approved private package boundary under Contract v1.7', () => {
   assert.match(agents, /Vanilla JavaScript,\n  React, Vue, and Svelte/);
   assert.match(security, /credential\/PII incident/i);
   assert.match(security, /npm pack --json --ignore-scripts/);
-  assert.match(readme, /private development package boundary/);
+  assert.match(readme, /public package is `comins-sortable@0\.1\.0`/);
   assert.match(readme, /Vanilla JavaScript, React, Vue, and Svelte/);
   assert.match(verify, /npm ci --ignore-scripts/);
   assert.match(verify, /npm run verify/);
@@ -94,10 +94,11 @@ test('adopts the approved private package boundary under Contract v1.7', () => {
   assert.equal(licenseResult.stdout, '');
   assert.equal(licenseResult.stderr, '');
   const manifest = JSON.parse(read('package.json'));
-  assert.equal(manifest.private, true);
+  assert.equal(manifest.version, '0.1.0');
+  assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
   assert.equal(existsSync(join(root, 'package-lock.json')), true);
-  assert.equal(existsSync(join(root, '.github/workflows/publish.yml')), false);
+  assert.equal(existsSync(join(root, '.github/workflows/publish.yml')), true);
 });
 
 test('runs browser gates after security and package verification', () => {

@@ -26,7 +26,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
   backdrop-filter: blur(12px);
 }
 .cs-playground__brand { align-items: center; color: inherit; display: flex; gap: 12px; text-decoration: none; }
-.cs-playground__brand-mark { align-items: center; background: #153f32; border-radius: 12px; color: #fff; display: flex; font-size: 12px; font-weight: 800; height: 40px; justify-content: center; letter-spacing: .08em; width: 40px; }
+.cs-playground__brand-mark { align-items: center; background: #153f32; border-radius: 12px; color: #fff; display: flex; font-size: 16px; font-weight: 850; height: 40px; justify-content: center; letter-spacing: -.08em; line-height: 1; width: 40px; }
 .cs-playground__brand strong, .cs-playground__brand small { display: block; }
 .cs-playground__brand strong { font-size: 16px; }
 .cs-playground__brand small { color: #728079; font-size: 11px; margin-top: 2px; text-transform: uppercase; }
@@ -37,13 +37,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 .cs-playground__sidebar { background: #fbfcfb; border-right: 1px solid #dce5e0; padding: 28px 18px; }
 .cs-playground__nav-label, .cs-playground__section-label { color: #87938d; font-size: 11px; font-weight: 800; letter-spacing: .12em; margin: 0 10px 12px; text-transform: uppercase; }
 .cs-playground__example-tabs { display: grid; gap: 4px; }
-.cs-playground__example-tab { background: transparent; border: 0; border-radius: 10px; cursor: pointer; display: flex; justify-content: space-between; padding: 12px; text-align: left; width: 100%; }
-.cs-playground__example-tab small { color: #96a19c; font-family: ui-monospace, monospace; }
+.cs-playground__example-tab { background: transparent; border: 0; border-radius: 10px; cursor: pointer; display: block; padding: 12px; text-align: left; width: 100%; }
 .cs-playground__example-tab[aria-selected="true"] { background: #e4f4ec; color: #12583e; font-weight: 750; }
-.cs-playground__parity-note { background: #153f32; border-radius: 14px; color: #fff; display: grid; gap: 7px; margin-top: 28px; padding: 16px; }
-.cs-playground__parity-note strong { font-size: 12px; }
-.cs-playground__parity-note span { color: #8ae2b8; font-size: 22px; font-weight: 800; }
-.cs-playground__parity-note small { color: #c6dbd3; line-height: 1.45; }
 
 .cs-playground__main { min-width: 0; padding: 36px clamp(20px, 4vw, 56px) 64px; }
 .cs-playground__intro { align-items: end; display: flex; justify-content: space-between; gap: 24px; }
@@ -66,7 +61,6 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 .cs-playground__control-actions button { background: #f5f8f6; border: 1px solid #d6e0db; border-radius: 8px; cursor: pointer; padding: 8px 11px; }
 .cs-playground__control-actions button.is-active { background: #dff4e9; border-color: #69b58f; color: #155d40; }
 
-.cs-playground__grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1.6fr) minmax(280px, .8fr); }
 .cs-playground__panel { background: #fff; border: 1px solid #dce5e0; border-radius: 16px; box-shadow: 0 12px 35px rgba(28,60,48,.055); min-width: 0; overflow: hidden; }
 .cs-playground__panel-heading { align-items: center; border-bottom: 1px solid #e4ebe7; color: #728079; display: flex; font-size: 11px; font-weight: 800; justify-content: space-between; letter-spacing: .08em; min-height: 43px; padding: 0 16px; text-transform: uppercase; }
 .cs-playground__workspace { min-height: 420px; }
@@ -76,7 +70,6 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 .cs-playground__status--ready { background: #dcf5e8; color: #176343; }
 .cs-playground__status--loading { background: #fff0cc; color: #755300; }
 .cs-playground__status--error { background: #ffe4e4; color: #a62c2c; }
-.cs-playground__inspectors { display: grid; gap: 20px; }
 .cs-playground__panel pre { background: #17231f; color: #c9f5df; font-size: 12px; line-height: 1.65; margin: 0; max-height: 300px; overflow: auto; padding: 18px; }
 .cs-playground__empty { color: #89958f; font-size: 13px; margin: 0; padding: 20px; }
 .cs-playground__events { margin-top: 20px; }
@@ -129,10 +122,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 @media (max-width: 900px) {
   .cs-playground__body { display: block; }
   .cs-playground__sidebar { border-bottom: 1px solid #dce5e0; border-right: 0; overflow-x: auto; padding: 14px 20px; }
-  .cs-playground__nav-label, .cs-playground__parity-note { display: none; }
+  .cs-playground__nav-label { display: none; }
   .cs-playground__example-tabs { display: flex; width: max-content; }
   .cs-playground__example-tab { min-width: 150px; }
-  .cs-playground__grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {
