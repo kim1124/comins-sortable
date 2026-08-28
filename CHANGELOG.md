@@ -12,6 +12,11 @@ All notable behavior and public API changes to this project are recorded here.
 - Block release automation when any reachable Git commit contains a non-public
   author or committer identity.
 
+### Documentation
+
+- Add a first-party Playground GIF captured from the live React two-list
+  example and list the implementation stack without remote badge services.
+
 ## 0.1.0 - Withdrawn 2026-08-28
 
 Version `0.1.0` was withdrawn after an npm public identity metadata incident and

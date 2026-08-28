@@ -10,6 +10,19 @@
   },
   "trackedMaterial": {
     "copiedOrGeneratedCode": [],
-    "assets": []
+    "assets": [
+      {
+        "path": "docs/assets/sortable-playground.gif",
+        "source": "example/",
+        "origin": "first-party",
+        "license": "MIT",
+        "useSurface": "repository-documentation",
+        "generated": true,
+        "modifications": [
+          "resized",
+          "gif-encoded"
+        ]
+      }
+    ]
   }
 }

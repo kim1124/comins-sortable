@@ -4,6 +4,13 @@ Comins Sortable is an independent npm frontend module that provides sortable
 interaction for Vanilla JavaScript, React, Vue, and Svelte over one Vanilla
 TypeScript Core.
 
+`TypeScript` · `Vanilla JS` · `React` · `Vue` · `Svelte` · `Vite` ·
+`Playwright` · `Zero runtime dependencies`
+
+![Comins Sortable Playground moving a controlled item between React lists](https://raw.githubusercontent.com/kim1124/comins-sortable/main/docs/assets/sortable-playground.gif)
+
+The animation is captured from the real Comins Sortable Playground.
+
 ## Status
 
 The next public candidate is `comins-sortable@0.1.1`. Its

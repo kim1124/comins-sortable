@@ -69,6 +69,17 @@ test('adopts the approved public package boundary under Contract v1.7', () => {
   assert.match(security, /npm pack --json --ignore-scripts/);
   assert.match(readme, /next public candidate is `comins-sortable@0\.1\.1`/);
   assert.match(readme, /Vanilla JavaScript, React, Vue, and Svelte/);
+  assert.match(readme, /docs\/assets\/sortable-playground\.gif/);
+  for (const tag of [
+    'TypeScript',
+    'Vanilla JS',
+    'React',
+    'Vue',
+    'Svelte',
+    'Vite',
+    'Playwright',
+    'Zero runtime dependencies',
+  ]) assert.equal(readme.includes(`\`${tag}\``), true);
   assert.match(verify, /npm ci --ignore-scripts/);
   assert.match(verify, /npm run verify/);
   assert.deepEqual(JSON.parse(read('LICENSE_SCOPE.json')), {
@@ -83,7 +94,15 @@ test('adopts the approved public package boundary under Contract v1.7', () => {
     },
     trackedMaterial: {
       copiedOrGeneratedCode: [],
-      assets: [],
+      assets: [{
+        path: 'docs/assets/sortable-playground.gif',
+        source: 'example/',
+        origin: 'first-party',
+        license: 'MIT',
+        useSurface: 'repository-documentation',
+        generated: true,
+        modifications: ['resized', 'gif-encoded'],
+      }],
     },
   });
   const licenseResult = spawnSync(process.execPath, [licenseChecker], {
