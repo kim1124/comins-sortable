@@ -7,8 +7,6 @@ import {
 
 import {
   adapterIds,
-  parityExampleIds,
-  plannedParityExampleCount,
   playgroundPath,
   resolvePlaygroundRoute,
   type PlaygroundRoute,
@@ -143,7 +141,7 @@ export function PlaygroundApp(): ReactElement {
     <div className="cs-playground">
       <header className="cs-playground__header">
         <a className="cs-playground__brand" href="/examples/simple/react">
-          <span className="cs-playground__brand-mark" aria-hidden="true">CS</span>
+          <span className="cs-playground__brand-mark" aria-hidden="true">co</span>
           <span>
             <strong>{message('brand', locale)}</strong>
             <small>{message('eyebrow', locale)}</small>
@@ -176,16 +174,8 @@ export function PlaygroundApp(): ReactElement {
                 onClick={() => navigate({ ...route, exampleId: item.id })}
               >
                 <span>{item.title[locale]}</span>
-                <small>{item.api[0]}</small>
               </button>
             ))}
-          </div>
-          <div className="cs-playground__parity-note">
-            <strong>Vue.Draggable parity</strong>
-            <span>{parityExampleIds.length} / {plannedParityExampleCount} examples</span>
-            <small>{locale === 'ko'
-              ? `전체 route ${playgroundScenarios.length}개 · 데스크톱 parity 완료`
-              : `${playgroundScenarios.length} total routes · desktop parity complete`}</small>
           </div>
         </aside>
 
@@ -244,32 +234,19 @@ export function PlaygroundApp(): ReactElement {
             </div>
           </section>
 
-          <div className="cs-playground__grid">
-            <section className="cs-playground__panel cs-playground__workspace" aria-label={message('workspace', locale)}>
-              <div className="cs-playground__panel-heading">
-                <span>{message('workspace', locale)}</span>
-                <span className={`cs-playground__status cs-playground__status--${status}`}>
-                  {status === 'ready' ? 'Live' : status}
-                </span>
-              </div>
-              {status === 'loading' && <p className="cs-playground__notice">{message('loading', locale)}</p>}
-              {status === 'error' && <p className="cs-playground__notice" role="alert">{message('error', locale)}</p>}
-              <div ref={runtimeTarget} className="cs-playground__runtime" data-playground-runtime />
-            </section>
-
-            <div className="cs-playground__inspectors">
-              <section className="cs-playground__panel" aria-label={message('model', locale)}>
-                <div className="cs-playground__panel-heading"><span>{message('model', locale)}</span><span>JSON</span></div>
-                <pre data-playground-model>{JSON.stringify(model, null, 2)}</pre>
-              </section>
-              <section className="cs-playground__panel" aria-label={message('operation', locale)}>
-                <div className="cs-playground__panel-heading"><span>{message('operation', locale)}</span></div>
-                {operation === null
-                  ? <p className="cs-playground__empty">{message('emptyOperation', locale)}</p>
-                  : <pre>{JSON.stringify(operation, null, 2)}</pre>}
-              </section>
+          <section className="cs-playground__panel cs-playground__workspace" aria-label={message('workspace', locale)}>
+            <div className="cs-playground__panel-heading">
+              <span>{message('workspace', locale)}</span>
+              <span className={`cs-playground__status cs-playground__status--${status}`}>
+                {status === 'ready' ? 'Live' : status}
+              </span>
             </div>
-          </div>
+            {status === 'loading' && <p className="cs-playground__notice">{message('loading', locale)}</p>}
+            {status === 'error' && <p className="cs-playground__notice" role="alert">{message('error', locale)}</p>}
+            <div ref={runtimeTarget} className="cs-playground__runtime" data-playground-runtime />
+          </section>
+          <output hidden data-playground-model>{JSON.stringify(model)}</output>
+          <output hidden data-playground-operation>{JSON.stringify(operation)}</output>
 
           <section className="cs-playground__panel cs-playground__events" aria-label={message('events', locale)}>
             <div className="cs-playground__panel-heading"><span>{message('events', locale)}</span><span>{events.length}</span></div>

@@ -18,10 +18,10 @@
 
 - The approved v1 scope provides sortable interactions for Vanilla JavaScript,
   React, Vue, and Svelte over one Vanilla TypeScript Core.
-- The approved private development boundary has zero runtime dependencies;
+- The approved public package boundary has zero runtime dependencies;
   optional React, React DOM, Vue, and Svelte peers; and exact ESM exports `.`,
-  `./core`, `./react`, `./vue`, `./svelte`, and `./styles.css`. Publishing,
-  release versions, tags, and Releases remain separately maintainer-gated.
-- The implemented private package boundary must validate with `npm run verify`.
-  Browser and artifact gates apply only when their corresponding implementation
-  tasks add them; do not invent publish gates.
+  `./core`, `./react`, `./vue`, `./svelte`, and `./styles.css`. New release
+  versions, tags, and GitHub Releases remain separately maintainer-gated.
+- The implemented public package boundary must validate with `npm run verify`.
+  Release candidates must additionally pass the exact-artifact, consumer, and
+  browser gates owned by this module.
