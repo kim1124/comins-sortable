@@ -20,6 +20,9 @@ export const exampleIds = [
   'empty',
   'accept',
   'auto-scroll',
+  'tree',
+  'custom-placeholder',
+  'skeleton-placeholder',
 ] as const;
 
 export const parityExampleIds = [

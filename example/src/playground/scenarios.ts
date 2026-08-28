@@ -182,6 +182,36 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
     api: ['autoScroll', 'direction'],
     controls: [resetControl],
   },
+  {
+    id: 'tree',
+    title: { ko: 'Tree API', en: 'Tree API' },
+    description: {
+      ko: '공식 headless Tree 모델로 루트와 자식 collection을 하나의 불변 상태로 연결합니다.',
+      en: 'Connect root and child collections as one immutable value with the official headless Tree model.',
+    },
+    api: ['createSortableTree', 'getAreas', 'updateArea'],
+    controls: [{ id: 'reverse-child', kind: 'button', label: { ko: '자식 순서 뒤집기', en: 'Reverse children' } }, resetControl],
+  },
+  {
+    id: 'custom-placeholder',
+    title: { ko: '커스텀 Placeholder', en: 'Custom placeholder' },
+    description: {
+      ko: '사용자 클래스와 공개 CSS 변수로 드래그 Placeholder 표현을 커스텀합니다.',
+      en: 'Customize drag placeholder feedback with a consumer class and public CSS variables.',
+    },
+    api: ['placeholder.className', '--comins-sortable-placeholder-*'],
+    controls: [resetControl],
+  },
+  {
+    id: 'skeleton-placeholder',
+    title: { ko: 'Skeleton Placeholder', en: 'Skeleton placeholder' },
+    description: {
+      ko: '로딩 UI와 분리된 선택형 Skeleton 드래그 피드백 프리셋을 사용합니다.',
+      en: 'Use the optional skeleton drag-feedback preset, independent of loading UI.',
+    },
+    api: ['placeholder.preset="skeleton"', 'prefers-reduced-motion'],
+    controls: [resetControl],
+  },
 ];
 
 export function scenarioById(id: PlaygroundExampleId): PlaygroundScenario {

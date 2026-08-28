@@ -60,6 +60,7 @@ import type {
   SortableId,
   SortableLocation,
   SortableParentLocation,
+  SortablePlaceholderOptions,
   SortableScope,
   SortableScopeOptions,
   SortableTransferMode,
@@ -79,6 +80,7 @@ interface NormalizedAreaOptions {
   emptyInsertThreshold: number;
   autoScroll: boolean;
   animation: SortableAnimation;
+  placeholder: SortablePlaceholderOptions;
   parent?: SortableParentLocation;
   accept(context: DragContext): boolean;
   pull(context: DragContext): false | SortableTransferMode;
@@ -621,7 +623,7 @@ export function createSortableScopeInternal(
       geometry.clear();
       for (const candidate of areas.values()) candidate.animator.cancel(true);
       geometry.refreshAtActivation(allTargets());
-      const feedback = createFeedback(sourceElement, platform);
+      const feedback = createFeedback(sourceElement, platform, area.options.placeholder);
       feedback.place(parent, sourceElement);
       active = {
         sourceArea: area,
@@ -909,6 +911,7 @@ function normalizeAreaOptions(
   const activationDistance = finiteNonNegative(options.activationDistance ?? 4);
   const emptyInsertThreshold = finiteNonNegative(options.emptyInsertThreshold ?? 8);
   const animation = normalizeAnimation(options.animation) ?? false;
+  const placeholder = normalizePlaceholder(options.placeholder);
   const getItemId = options.getItemId ?? ((element: Element) => (
     element.getAttribute('data-sortable-id') as SortableId
   ));
@@ -927,11 +930,39 @@ function normalizeAreaOptions(
     emptyInsertThreshold,
     autoScroll: options.autoScroll ?? true,
     animation,
+    placeholder,
     ...(options.parent === undefined ? {} : { parent: normalizeParent(options.parent) }),
     accept: options.accept ?? (() => true),
     pull: group.pull,
     put: group.put,
     ...(options.prepareCopy === undefined ? {} : { prepareCopy: options.prepareCopy }),
+  };
+}
+
+function normalizePlaceholder(
+  placeholder: SortableAreaOptions['placeholder'],
+): SortablePlaceholderOptions {
+  if (placeholder === undefined) {
+    return { preset: 'default' };
+  }
+  if (typeof placeholder !== 'object' || placeholder === null) {
+    throw new SortableError('INVALID_OPTION');
+  }
+  const preset = placeholder.preset ?? 'default';
+  if (preset !== 'default' && preset !== 'skeleton') {
+    throw new SortableError('INVALID_OPTION');
+  }
+  if (
+    placeholder.className !== undefined
+    && (typeof placeholder.className !== 'string' || placeholder.className.trim().length === 0)
+  ) {
+    throw new SortableError('INVALID_OPTION');
+  }
+  return {
+    preset,
+    ...(placeholder.className === undefined
+      ? {}
+      : { className: placeholder.className.trim().replace(/\s+/g, ' ') }),
   };
 }
 

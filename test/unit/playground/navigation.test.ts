@@ -37,12 +37,12 @@ test('invalid routes fail closed to the simple React example', () => {
 test('all planned parity routes ship while Comins-only routes remain separate', () => {
   const implementedParityExamples = new Set<string>(parityExampleIds);
 
-  assert.equal(exampleIds.length, 20);
+  assert.equal(exampleIds.length, 23);
   assert.equal(parityExampleIds.length, 17);
   assert.equal(plannedParityExampleCount, 17);
   assert.deepEqual(
     exampleIds.filter((exampleId) => !implementedParityExamples.has(exampleId)),
-    ['empty', 'accept', 'auto-scroll'],
+    ['empty', 'accept', 'auto-scroll', 'tree', 'custom-placeholder', 'skeleton-placeholder'],
   );
 });
 

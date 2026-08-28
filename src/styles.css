@@ -1,6 +1,34 @@
 .comins-sortable__placeholder {
   box-sizing: border-box;
+  border: var(--comins-sortable-placeholder-border, 0 solid transparent);
+  border-radius: var(--comins-sortable-placeholder-border-radius, 0);
+  opacity: var(--comins-sortable-placeholder-opacity, 1);
   pointer-events: none;
+}
+
+[data-comins-sortable-placeholder-preset="default"] {
+  background: var(--comins-sortable-placeholder-background, transparent);
+}
+
+[data-comins-sortable-placeholder-preset="skeleton"] {
+  background-color: var(--comins-sortable-placeholder-skeleton-base, #e2e8f0);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--comins-sortable-placeholder-skeleton-highlight, rgb(255 255 255 / 65%)) 50%,
+    transparent 100%
+  );
+  background-position: 200% 0;
+  background-size: 200% 100%;
+  animation: comins-sortable-placeholder-skeleton
+    var(--comins-sortable-placeholder-skeleton-duration, 1.2s)
+    ease-in-out infinite;
+}
+
+@keyframes comins-sortable-placeholder-skeleton {
+  to {
+    background-position: -200% 0;
+  }
 }
 
 [data-comins-sortable-dragging] {
@@ -9,7 +37,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-comins-sortable-placeholder-preset="skeleton"],
   [data-comins-sortable-dragging] {
+    animation: none !important;
     transition: none !important;
   }
 }

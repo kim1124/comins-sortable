@@ -25,10 +25,13 @@ import {
   createDemoState,
   copyDemoItem,
   demoModel,
+  demoTreeArea,
   hasSecondArea,
   isCopyExample,
   isNestedExample,
+  placeholderForExample,
   playgroundOperation,
+  updateDemoTreeArea,
   type DemoItem,
   type DemoState,
 } from './demo-data.js';
@@ -97,7 +100,9 @@ function Demo({
         : 'playground'
   ), [input.exampleId]);
   const setItems = (areaId: 'todo' | 'done' | 'child', items: readonly DemoItem[]): void => {
-    setState((current) => ({ ...current, [areaId]: [...items] }));
+    setState((current) => input.exampleId === 'tree' && areaId !== 'done'
+      ? updateDemoTreeArea(current, areaId, items)
+      : { ...current, [areaId]: [...items] });
   };
   const event = (name: string, result?: AfterDragResult): void => {
     bridge.publishEvent({ name, status: result?.status, reason: result?.reason });
@@ -135,6 +140,7 @@ function Demo({
     </ItemCard>
   );
   function childArea(): ReactElement {
+    const treeArea = input.exampleId === 'tree' ? demoTreeArea(state, 'child') : null;
     return (
       <div className="cs-demo-nested-shell">
         <strong>Research children</strong>
@@ -143,8 +149,8 @@ function Demo({
           areaProps={{ className: 'cs-demo-list cs-demo-list--nested', role: 'list', 'data-demo-area': 'child' } as HTMLAttributes<HTMLElement>}
           areaId="child"
           group="playground"
-          parent={{ areaId: 'todo', itemId: 'research' }}
-          items={state.child}
+          parent={treeArea?.parent ?? { areaId: 'todo', itemId: 'research' }}
+          items={treeArea?.items ?? state.child}
           itemKey="id"
           animation={160}
           onItemsChange={(items) => setItems('child', items)}
@@ -169,6 +175,7 @@ function Demo({
           handle={input.exampleId === 'handle' ? '.cs-demo-handle' : undefined}
           autoScroll={input.exampleId === 'auto-scroll'}
           animation={animation}
+          placeholder={areaId === 'todo' ? placeholderForExample(input.exampleId) : undefined}
           header={input.exampleId === 'header-slot' || input.exampleId === 'two-list-slots'
             ? <div className="cs-demo-slot" data-demo-slot="header">Pinned header</div>
             : undefined}
@@ -239,7 +246,7 @@ function Demo({
       <div className={`cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}`}>
         {input.exampleId === 'table' || input.exampleId === 'table-column'
           ? table()
-          : area('todo', state.todo)}
+          : area('todo', input.exampleId === 'tree' ? demoTreeArea(state, 'todo').items : state.todo)}
         {secondArea && area('done', state.done)}
       </div>
     </SortableRoot>

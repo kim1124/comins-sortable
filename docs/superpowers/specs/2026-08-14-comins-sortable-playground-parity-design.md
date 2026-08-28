@@ -298,8 +298,9 @@ interface SortableAreaOptions {
 - nested transfer도 일반 source/destination binding transaction을 사용한다.
 - controlled tree consumer는 area별 items callback을 immutable tree state로 반영한다.
 
-고수준 Tree component는 추가하지 않는다. Core의 nested area 계약과 adapter example로
-동등 기능을 제공하며 특정 tree data schema를 package가 소유하지 않는다.
+고수준 Tree component는 추가하지 않는다. 대신 schema adapter를 받는 공식 headless
+`createSortableTree` API가 area discovery, immutable area update, framework enhanced change
+folding을 제공한다. package는 특정 tree data schema나 rendering hierarchy를 소유하지 않는다.
 
 ## 6. Data flow
 
@@ -357,8 +358,9 @@ interface SortableAreaOptions {
 | Nested controlled state | Controlled Tree | immutable recursive state |
 | Functional third party | Nested Component Layout | nested areas plus component hosts |
 
-추가 Comins example은 Empty Destination, Accept/Reject, Auto Direction, Auto Scroll,
-Rollback Reasons, Resource Stability, Accessibility를 제공한다.
+추가 Comins example은 Empty Destination, Accept/Reject, Auto Scroll, Tree, Custom
+Placeholder, Skeleton Placeholder를 제공한다. Keyboard accessibility와 virtualization은
+이번 구현 범위가 아니다.
 
 ## 9. 검증
 
@@ -409,11 +411,16 @@ Playwright WebKit은 Safari 인증이 아니다. physical touch/pen과 실제 Sa
 
 ## 10.1 구현 상태 (2026-08-25)
 
-- 17개 parity example과 3개 Comins 추가 example을 네 adapter runtime에 구현했다.
+- 17개 parity example과 6개 Comins 추가 example을 네 adapter runtime에 구현했다.
 - animation, custom/table/component host, header/footer sibling, nested 및 controlled nested
   계약을 Core와 adapter public surface에 반영했다.
 - Chromium, Firefox, Playwright WebKit 검증을 완료 조건으로 사용한다. 실제 Safari 검증은
   별도 evidence로 남기며, physical touch/pen과 모바일 인증은 후순위로 보류한다.
+- `createSortableTree`를 공식 headless public API로 추가했다. 고수준 framework Tree
+  component와 특정 node schema는 제공하지 않는다.
+- Area `placeholder` 옵션은 consumer class와 공개 CSS variable을 제공한다. Skeleton은
+  generic loading component가 아니라 reduced-motion-aware drag feedback preset이다.
+- virtualization은 제외가 아니라 보류이며, keyboard 접근성은 구현 목록에서 제외한다.
 
 ## 11. 경계
 

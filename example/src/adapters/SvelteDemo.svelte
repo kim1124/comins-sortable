@@ -3,7 +3,7 @@
   import { createSortableScope, sortable } from '../../../src/svelte.js';
   import type { AfterDragResult, FrameworkSortableChange } from '../../../src/core.js';
   import type { PlaygroundBridge, PlaygroundDemoInput } from '../playground/types.js';
-  import { copyDemoItem, createDemoState, demoModel, hasSecondArea, isCopyExample, isNestedExample, playgroundOperation, type DemoItem } from './demo-data.js';
+  import { copyDemoItem, createDemoState, demoModel, demoTreeArea, hasSecondArea, isCopyExample, isNestedExample, placeholderForExample, playgroundOperation, updateDemoTreeArea, type DemoItem } from './demo-data.js';
 
   interface DemoCommands {
     dispatch(controlId: string, value?: string | number | boolean): void;
@@ -44,7 +44,9 @@
   });
 
   const setItems = (areaId: 'todo' | 'done' | 'child', items: readonly DemoItem[]) => {
-    state = { ...state, [areaId]: [...items] };
+    state = input.exampleId === 'tree' && areaId !== 'done'
+      ? updateDemoTreeArea(state, areaId, items)
+      : { ...state, [areaId]: [...items] };
   };
   const reset = () => {
     copySequence = 0;
@@ -69,7 +71,7 @@
     scope,
     areaId: 'todo',
     group: todoGroup,
-    items: state.todo,
+    items: input.exampleId === 'tree' ? demoTreeArea(state, 'todo').items : state.todo,
     itemKey: 'id' as const,
     handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
     autoScroll: input.exampleId === 'auto-scroll',
@@ -78,6 +80,7 @@
       : input.exampleId === 'transitions'
         ? { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }
         : false,
+    placeholder: placeholderForExample(input.exampleId),
     item: input.exampleId === 'table'
       ? '.cs-demo-row'
       : input.exampleId === 'table-column'
@@ -103,8 +106,10 @@
     scope,
     areaId: 'child',
     group: 'playground',
-    parent: { areaId: 'todo', itemId: 'research' },
-    items: state.child,
+    parent: input.exampleId === 'tree'
+      ? demoTreeArea(state, 'child').parent
+      : { areaId: 'todo', itemId: 'research' },
+    items: input.exampleId === 'tree' ? demoTreeArea(state, 'child').items : state.child,
     itemKey: 'id' as const,
     item: '.cs-demo-card',
     animation: 160,

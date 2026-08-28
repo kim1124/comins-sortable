@@ -1,5 +1,6 @@
 import {
   createSortableScope,
+  createSortableTree,
   reorder,
   SortableError,
   transfer,
@@ -22,15 +23,30 @@ import type {
   SortableId,
   SortableLocation,
   SortableOrder,
+  SortablePlaceholderOptions,
   SortableScope,
   SortableScopeOptions,
   SortableTransferMode,
+  SortableTree,
+  SortableTreeArea,
+  SortableTreeOptions,
 } from '../../src/core.js';
 
 interface Item {
   id: number;
   label: string;
 }
+
+const treeOptions: SortableTreeOptions<Item> = {
+  rootAreaId: 'tree-root',
+  getNodeId: (item) => item.id,
+  getChildren: () => [],
+  withChildren: (item) => item,
+  getChildrenAreaId: (item) => `children-${item.id}`,
+};
+const tree: SortableTree<Item> = createSortableTree(treeOptions);
+const treeAreas: readonly SortableTreeArea<Item>[] = tree.getAreas([]);
+void treeAreas;
 
 const id: SortableId = 1;
 const key: ItemKey<Item> = 'id';
@@ -104,6 +120,16 @@ const nestedAnimatedArea: SortableAreaOptions = {
   parent: { areaId: 'todo', itemId: 'parent' },
 };
 void nestedAnimatedArea;
+const placeholder: SortablePlaceholderOptions = {
+  className: 'project-placeholder',
+  preset: 'skeleton',
+};
+const placeholderArea: SortableAreaOptions = {
+  areaId: 'placeholder',
+  item: '[data-sortable-id]',
+  placeholder,
+};
+void placeholderArea;
 const transferMode: SortableTransferMode = 'copy';
 const groupOptions: SortableGroupOptions = areaOptions.group as SortableGroupOptions;
 const group: SortableGroup = groupOptions;

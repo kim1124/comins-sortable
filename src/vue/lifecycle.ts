@@ -9,6 +9,7 @@ import type {
   SortableGroup,
   SortableId,
   SortableParentLocation,
+  SortablePlaceholderOptions,
 } from '../core/model.js';
 import type { FrameworkAreaBinding } from '../framework/bindings.js';
 import { resolveItemId } from '../framework/item-key.js';
@@ -29,6 +30,7 @@ export interface VueAreaLifecycleProps<T> {
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
   animation?: SortableAnimation;
+  placeholder?: SortablePlaceholderOptions;
   parent?: SortableParentLocation;
 }
 
@@ -169,7 +171,8 @@ function areaOptions<T>(
     areaId: props.areaId, group: props.group, item: '[data-comins-sortable-item]', getItemId,
     direction: props.direction, disabled: props.disabled, handle: props.handle, ignore: props.ignore,
     activationDistance: props.activationDistance, emptyInsertThreshold: props.emptyInsertThreshold,
-    autoScroll: props.autoScroll, animation: props.animation, parent: props.parent, accept: props.accept,
+    autoScroll: props.autoScroll, animation: props.animation, placeholder: props.placeholder,
+    parent: props.parent, accept: props.accept,
   };
 }
 
@@ -179,6 +182,8 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && left.activationDistance === right.activationDistance
     && left.emptyInsertThreshold === right.emptyInsertThreshold && left.autoScroll === right.autoScroll
     && sameAnimation(left.animation, right.animation)
+    && left.placeholder?.preset === right.placeholder?.preset
+    && left.placeholder?.className === right.placeholder?.className
     && left.parent?.areaId === right.parent?.areaId && left.parent?.itemId === right.parent?.itemId
     && left.accept === right.accept;
 }

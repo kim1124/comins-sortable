@@ -21,6 +21,7 @@ import type {
   SortableDirection,
   SortableGroup,
   SortableParentLocation,
+  SortablePlaceholderOptions,
 } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
 import {
@@ -47,6 +48,7 @@ export interface SortableAreaProps<T> {
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
   animation?: SortableAnimation;
+  placeholder?: SortablePlaceholderOptions;
   parent?: SortableParentLocation;
   as?: ElementType;
   areaProps?: HTMLAttributes<HTMLElement>;

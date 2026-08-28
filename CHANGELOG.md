@@ -4,6 +4,20 @@ All notable behavior and public API changes to this project are recorded here.
 
 ## 0.1.1 - Unreleased
 
+### Added
+
+- Official framework-neutral `createSortableTree` API for area discovery,
+  immutable area replacement, and enhanced-change folding.
+- Consumer-customizable placeholder classes and CSS variables, plus an optional
+  reduced-motion-aware `skeleton` drag-feedback preset.
+- Tree, Custom Placeholder, and Skeleton Placeholder Playground routes for all
+  four adapters.
+
+### Changed
+
+- The Playground now exposes 23 routes while keeping the 17-route desktop
+  parity count unchanged.
+
 ### Security
 
 - Require an exact provider-managed npm service name and email for the

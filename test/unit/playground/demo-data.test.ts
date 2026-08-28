@@ -6,6 +6,9 @@ import {
   copyDemoItem,
   createDemoState,
   demoModel,
+  demoTreeArea,
+  placeholderForExample,
+  updateDemoTreeArea,
 } from '../../../example/src/adapters/demo-data.js';
 
 test('two-list transfer produces hand-checked immutable orders', () => {
@@ -24,6 +27,30 @@ test('two-list transfer produces hand-checked immutable orders', () => {
   assert.deepEqual(next.todo.map((item) => item.id), ['research', 'build']);
   assert.deepEqual(next.done.map((item) => item.id), ['review', 'design']);
   assert.deepEqual(state.todo.map((item) => item.id), ['research', 'design', 'build']);
+});
+
+test('Tree API maps root and child areas and folds immutable child updates', () => {
+  const state = createDemoState('tree');
+  const root = demoTreeArea(state, 'todo');
+  const child = demoTreeArea(state, 'child');
+  const next = updateDemoTreeArea(state, 'child', [...child.items].reverse());
+
+  assert.equal(root.parent, undefined);
+  assert.deepEqual(root.items.map((item) => item.id), ['research', 'design', 'build']);
+  assert.deepEqual(child.parent, { areaId: 'todo', itemId: 'research' });
+  assert.deepEqual(next.child.map((item) => item.id), ['release', 'review']);
+  assert.deepEqual(state.child.map((item) => item.id), ['review', 'release']);
+});
+
+test('placeholder scenarios expose consumer classes and only the opt-in skeleton preset', () => {
+  assert.deepEqual(placeholderForExample('custom-placeholder'), {
+    className: 'cs-demo-placeholder--custom',
+  });
+  assert.deepEqual(placeholderForExample('skeleton-placeholder'), {
+    className: 'cs-demo-placeholder--skeleton',
+    preset: 'skeleton',
+  });
+  assert.equal(placeholderForExample('simple'), undefined);
 });
 
 test('every visible scenario returns fresh data and a sanitized model', () => {

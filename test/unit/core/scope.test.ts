@@ -76,6 +76,23 @@ test('scope validates selectors without exposing their values', () => {
   }
 });
 
+test('scope validates placeholder options before registering an area', () => {
+  const platform = fakePlatform();
+  const scope = createSortableScopeInternal({}, platform);
+  const area = fakeElement('UL', { ownerDocument: platform.document });
+
+  assert.throws(() => scope.registerArea(area, {
+    areaId: 'invalid-preset',
+    item: '[data-sortable-item]',
+    placeholder: { preset: 'loading' as 'skeleton' },
+  }), hasCode('INVALID_OPTION'));
+  assert.throws(() => scope.registerArea(area, {
+    areaId: 'invalid-class',
+    item: '[data-sortable-item]',
+    placeholder: { className: '   ' },
+  }), hasCode('INVALID_OPTION'));
+});
+
 test('scope register, update, unregister, cancel, and destroy are idempotent', () => {
   const fixture = scopeFixture();
 

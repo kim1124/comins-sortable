@@ -15,6 +15,7 @@ export const sourceModules = [
   'core/session',
   'core/pointer',
   'core/feedback',
+  'core/tree',
   'core/auto-scroll',
   'core/scope',
   'vanilla/types',
