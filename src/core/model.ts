@@ -20,6 +20,15 @@ export interface SortableAnimationOptions {
 
 export type SortableAnimation = false | number | SortableAnimationOptions;
 
+export type SortablePlaceholderPreset = 'default' | 'skeleton';
+
+export interface SortablePlaceholderOptions {
+  /** Consumer classes added alongside the stable Comins placeholder class. */
+  className?: string;
+  /** Optional visual preset. Skeleton is drag feedback, not a loading state. */
+  preset?: SortablePlaceholderPreset;
+}
+
 export interface SortableOrder {
   areaId: string;
   itemIds: readonly SortableId[];
@@ -131,6 +140,7 @@ export interface SortableAreaOptions {
   emptyInsertThreshold?: number;
   autoScroll?: boolean;
   animation?: SortableAnimation;
+  placeholder?: SortablePlaceholderOptions;
   parent?: SortableParentLocation;
   accept?: (context: DragContext) => boolean;
   prepareCopy?: (context: CopyItemContext) => SortableId;

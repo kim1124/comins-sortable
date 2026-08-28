@@ -21,10 +21,13 @@ import {
   createDemoState,
   copyDemoItem,
   demoModel,
+  demoTreeArea,
   hasSecondArea,
   isCopyExample,
   isNestedExample,
+  placeholderForExample,
   playgroundOperation,
+  updateDemoTreeArea,
   type DemoItem,
   type DemoState,
 } from './demo-data.js';
@@ -83,7 +86,9 @@ export const vueDemoModule: PlaygroundDemoModule = {
           bridge.publishEvent({ name, status: result?.status, reason: result?.reason });
         };
         const setItems = (areaId: 'todo' | 'done' | 'child', items: readonly DemoItem[]): void => {
-          state.value = { ...state.value, [areaId]: [...items] };
+          state.value = input.exampleId === 'tree' && areaId !== 'done'
+            ? updateDemoTreeArea(state.value, areaId, items)
+            : { ...state.value, [areaId]: [...items] };
         };
 
         commands = {
@@ -107,7 +112,9 @@ export const vueDemoModule: PlaygroundDemoModule = {
           : input.exampleId === 'transitions'
             ? { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }
             : false;
-        const childArea = (): VNode => h('div', { class: 'cs-demo-nested-shell' }, [
+        const childArea = (): VNode => {
+          const treeArea = input.exampleId === 'tree' ? demoTreeArea(state.value, 'child') : null;
+          return h('div', { class: 'cs-demo-nested-shell' }, [
           h('strong', 'Research children'),
           h(SortableArea<DemoItem>, {
             tag: input.exampleId === 'functional-third-party' ? ComponentHost : 'div',
@@ -118,15 +125,16 @@ export const vueDemoModule: PlaygroundDemoModule = {
             },
             areaId: 'child',
             group: 'playground',
-            parent: { areaId: 'todo', itemId: 'research' },
-            modelValue: state.value.child,
+            parent: treeArea?.parent ?? { areaId: 'todo', itemId: 'research' },
+            modelValue: treeArea?.items ?? state.value.child,
             itemKey: 'id',
             animation: 160,
             'onUpdate:modelValue': (items: readonly DemoItem[]) => setItems('child', items),
           }, {
             item: ({ item }: { item: DemoItem }) => itemCard(item, false),
           }),
-        ]);
+          ]);
+        };
         const area = (areaId: 'todo' | 'done', items: readonly DemoItem[]): VNode => h(
           'section',
           { class: 'cs-demo-column', 'data-demo-column': areaId },
@@ -149,6 +157,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
                 handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
                 autoScroll: input.exampleId === 'auto-scroll',
                 animation,
+                placeholder: areaId === 'todo' ? placeholderForExample(input.exampleId) : undefined,
                 emptyInsertThreshold: areaId === 'done' && input.exampleId === 'empty' ? 42 : undefined,
                 accept: areaId === 'done' && input.exampleId === 'accept' ? () => allowed.value : undefined,
                 copyItem: areaId === 'todo' && isCopyExample(input.exampleId)
@@ -220,7 +229,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
           }, [
             input.exampleId === 'table' || input.exampleId === 'table-column'
               ? table()
-              : area('todo', state.value.todo),
+              : area('todo', input.exampleId === 'tree' ? demoTreeArea(state.value, 'todo').items : state.value.todo),
             secondArea ? area('done', state.value.done) : null,
           ]),
         });

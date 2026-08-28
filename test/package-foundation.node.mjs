@@ -87,6 +87,7 @@ test('records the reviewed source, export, and peer boundaries', async () => {
   });
   assert.deepEqual(boundary.peerRanges, peers);
   assert.equal(boundary.sourceModules.includes('core'), true);
+  assert.equal(boundary.sourceModules.includes('core/tree'), true);
   assert.equal(boundary.sourceModules.includes('vanilla/create-sortable'), true);
   assert.equal(boundary.sourceModules.includes('react/SortableArea'), true);
   assert.equal(boundary.sourceModules.includes('vue/SortableArea'), true);

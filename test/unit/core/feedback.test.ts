@@ -28,6 +28,26 @@ test('feedback creates one empty same-tag placeholder without copied consumer da
   assert.equal((feedback.placeholder as unknown as HTMLElement).style.height, '30px');
 });
 
+test('feedback applies consumer classes and the optional skeleton preset', () => {
+  const platform = fakePlatform();
+  const source = fakeElement('LI', {
+    ownerDocument: platform.document,
+    rect: { left: 0, top: 0, right: 120, bottom: 40, width: 120, height: 40 },
+  });
+
+  const feedback = createFeedback(source, platform, {
+    className: 'project-placeholder project-placeholder--compact',
+    preset: 'skeleton',
+  });
+
+  assert.equal(feedback.placeholder.classList.contains('project-placeholder'), true);
+  assert.equal(feedback.placeholder.classList.contains('project-placeholder--compact'), true);
+  assert.equal(
+    feedback.placeholder.getAttribute('data-comins-sortable-placeholder-preset'),
+    'skeleton',
+  );
+});
+
 test('feedback moves by pointer delta and restores only changed source state', () => {
   const platform = fakePlatform();
   const parent = fakeElement('UL', { ownerDocument: platform.document });

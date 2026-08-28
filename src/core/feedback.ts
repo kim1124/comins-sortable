@@ -1,5 +1,5 @@
 import { SortableError } from './errors.js';
-import type { PointerSnapshot } from './model.js';
+import type { PointerSnapshot, SortablePlaceholderOptions } from './model.js';
 import type { SortablePlatform } from './platform.js';
 
 const FEEDBACK_PROPERTIES = [
@@ -33,6 +33,7 @@ interface StyledElement extends Element {
 export function createFeedback(
   source: Element,
   platform: SortablePlatform,
+  options: SortablePlaceholderOptions = {},
 ): SortableFeedback {
   void platform;
   const styledSource = asStyledElement(source);
@@ -53,7 +54,14 @@ export function createFeedback(
   let disposed = false;
 
   placeholder.classList.add('comins-sortable__placeholder');
+  for (const className of placeholderClassNames(options.className)) {
+    placeholder.classList.add(className);
+  }
   placeholder.setAttribute('data-comins-sortable-placeholder', '');
+  placeholder.setAttribute(
+    'data-comins-sortable-placeholder-preset',
+    options.preset ?? 'default',
+  );
   placeholder.setAttribute('aria-hidden', 'true');
   styledPlaceholder.style.boxSizing = 'border-box';
   styledPlaceholder.style.width = `${rect.width}px`;
@@ -110,6 +118,10 @@ export function createFeedback(
     },
     destroy,
   };
+}
+
+function placeholderClassNames(className: string | undefined): readonly string[] {
+  return className === undefined ? [] : className.trim().split(/\s+/).filter(Boolean);
 }
 
 function asStyledElement(element: Element): StyledElement {

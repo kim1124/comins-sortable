@@ -5,9 +5,11 @@ import {
   createDemoState,
   copyDemoItem,
   demoModel,
+  demoTreeArea,
   hasSecondArea,
   isCopyExample,
   isNestedExample,
+  placeholderForExample,
   playgroundOperation,
   type DemoItem,
 } from './demo-data.js';
@@ -131,6 +133,10 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
     const render = (): void => {
       sortable?.destroy();
       const state = createDemoState(input.exampleId);
+      const treeRoot = input.exampleId === 'tree' ? demoTreeArea(state, 'todo') : null;
+      const treeChild = input.exampleId === 'tree' ? demoTreeArea(state, 'child') : null;
+      const todoItems = treeRoot?.items ?? state.todo;
+      const childItems = treeChild?.items ?? state.child;
       copySequence = 0;
       itemsById = new Map(
         [...state.todo, ...state.done, ...state.child].map((item) => [item.id, item]),
@@ -143,12 +149,12 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
       let todo: HTMLElement;
       let todoList: HTMLElement;
       if (input.exampleId === 'table' || input.exampleId === 'table-column') {
-        const rendered = table(state.todo, input.exampleId === 'table-column');
+        const rendered = table(todoItems, input.exampleId === 'table-column');
         todo = rendered.table;
         todoList = rendered.area;
         board.append(todo);
       } else {
-        todo = area('todo', input.locale === 'ko' ? '진행할 작업' : 'To do', state.todo, input.exampleId === 'handle');
+        todo = area('todo', input.locale === 'ko' ? '진행할 작업' : 'To do', todoItems, input.exampleId === 'handle');
         todoList = todo.querySelector<HTMLElement>('[data-demo-area="todo"]')!;
         if (input.exampleId === 'third-party' || input.exampleId === 'functional-third-party') {
           todoList.classList.add('cs-demo-component-host');
@@ -183,7 +189,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           childList.classList.add('cs-demo-component-host');
           childList.dataset.demoComponentHost = 'vanilla';
         }
-        for (const item of state.child) childList.append(card(item, false));
+        for (const item of childItems) childList.append(card(item, false));
         shell.append(title, childList);
         parent.append(shell);
       }
@@ -229,6 +235,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           : input.exampleId === 'transitions'
             ? { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }
             : false,
+        placeholder: placeholderForExample(input.exampleId),
         direction: input.exampleId === 'table-column' ? 'horizontal' : undefined,
         onBeforeDragStart: () => event('beforeDragStart'),
         onDragStart: () => event('dragStart'),
@@ -250,7 +257,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           areaId: 'child',
           group: 'playground',
           item: '.cs-demo-card',
-          parent: { areaId: 'todo', itemId: 'research' },
+          parent: treeChild?.parent ?? { areaId: 'todo', itemId: 'research' },
           animation: 160,
         });
       }

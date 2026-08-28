@@ -1,4 +1,9 @@
-import type { SortableChange } from '../../../src/core.js';
+import { createSortableTree } from '../../../src/core.js';
+import type {
+  SortableChange,
+  SortablePlaceholderOptions,
+  SortableTreeArea,
+} from '../../../src/core.js';
 import type { PlaygroundExampleId } from '../app/navigation.js';
 import type {
   PlaygroundModel,
@@ -18,6 +23,18 @@ export interface DemoState {
   child: DemoItem[];
 }
 
+export interface DemoTreeNode extends DemoItem {
+  children: readonly DemoTreeNode[];
+}
+
+const demoTree = createSortableTree<DemoTreeNode>({
+  rootAreaId: 'todo',
+  getNodeId: (item) => item.id,
+  getChildren: (item) => item.children,
+  withChildren: (item, children) => ({ ...item, children }),
+  getChildrenAreaId: (item) => item.id === 'research' ? 'child' : `tree-children-${item.id}`,
+});
+
 const catalog: Readonly<Record<string, DemoItem>> = {
   research: { id: 'research', title: 'Research', detail: 'Product discovery', tone: 'mint' },
   design: { id: 'design', title: 'Design', detail: 'Interaction system', tone: 'violet' },
@@ -33,7 +50,12 @@ const catalog: Readonly<Record<string, DemoItem>> = {
 const items = (...ids: string[]): DemoItem[] => ids.map((id) => ({ ...catalog[id]! }));
 
 export function createDemoState(exampleId: PlaygroundExampleId): DemoState {
-  if (exampleId === 'simple' || exampleId === 'handle') {
+  if (
+    exampleId === 'simple'
+    || exampleId === 'handle'
+    || exampleId === 'custom-placeholder'
+    || exampleId === 'skeleton-placeholder'
+  ) {
     return { todo: items('research', 'design', 'build', 'review'), done: [], child: [] };
   }
   if (isNestedExample(exampleId)) {
@@ -136,7 +158,72 @@ export function hasSecondArea(exampleId: PlaygroundExampleId): boolean {
 export function isNestedExample(exampleId: PlaygroundExampleId): boolean {
   return exampleId === 'nested'
     || exampleId === 'nested-controlled'
-    || exampleId === 'functional-third-party';
+    || exampleId === 'functional-third-party'
+    || exampleId === 'tree';
+}
+
+export function placeholderForExample(
+  exampleId: PlaygroundExampleId,
+): SortablePlaceholderOptions | undefined {
+  if (exampleId === 'custom-placeholder') {
+    return { className: 'cs-demo-placeholder--custom' };
+  }
+  if (exampleId === 'skeleton-placeholder') {
+    return { className: 'cs-demo-placeholder--skeleton', preset: 'skeleton' };
+  }
+  return undefined;
+}
+
+export function demoTreeArea(
+  state: DemoState,
+  areaId: 'todo' | 'child',
+): SortableTreeArea<DemoTreeNode> {
+  const area = demoTree.getAreas(toTree(state)).find((candidate) => candidate.areaId === areaId);
+  if (area === undefined) throw new Error(`Unknown demo tree area: ${areaId}`);
+  return area;
+}
+
+export function updateDemoTreeArea(
+  state: DemoState,
+  areaId: 'todo' | 'child',
+  items: readonly DemoItem[],
+): DemoState {
+  const nextTree = demoTree.updateArea(
+    toTree(state),
+    areaId,
+    items as readonly DemoTreeNode[],
+  );
+  const research = findTreeNode(nextTree, 'research');
+  return {
+    ...state,
+    todo: nextTree.map(toDemoItem),
+    child: (research?.children ?? []).map(toDemoItem),
+  };
+}
+
+function toTree(state: DemoState): readonly DemoTreeNode[] {
+  return state.todo.map((item) => ({
+    ...item,
+    children: item.id === 'research'
+      ? state.child.map((child) => ({ ...child, children: [] }))
+      : [],
+  }));
+}
+
+function toDemoItem({ children: _children, ...item }: DemoTreeNode): DemoItem {
+  return item;
+}
+
+function findTreeNode(
+  nodes: readonly DemoTreeNode[],
+  itemId: string,
+): DemoTreeNode | undefined {
+  for (const node of nodes) {
+    if (node.id === itemId) return node;
+    const child = findTreeNode(node.children, itemId);
+    if (child !== undefined) return child;
+  }
+  return undefined;
 }
 
 export function isAnimationExample(exampleId: PlaygroundExampleId): boolean {

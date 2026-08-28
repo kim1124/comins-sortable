@@ -11,6 +11,7 @@ import type {
   SortableDirection,
   SortableGroup,
   SortableParentLocation,
+  SortablePlaceholderOptions,
 } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
 import {
@@ -35,6 +36,7 @@ export interface VueSortableAreaProps<T> {
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
   animation?: SortableAnimation;
+  placeholder?: SortablePlaceholderOptions;
   parent?: SortableParentLocation;
   tag?: string | Component;
   componentProps?: Readonly<Record<string, unknown>>;
@@ -63,6 +65,7 @@ const SortableAreaComponent = defineComponent({
     accept: Function as PropType<(context: DragContext) => boolean>,
     copyItem: Function as PropType<(item: unknown, context: CopyItemContext) => unknown>,
     animation: [Boolean, Number, Object] as PropType<SortableAnimation>,
+    placeholder: Object as PropType<SortablePlaceholderOptions>,
     parent: Object as PropType<SortableParentLocation>,
     tag: { type: [String, Object, Function] as PropType<string | Component>, default: 'div' },
     componentProps: Object as PropType<Readonly<Record<string, unknown>>>,

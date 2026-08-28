@@ -9,6 +9,7 @@ import type {
   SortableGroup,
   SortableId,
   SortableParentLocation,
+  SortablePlaceholderOptions,
 } from '../core/model.js';
 import type { FrameworkAreaBinding } from '../framework/bindings.js';
 import { resolveItemId } from '../framework/item-key.js';
@@ -38,6 +39,7 @@ export interface SvelteSortableOptions<T> {
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
   animation?: SortableAnimation;
+  placeholder?: SortablePlaceholderOptions;
   parent?: SortableParentLocation;
   item?: string;
 }
@@ -368,6 +370,7 @@ function toAreaOptions<T>(
     emptyInsertThreshold: options.emptyInsertThreshold,
     autoScroll: options.autoScroll,
     animation: options.animation,
+    placeholder: options.placeholder,
     parent: options.parent,
     accept: options.accept,
   };
@@ -384,6 +387,8 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && left.emptyInsertThreshold === right.emptyInsertThreshold
     && left.autoScroll === right.autoScroll
     && sameAnimation(left.animation, right.animation)
+    && left.placeholder?.preset === right.placeholder?.preset
+    && left.placeholder?.className === right.placeholder?.className
     && left.parent?.areaId === right.parent?.areaId
     && left.parent?.itemId === right.parent?.itemId
     && left.accept === right.accept;

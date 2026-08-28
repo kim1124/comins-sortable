@@ -16,10 +16,12 @@ The animation is captured from the real Comins Sortable Playground.
 The next public candidate is `comins-sortable@0.1.1`. Its
 Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
 reorder, transfer, and copy interactions with commit verification and rollback.
-The Playground currently provides 20 routes. Seventeen implement the planned
+The Playground currently provides 23 routes. Seventeen implement the planned
 Vue.Draggable parity contracts, including animation, custom hosts, non-item
 siblings, and nested sortable areas. Empty Destination, Accept/Reject, and Auto
-Scroll are additional Comins examples. Runtime dependencies are not allowed.
+Scroll are additional Comins examples. Tree, Custom Placeholder, and Skeleton
+Placeholder demonstrate the official headless Tree model and customizable drag
+feedback. Runtime dependencies are not allowed.
 React, React DOM, Vue, and Svelte are optional peers.
 
 Version `0.1.0` was withdrawn on 2026-08-28 after a public identity metadata
@@ -31,6 +33,59 @@ Publishing `0.1.1`, tags, and GitHub Releases remain separately maintainer-gated
 ```sh
 npm install comins-sortable
 ```
+
+## Tree API
+
+`createSortableTree` is a framework-neutral, schema-adapted public API. It maps
+one immutable tree value to sortable areas and folds controlled area updates
+back into that value without owning a component hierarchy.
+
+```ts
+import { createSortableTree } from 'comins-sortable/core';
+
+const tree = createSortableTree<Node>({
+  rootAreaId: 'root',
+  getNodeId: (node) => node.id,
+  getChildren: (node) => node.children,
+  withChildren: (node, children) => ({ ...node, children }),
+  getChildrenAreaId: (node) => `children-${node.id}`,
+});
+
+const areas = tree.getAreas(nodes);
+const nextNodes = tree.updateArea(nodes, areaId, nextItems);
+```
+
+React, Vue, and Svelte controlled Areas use `updateArea` from their item update
+callback. `applyChange` accepts the typed `FrameworkSortableChange` emitted by
+framework Roots when a consumer needs to fold a whole transaction at once.
+
+## Placeholder styling
+
+Every Area accepts `placeholder`. `className` adds consumer classes beside the
+stable `comins-sortable__placeholder` class. The optional `skeleton` preset is
+drag feedback only; it is not a general loading-skeleton API.
+
+```ts
+const areaOptions = {
+  placeholder: {
+    className: 'project-drop-placeholder',
+    preset: 'skeleton' as const,
+  },
+};
+```
+
+Consumers can style either their class or these public CSS variables:
+
+- `--comins-sortable-placeholder-background`
+- `--comins-sortable-placeholder-border`
+- `--comins-sortable-placeholder-border-radius`
+- `--comins-sortable-placeholder-opacity`
+- `--comins-sortable-placeholder-skeleton-base`
+- `--comins-sortable-placeholder-skeleton-highlight`
+- `--comins-sortable-placeholder-skeleton-duration`
+
+Import `comins-sortable/styles.css` to enable the preset. Reduced-motion mode
+disables the skeleton animation.
 
 ## Governance
 

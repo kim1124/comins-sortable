@@ -58,6 +58,61 @@ for (const adapter of adapters) {
 }
 
 for (const adapter of adapters) {
+  test(`${adapter} Tree route transfers through the official headless model`, async ({ page }) => {
+    await page.goto(`/examples/tree/${adapter}`);
+    await waitForRuntime(page);
+
+    await expect(page.getByRole('heading', { name: 'Tree API' })).toBeVisible();
+    await dragItem(page, 'todo', 'design', { areaId: 'child', beforeId: 'review' });
+
+    await expect.poll(async () => (await model(page)).todo).toEqual(['research', 'build']);
+    await expect.poll(async () => (await model(page)).child).toEqual(['design', 'review', 'release']);
+    await expect(page.locator('[data-comins-sortable-area="child"]'))
+      .toHaveAttribute('data-comins-sortable-area', 'child');
+  });
+
+  test(`${adapter} placeholder routes expose consumer styling and skeleton feedback`, async ({ page }) => {
+    await page.goto(`/examples/custom-placeholder/${adapter}`);
+    await waitForRuntime(page);
+    await activateDrag(page, 'design');
+    const custom = page.locator('[data-comins-sortable-placeholder]');
+    await expect(custom).toHaveClass(/cs-demo-placeholder--custom/);
+    await expect(custom).toHaveAttribute('data-comins-sortable-placeholder-preset', 'default');
+    await expect.poll(() => custom.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        background: style.backgroundColor,
+        borderStyle: style.borderStyle,
+        radius: style.borderRadius,
+      };
+    })).toEqual({ background: 'rgb(255, 244, 207)', borderStyle: 'dotted', radius: '18px' });
+    await page.mouse.up();
+
+    await page.goto(`/examples/skeleton-placeholder/${adapter}`);
+    await waitForRuntime(page);
+    await activateDrag(page, 'design');
+    const skeleton = page.locator('[data-comins-sortable-placeholder]');
+    await expect(skeleton).toHaveClass(/cs-demo-placeholder--skeleton/);
+    await expect(skeleton).toHaveAttribute('data-comins-sortable-placeholder-preset', 'skeleton');
+    await expect.poll(() => skeleton.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return `${style.animationName}|${style.backgroundImage}`;
+    })).toContain('comins-sortable-placeholder-skeleton|linear-gradient');
+    await page.mouse.up();
+  });
+}
+
+async function activateDrag(page: Page, itemId: string): Promise<void> {
+  const source = page.locator(`[data-comins-sortable-area="todo"] > [data-sortable-id="${itemId}"]`);
+  const box = await source.boundingBox();
+  if (box === null) throw new Error(`Missing drag source: ${itemId}`);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2 + 12);
+  await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCount(1);
+}
+
+for (const adapter of adapters) {
   test(`${adapter} exposes the remaining desktop parity routes as live behavior`, async ({ page }) => {
     await page.addInitScript(() => {
       const original = Element.prototype.animate;

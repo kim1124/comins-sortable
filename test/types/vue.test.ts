@@ -38,6 +38,7 @@ h(SortableRoot<Task>, {
     tag: 'section',
     componentProps: { class: 'task-list' },
     animation: 180,
+    placeholder: { className: 'project-placeholder', preset: 'skeleton' },
     parent: { areaId: 'root', itemId: 'parent' },
     'onUpdate:modelValue': (next) => {
       const task: Task | undefined = next[0];
