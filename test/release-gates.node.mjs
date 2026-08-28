@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   normalizeMaintainers,
   run,
+  validateBootstrapPublishedIdentity,
   validateCurrentIdentity,
   validatePublishedIdentity,
 } from '../scripts/check-npm-public-identity.mjs';
@@ -111,6 +112,46 @@ test('checks current registry maintainers and exact published metadata', () => {
   ]);
 });
 
+test('checks exact interactive bootstrap metadata without weakening trusted publishing', () => {
+  const metadata = {
+    maintainers: [expected],
+    npmUser: expected,
+    author: null,
+    contributors: [],
+  };
+  const bootstrap = runner({
+    args: ['--bootstrap-version', '0.1.1'],
+    outputs: { _npmUser: expected },
+  });
+
+  assert.equal(validateBootstrapPublishedIdentity(metadata, expected), true);
+  assert.equal(validatePublishedIdentity(metadata, expected), false);
+  assert.equal(
+    validateBootstrapPublishedIdentity({ ...metadata, npmUser: provider }, expected),
+    false,
+  );
+  assert.equal(
+    validateBootstrapPublishedIdentity({ ...metadata, author: expected }, expected),
+    false,
+  );
+  assert.equal(
+    validateBootstrapPublishedIdentity({ ...metadata, contributors: [expected] }, expected),
+    false,
+  );
+  assert.equal(bootstrap.code, 0);
+  assert.deepEqual(bootstrap.calls.map(({ args }) => args), [
+    ['view', 'comins-sortable@0.1.1', 'maintainers', '--json'],
+    ['view', 'comins-sortable@0.1.1', '_npmUser', '--json'],
+    ['view', 'comins-sortable@0.1.1', 'author', '--json'],
+    ['view', 'comins-sortable@0.1.1', 'contributors', '--json'],
+  ]);
+  assertConstantFailure(runner({ args: ['--bootstrap-version', '0.1.1'] }));
+  assertConstantFailure(runner({
+    args: ['--bootstrap-version', '0.1.1'],
+    outputs: { _npmUser: { ...expected, name: 'different' } },
+  }));
+});
+
 test('requires trusted publishing and the service approver after publication', () => {
   const metadata = (overrides = {}) => ({
     maintainers: [expected],
@@ -185,6 +226,15 @@ test('accepts npm 12 wrapped JSON but rejects ambiguous nesting', () => {
       contributors: [[]],
     },
   }).code, 0);
+  assert.equal(runner({
+    args: ['--bootstrap-version', '0.1.1'],
+    outputs: {
+      maintainers: [[expected]],
+      _npmUser: [expected],
+      author: [null],
+      contributors: [[]],
+    },
+  }).code, 0);
 
   assertConstantFailure(runner({
     args: ['--profile'],
@@ -197,6 +247,10 @@ test('accepts npm 12 wrapped JSON but rejects ambiguous nesting', () => {
     args: ['--version', '0.1.1'],
     outputs: { _npmUser: [provider, provider] },
   }));
+  assertConstantFailure(runner({
+    args: ['--bootstrap-version', '0.1.1'],
+    outputs: { _npmUser: [expected, expected] },
+  }));
 });
 
 test('fails closed without exposing actual or expected npm identity values', () => {
@@ -204,6 +258,7 @@ test('fails closed without exposing actual or expected npm identity values', () 
     runner({ env: {} }),
     runner({ args: ['--unknown'] }),
     runner({ args: ['--version', '0.1'] }),
+    runner({ args: ['--bootstrap-version', '0.1'] }),
     runner({ args: ['--profile'], outputs: { profile: {
       ...expected,
       email: email('private', 'example.test'),
@@ -211,6 +266,19 @@ test('fails closed without exposing actual or expected npm identity values', () 
     runner({ outputs: { maintainers: [expected, expected] } }),
     runner({ execNpm: () => { throw new Error('unavailable'); } }),
   ]) assertConstantFailure(result);
+});
+
+test('documents distinct bootstrap and trusted-publisher closure commands', () => {
+  const security = readFileSync(`${root}/SECURITY.md`, 'utf8');
+  const bootstrap = security.indexOf('npm run check:npm-bootstrap -- <exact-version>');
+  const register = security.indexOf('Then register');
+  const trusted = security.indexOf(
+    'npm run check:npm-identity -- --version <exact-version>',
+  );
+
+  assert.ok(bootstrap >= 0);
+  assert.ok(register > bootstrap);
+  assert.ok(trusted > register);
 });
 
 test('uses full-history, exact-artifact, and staged-publishing release controls', () => {

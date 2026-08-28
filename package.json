@@ -49,6 +49,7 @@
   "scripts": {
     "build": "node scripts/build-package.mjs",
     "dev": "vite --config vite.example.config.ts",
+    "check:npm-bootstrap": "node scripts/check-npm-public-identity.mjs --bootstrap-version",
     "check:npm-identity": "node scripts/check-npm-public-identity.mjs",
     "check:npm-profile": "node scripts/check-npm-public-identity.mjs --profile",
     "check:licenses": "node scripts/check-licenses.mjs",

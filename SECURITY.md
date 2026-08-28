@@ -23,7 +23,16 @@ blocked until `node scripts/check-public-identities.mjs --all-history` also
 passes. It remains interactive with maintainer 2FA and no automation token
 because trusted and staged publishing require an existing package.
 
-After bootstrap, register the exact repository, publish workflow filename, and `npm` environment as the trusted publisher. Allow only `npm stage publish`, disallow token publishing, and require maintainer 2FA approval for every staged version. Before staging, verify the current registry maintainer name and email; after publication, run `npm run check:npm-identity -- --version <exact-version>` to verify that version's maintainer, trusted publisher, approver, author, and contributor metadata.
+Immediately after an interactive bootstrap, run
+`npm run check:npm-bootstrap -- <exact-version>` to verify that version's
+maintainer, direct publisher, author, and contributor metadata. Then register
+the exact repository, publish workflow filename, and `npm` environment as the
+trusted publisher. Allow only `npm stage publish`, disallow token publishing,
+and require maintainer 2FA approval for every staged version. Before staging,
+verify the current registry maintainer name and email; after a trusted
+publication, run `npm run check:npm-identity -- --version <exact-version>` to
+verify that version's maintainer, trusted publisher, approver, author, and
+contributor metadata.
 
 For every release, create one artifact with `npm pack --json --ignore-scripts`, validate its exact file list, scan the extracted contents, and publish or stage that same verified artifact.
 

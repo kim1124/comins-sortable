@@ -22,6 +22,8 @@ All notable behavior and public API changes to this project are recorded here.
 
 - Require an exact provider-managed npm service name and email for the
   authenticated bootstrap profile and current registry maintainer.
+- Verify exact maintainer and direct-publisher metadata for an interactive
+  bootstrap without weakening trusted-publisher checks for later releases.
 - Verify trusted publisher and person metadata for an exact published version.
 - Block release automation when any reachable Git commit contains a non-public
   author or committer identity.

@@ -108,6 +108,10 @@ test('defines package build, test, and typecheck entry points', () => {
     manifest.scripts['check:npm-profile'],
     'node scripts/check-npm-public-identity.mjs --profile',
   );
+  assert.equal(
+    manifest.scripts['check:npm-bootstrap'],
+    'node scripts/check-npm-public-identity.mjs --bootstrap-version',
+  );
   assert.equal(manifest.scripts.typecheck, 'tsc --noEmit');
   assert.equal(manifest.scripts.test, 'node scripts/run-unit-tests.mjs');
   assert.equal(manifest.scripts['test:types'], 'tsc -p test/types/tsconfig.json --noEmit');

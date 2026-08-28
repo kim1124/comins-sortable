@@ -120,6 +120,16 @@ export function validatePublishedIdentity(
     && isEmptyPersonMetadata(contributors);
 }
 
+export function validateBootstrapPublishedIdentity(
+  { maintainers, npmUser, author, contributors } = {},
+  expected,
+) {
+  return validateCurrentIdentity(maintainers, expected)
+    && validateCurrentIdentity(npmUser, expected)
+    && isEmptyPersonMetadata(author)
+    && isEmptyPersonMetadata(contributors);
+}
+
 export function run(options = {}) {
   const args = options.args ?? process.argv.slice(2);
   const env = options.env ?? process.env;
@@ -135,11 +145,11 @@ export function run(options = {}) {
         mode = 'profile';
       } else if (
         args.length === 2
-        && args[0] === '--version'
+        && (args[0] === '--version' || args[0] === '--bootstrap-version')
         && typeof args[1] === 'string'
         && EXACT_SEMVER.test(args[1])
       ) {
-        mode = 'version';
+        mode = args[0] === '--version' ? 'version' : 'bootstrap-version';
         version = args[1];
       } else {
         return fail(writeError);
@@ -167,22 +177,25 @@ export function run(options = {}) {
     if (!packageJson || typeof packageJson.name !== 'string' || packageJson.name.trim() === '') {
       return fail(writeError);
     }
-    const packageSpec = mode === 'version'
-      ? `${packageJson.name.trim()}@${version}`
-      : packageJson.name.trim();
+    const packageSpec = mode === 'current'
+      ? packageJson.name.trim()
+      : `${packageJson.name.trim()}@${version}`;
     const query = (field) => parseNpmJson(execNpm(
       ['view', packageSpec, field, '--json'],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     ), field);
     const maintainers = query('maintainers');
+    const publishedMetadata = mode === 'current' ? null : {
+      maintainers,
+      npmUser: query('_npmUser'),
+      author: query('author'),
+      contributors: query('contributors'),
+    };
     const valid = mode === 'current'
       ? validateCurrentIdentity(maintainers, expected[0])
-      : validatePublishedIdentity({
-          maintainers,
-          npmUser: query('_npmUser'),
-          author: query('author'),
-          contributors: query('contributors'),
-        }, expected[0]);
+      : mode === 'bootstrap-version'
+        ? validateBootstrapPublishedIdentity(publishedMetadata, expected[0])
+        : validatePublishedIdentity(publishedMetadata, expected[0]);
     return valid ? 0 : fail(writeError);
   } catch {
     return fail(writeError);
