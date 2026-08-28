@@ -32,6 +32,8 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - name: Verify all public Git identities
+        run: node scripts/check-public-identities.mjs --all-history
       - name: Verify requested version
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
@@ -100,6 +102,9 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      COMINS_NPM_PUBLIC_NAME: ${{ secrets.COMINS_NPM_PUBLIC_NAME }}
+      COMINS_NPM_PUBLIC_EMAIL: ${{ secrets.COMINS_NPM_PUBLIC_EMAIL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -115,5 +120,5 @@ jobs:
           name: npm-package-${{ inputs.version }}
           path: package-artifact
       - name: Verify current npm maintainer identity
-        run: node scripts/check-npm-maintainer.mjs
+        run: node scripts/check-npm-public-identity.mjs
       - run: npm stage publish ./package-artifact/*.tgz --access public

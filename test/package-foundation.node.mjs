@@ -25,7 +25,7 @@ test('declares the approved public package boundary', () => {
   const manifest = readJson('package.json');
 
   assert.equal(manifest.name, 'comins-sortable');
-  assert.equal(manifest.version, '0.1.0');
+  assert.equal(manifest.version, '0.1.1');
   assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(manifest.type, 'module');
   assert.equal(manifest.license, 'MIT');
@@ -99,7 +99,14 @@ test('defines package build, test, and typecheck entry points', () => {
 
   assert.equal(manifest.scripts.build, 'node scripts/build-package.mjs');
   assert.equal(manifest.scripts['check:licenses'], 'node scripts/check-licenses.mjs');
-  assert.equal(manifest.scripts['check:npm-maintainer'], 'node scripts/check-npm-maintainer.mjs');
+  assert.equal(
+    manifest.scripts['check:npm-identity'],
+    'node scripts/check-npm-public-identity.mjs',
+  );
+  assert.equal(
+    manifest.scripts['check:npm-profile'],
+    'node scripts/check-npm-public-identity.mjs --profile',
+  );
   assert.equal(manifest.scripts.typecheck, 'tsc --noEmit');
   assert.equal(manifest.scripts.test, 'node scripts/run-unit-tests.mjs');
   assert.equal(manifest.scripts['test:types'], 'tsc -p test/types/tsconfig.json --noEmit');
