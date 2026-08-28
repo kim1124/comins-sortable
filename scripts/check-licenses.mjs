@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, isAbsolute, join } from 'node:path';
 
 import { peerRanges } from '../package-boundary.mjs';
 
@@ -117,6 +117,19 @@ function isEmptyArray(value) {
   return Array.isArray(value) && value.length === 0;
 }
 
+function isSafeRelativePath(value, directory = false) {
+  if (typeof value !== 'string' || value === '') return false;
+  const normalized = value.replaceAll('\\', '/');
+  if (isAbsolute(normalized)
+    || normalized.startsWith('/')
+    || normalized.split('/').includes('..')) {
+    return false;
+  }
+  return directory
+    ? normalized.endsWith('/') && normalized.length > 1
+    : !normalized.endsWith('/');
+}
+
 function sameJson(left, right) {
   if (Array.isArray(left) || Array.isArray(right)) {
     return Array.isArray(left)
@@ -181,9 +194,34 @@ function parseScope(root) {
   }
   if (!hasExactKeys(scope.trackedMaterial, ['assets', 'copiedOrGeneratedCode'])
     || !isEmptyArray(scope.trackedMaterial.copiedOrGeneratedCode)
-    || !isEmptyArray(scope.trackedMaterial.assets)) {
+    || !Array.isArray(scope.trackedMaterial.assets)) {
     throw new Error('evidence review required');
   }
+  const reviewedAssets = scope.trackedMaterial.assets;
+  const reviewedPaths = new Set();
+  for (const asset of reviewedAssets) {
+    if (!hasExactKeys(asset, [
+      'generated',
+      'license',
+      'modifications',
+      'origin',
+      'path',
+      'source',
+      'useSurface',
+    ])
+      || !isSafeRelativePath(asset.path)
+      || !isSafeRelativePath(asset.source, true)
+      || asset.origin !== 'first-party'
+      || asset.license !== 'MIT'
+      || asset.useSurface !== 'repository-documentation'
+      || asset.generated !== true
+      || !sameJson(asset.modifications, ['resized', 'gif-encoded'])
+      || reviewedPaths.has(asset.path)) {
+      throw new Error('evidence review required');
+    }
+    reviewedPaths.add(asset.path);
+  }
+  return reviewedAssets;
 }
 
 function parsePackageBoundary(root) {
@@ -350,13 +388,19 @@ try {
   if (root === '') throw new Error('missing root');
 
   if (args.length === 0) {
-    parseScope(root);
+    const reviewedAssets = parseScope(root);
     const packages = parsePackageBoundary(root);
     const paths = trackedPaths(root);
+    const reviewedAssetPaths = new Set(reviewedAssets.map((asset) => asset.path));
+    if (reviewedAssets.some((asset) => (
+      !paths.includes(asset.path)
+      || !paths.some((path) => path.startsWith(asset.source))
+      || !isAsset(asset.path)
+    ))) throw new Error('reviewed asset drift');
     if (paths.some((path) => (
       (isDependency(path) && !REVIEWED_DEPENDENCY_FILES.has(path))
-      || isCopiedOrGenerated(path)
-      || isAsset(path)
+      || (isCopiedOrGenerated(path) && !reviewedAssetPaths.has(path))
+      || (isAsset(path) && !reviewedAssetPaths.has(path))
     ))) throw new Error('tracked material requires review');
     checkLockLicenses(packages);
   } else if (args.length === 2 && args[0] === '--artifact') {

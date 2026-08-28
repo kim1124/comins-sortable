@@ -67,8 +67,19 @@ test('adopts the approved public package boundary under Contract v1.7', () => {
   assert.match(agents, /Vanilla JavaScript,\n  React, Vue, and Svelte/);
   assert.match(security, /credential\/PII incident/i);
   assert.match(security, /npm pack --json --ignore-scripts/);
-  assert.match(readme, /public package is `comins-sortable@0\.1\.0`/);
+  assert.match(readme, /next public candidate is `comins-sortable@0\.1\.1`/);
   assert.match(readme, /Vanilla JavaScript, React, Vue, and Svelte/);
+  assert.match(readme, /docs\/assets\/sortable-playground\.gif/);
+  for (const tag of [
+    'TypeScript',
+    'Vanilla JS',
+    'React',
+    'Vue',
+    'Svelte',
+    'Vite',
+    'Playwright',
+    'Zero runtime dependencies',
+  ]) assert.equal(readme.includes(`\`${tag}\``), true);
   assert.match(verify, /npm ci --ignore-scripts/);
   assert.match(verify, /npm run verify/);
   assert.deepEqual(JSON.parse(read('LICENSE_SCOPE.json')), {
@@ -83,7 +94,15 @@ test('adopts the approved public package boundary under Contract v1.7', () => {
     },
     trackedMaterial: {
       copiedOrGeneratedCode: [],
-      assets: [],
+      assets: [{
+        path: 'docs/assets/sortable-playground.gif',
+        source: 'example/',
+        origin: 'first-party',
+        license: 'MIT',
+        useSurface: 'repository-documentation',
+        generated: true,
+        modifications: ['resized', 'gif-encoded'],
+      }],
     },
   });
   const licenseResult = spawnSync(process.execPath, [licenseChecker], {
@@ -94,7 +113,7 @@ test('adopts the approved public package boundary under Contract v1.7', () => {
   assert.equal(licenseResult.stdout, '');
   assert.equal(licenseResult.stderr, '');
   const manifest = JSON.parse(read('package.json'));
-  assert.equal(manifest.version, '0.1.0');
+  assert.equal(manifest.version, '0.1.1');
   assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
   assert.equal(existsSync(join(root, 'package-lock.json')), true);
@@ -207,4 +226,28 @@ test('rejects an unsafe identity hidden by mailmap', () => {
   git(cwd, 'add', '.mailmap');
   const head = commit(cwd, 'mailmap');
   constantFailure(run(cwd, base, head));
+});
+
+test('checks every reachable commit, including the root, for a release', () => {
+  const safeCwd = repository();
+  commit(safeCwd, 'safe root');
+  commit(safeCwd, 'safe head');
+  const safeHistory = run(safeCwd, '--all-history');
+  assert.equal(safeHistory.status, 0);
+  assert.equal(safeHistory.stdout, '');
+  assert.equal(safeHistory.stderr, '');
+
+  const cwd = repository();
+  git(cwd, 'config', 'user.name', unsafeName);
+  git(cwd, 'config', 'user.email', unsafeEmail);
+  const unsafeRoot = commit(cwd, 'unsafe root');
+  git(cwd, 'config', 'user.name', safeName);
+  git(cwd, 'config', 'user.email', safeEmail);
+  const safeHead = commit(cwd, 'safe head');
+
+  const reviewedRange = run(cwd, unsafeRoot, safeHead);
+  assert.equal(reviewedRange.status, 0);
+  assert.equal(reviewedRange.stdout, '');
+  assert.equal(reviewedRange.stderr, '');
+  constantFailure(run(cwd, '--all-history'));
 });

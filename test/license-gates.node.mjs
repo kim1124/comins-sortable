@@ -30,6 +30,15 @@ const cleanScope = {
     assets: [],
   },
 };
+const reviewedAsset = {
+  path: 'docs/assets/sortable-playground.gif',
+  source: 'example/',
+  origin: 'first-party',
+  license: 'MIT',
+  useSurface: 'repository-documentation',
+  generated: true,
+  modifications: ['resized', 'gif-encoded'],
+};
 const cleanManifest = {
   name: 'comins-sortable',
   version: '0.1.0',
@@ -273,4 +282,51 @@ test('does not allow a path-only declaration to bypass evidence review', (t) => 
   track(cwd, 'README.md');
 
   constantFailure(run(cwd));
+});
+
+test('accepts exact first-party generated documentation asset evidence', (t) => {
+  const cwd = packageFixture({
+    scope: {
+      ...cleanScope,
+      trackedMaterial: {
+        ...cleanScope.trackedMaterial,
+        assets: [reviewedAsset],
+      },
+    },
+  });
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  track(cwd, reviewedAsset.path, 'GIF89a');
+  track(cwd, 'example/index.html', '<main>fixture</main>\n');
+
+  const result = run(cwd);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, '');
+  assert.equal(result.stderr, '');
+});
+
+test('rejects incomplete or non-first-party asset evidence', (t) => {
+  const cases = [
+    { ...reviewedAsset, origin: 'third-party' },
+    { ...reviewedAsset, license: 'UNKNOWN' },
+    { ...reviewedAsset, source: 'missing/' },
+    { ...reviewedAsset, modifications: [] },
+  ];
+
+  for (const asset of cases) {
+    const cwd = packageFixture({
+      scope: {
+        ...cleanScope,
+        trackedMaterial: {
+          ...cleanScope.trackedMaterial,
+          assets: [asset],
+        },
+      },
+    });
+    t.after(() => rmSync(cwd, { recursive: true, force: true }));
+    track(cwd, reviewedAsset.path, 'GIF89a');
+    track(cwd, 'example/index.html', '<main>fixture</main>\n');
+
+    constantFailure(run(cwd));
+  }
 });

@@ -2,7 +2,25 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
-## 0.1.0 - 2026-08-28
+## 0.1.1 - Unreleased
+
+### Security
+
+- Require an exact provider-managed npm service name and email for the
+  authenticated bootstrap profile and current registry maintainer.
+- Verify trusted publisher and person metadata for an exact published version.
+- Block release automation when any reachable Git commit contains a non-public
+  author or committer identity.
+
+### Documentation
+
+- Add a first-party Playground GIF captured from the live React two-list
+  example and list the implementation stack without remote badge services.
+
+## 0.1.0 - Withdrawn 2026-08-28
+
+Version `0.1.0` was withdrawn after an npm public identity metadata incident and
+cannot be reused.
 
 ### Added
 

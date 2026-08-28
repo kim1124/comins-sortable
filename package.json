@@ -1,6 +1,6 @@
 {
   "name": "comins-sortable",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -49,7 +49,8 @@
   "scripts": {
     "build": "node scripts/build-package.mjs",
     "dev": "vite --config vite.example.config.ts",
-    "check:npm-maintainer": "node scripts/check-npm-maintainer.mjs",
+    "check:npm-identity": "node scripts/check-npm-public-identity.mjs",
+    "check:npm-profile": "node scripts/check-npm-public-identity.mjs --profile",
     "check:licenses": "node scripts/check-licenses.mjs",
     "lint": "npm run typecheck",
     "typecheck": "tsc --noEmit",

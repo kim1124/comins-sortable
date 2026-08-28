@@ -56,12 +56,35 @@ function rangeIdentities(base, head) {
   return identities;
 }
 
+function allHistoryIdentities() {
+  const output = git([
+    'log',
+    '--format=%an%x00%ae%x00%cn%x00%ce%x00',
+    'HEAD',
+  ]);
+  const identities = [];
+  for (const record of output.split('\n')) {
+    if (record === '') continue;
+    const fields = record.split('\0');
+    if (fields.length !== 5 || fields[4] !== '') throw new Error('invalid log');
+    identities.push([fields[0], fields[1]], [fields[2], fields[3]]);
+  }
+  if (identities.length === 0) throw new Error('empty history');
+  return identities;
+}
+
 try {
   const args = process.argv.slice(2);
-  if (args.length !== 0 && args.length !== 2) throw new Error('invalid arguments');
-  const identities = args.length === 0
-    ? localIdentities()
-    : rangeIdentities(args[0], args[1]);
+  let identities;
+  if (args.length === 0) {
+    identities = localIdentities();
+  } else if (args.length === 1 && args[0] === '--all-history') {
+    identities = allHistoryIdentities();
+  } else if (args.length === 2) {
+    identities = rangeIdentities(args[0], args[1]);
+  } else {
+    throw new Error('invalid arguments');
+  }
   if (!identities.every(([name, email]) => isPublicIdentity(name, email))) {
     throw new Error('non-public identity');
   }
