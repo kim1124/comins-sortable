@@ -2,21 +2,38 @@
 
 모든 Area는 consumer class와 선택형 visual preset을 지원합니다.
 
+## 전체 예제
+
 ```tsx
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
 import 'comins-sortable/styles.css';
 
-<SortableArea
-  areaId="tasks"
-  items={items}
-  itemKey="id"
-  placeholder={{
-    className: 'project-drop-placeholder',
-    preset: 'skeleton',
-  }}
-  onItemsChange={(next) => setItems([...next])}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
+type Item = { id: string; label: string };
+
+export function PlaceholderExample() {
+  const [items, setItems] = useState<Item[]>([
+    { id: 'task-1', label: '기획' },
+    { id: 'task-2', label: '개발' },
+  ]);
+
+  return (
+    <SortableRoot<Item>>
+      <SortableArea
+        areaId="tasks"
+        items={items}
+        itemKey="id"
+        placeholder={{
+          className: 'project-drop-placeholder',
+          preset: 'skeleton',
+        }}
+        onItemsChange={(next) => setItems([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
 ```
 
 `className`은 안정적인 `comins-sortable__placeholder` class와 함께 적용됩니다.

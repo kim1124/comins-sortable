@@ -3,23 +3,48 @@
 React `as` and Vue `tag` change the sortable host without changing the area
 contract. Svelte and Vanilla register the element that owns the item children.
 
+## Complete example
+
 ```tsx
-<table>
-  <SortableArea
-    as="tbody"
-    areaId="rows"
-    items={rows}
-    itemKey="id"
-    animation={160}
-    onItemsChange={(next) => setRows([...next])}
-  >
-    {(row) => (
-      <tr>
-        <td>{row.name}</td>
-      </tr>
-    )}
-  </SortableArea>
-</table>
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Row = { id: string; name: string; owner: string };
+
+export function TableRowsExample() {
+  const [rows, setRows] = useState<Row[]>([
+    { id: 'project-1', name: 'Website', owner: 'Min' },
+    { id: 'project-2', name: 'Mobile app', owner: 'Lee' },
+  ]);
+
+  return (
+    <SortableRoot<Row>>
+      <table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Owner</th>
+          </tr>
+        </thead>
+        <SortableArea
+          as="tbody"
+          areaId="rows"
+          items={rows}
+          itemKey="id"
+          animation={160}
+          onItemsChange={(next) => setRows([...next])}
+        >
+          {(row) => (
+            <tr>
+              <td>{row.name}</td>
+              <td>{row.owner}</td>
+            </tr>
+          )}
+        </SortableArea>
+      </table>
+    </SortableRoot>
+  );
+}
 ```
 
 Use `direction="horizontal"` with a row host and header-cell items for table

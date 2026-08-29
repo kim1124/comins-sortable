@@ -2,17 +2,39 @@
 
 Set `animation` to a duration or an options object.
 
+## Complete example
+
 ```tsx
-<SortableArea
-  areaId="tasks"
-  items={items}
-  itemKey="id"
-  animation={{ duration: 180, easing: 'ease-out' }}
-  autoScroll
-  onItemsChange={(next) => setItems([...next])}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Item = { id: string; label: string };
+
+export function AnimatedScrollExample() {
+  const [items, setItems] = useState<Item[]>(
+    Array.from({ length: 20 }, (_, index) => ({
+      id: `task-${index + 1}`,
+      label: `Task ${index + 1}`,
+    })),
+  );
+
+  return (
+    <div style={{ maxHeight: 240, overflow: 'auto' }}>
+      <SortableRoot<Item>>
+        <SortableArea
+          areaId="tasks"
+          items={items}
+          itemKey="id"
+          animation={{ duration: 180, easing: 'ease-out' }}
+          autoScroll
+          onItemsChange={(next) => setItems([...next])}
+        >
+          {(item) => <div>{item.label}</div>}
+        </SortableArea>
+      </SortableRoot>
+    </div>
+  );
+}
 ```
 
 Animation uses FLIP layout deltas for controlled updates and drag commits. Set

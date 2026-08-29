@@ -85,6 +85,44 @@ test('keeps complete English and Korean guide pairs', () => {
   assert.deepEqual(korean, guideNames);
 });
 
+test('provides complete examples in every English and Korean feature guide', () => {
+  const featureGuideNames = guideNames.slice(6);
+
+  for (const [locale, heading] of [
+    ['user', '## Complete example'],
+    ['ko', '## 전체 예제'],
+  ]) {
+    for (const name of featureGuideNames) {
+      const relativePath = `docs/${locale}/${name}`;
+      const source = read(relativePath);
+
+      assert.equal(
+        source.includes(heading),
+        true,
+        `${relativePath} must identify its complete example`,
+      );
+
+      if (name === '12-nested-tree.md') {
+        assert.match(source, /import \{ createSortableTree \} from 'comins-sortable\/core';/);
+        assert.match(source, /export type Node =/);
+        assert.match(source, /export function getTreeAreas\(/);
+        assert.match(source, /export function updateTreeArea\(/);
+        continue;
+      }
+
+      assert.match(source, /import \{ useState \} from 'react';/);
+      assert.match(
+        source,
+        /import \{ SortableArea, SortableRoot \} from 'comins-sortable\/react';/,
+      );
+      assert.match(source, /export function \w+Example\(\)/);
+      assert.match(source, /<SortableRoot</);
+      assert.match(source, /<SortableArea/);
+      assert.match(source, /onItemsChange=/);
+    }
+  }
+});
+
 test('maps every shipped Playground example to the user guide index', () => {
   const navigation = read('example/src/app/navigation.ts');
   const block = navigation.match(

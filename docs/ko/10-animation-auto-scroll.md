@@ -2,17 +2,39 @@
 
 `animation`에 duration 또는 option object를 지정합니다.
 
+## 전체 예제
+
 ```tsx
-<SortableArea
-  areaId="tasks"
-  items={items}
-  itemKey="id"
-  animation={{ duration: 180, easing: 'ease-out' }}
-  autoScroll
-  onItemsChange={(next) => setItems([...next])}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Item = { id: string; label: string };
+
+export function AnimatedScrollExample() {
+  const [items, setItems] = useState<Item[]>(
+    Array.from({ length: 20 }, (_, index) => ({
+      id: `task-${index + 1}`,
+      label: `Task ${index + 1}`,
+    })),
+  );
+
+  return (
+    <div style={{ maxHeight: 240, overflow: 'auto' }}>
+      <SortableRoot<Item>>
+        <SortableArea
+          areaId="tasks"
+          items={items}
+          itemKey="id"
+          animation={{ duration: 180, easing: 'ease-out' }}
+          autoScroll
+          onItemsChange={(next) => setItems([...next])}
+        >
+          {(item) => <div>{item.label}</div>}
+        </SortableArea>
+      </SortableRoot>
+    </div>
+  );
+}
 ```
 
 애니메이션은 제어 상태 update와 drag commit의 layout delta를 FLIP으로 처리합니다.

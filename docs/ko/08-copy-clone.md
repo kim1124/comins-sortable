@@ -3,33 +3,50 @@
 source group의 `pull` 정책에서 `copy`를 반환하고 새로운 안정 ID를 생성하는
 factory를 제공합니다. source 배열은 변경되지 않습니다.
 
+## 전체 예제
+
 ```tsx
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Item = { id: string; label: string };
 const sourceGroup = { name: 'tasks', pull: 'copy' as const };
 
-<SortableArea
-  areaId="catalog"
-  group={sourceGroup}
-  items={catalog}
-  itemKey="id"
-  copyItem={(item) => ({
-    ...item,
-    id: crypto.randomUUID(),
-    label: `${item.label} 복사본`,
-  })}
-  onItemsChange={(next) => setCatalog([...next])}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
+export function CopyExample() {
+  const [catalog, setCatalog] = useState<Item[]>([
+    { id: 'template-1', label: 'Template' },
+  ]);
+  const [board, setBoard] = useState<Item[]>([]);
 
-<SortableArea
-  areaId="board"
-  group="tasks"
-  items={board}
-  itemKey="id"
-  onItemsChange={(next) => setBoard([...next])}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
+  return (
+    <SortableRoot<Item>>
+      <SortableArea
+        areaId="catalog"
+        group={sourceGroup}
+        items={catalog}
+        itemKey="id"
+        copyItem={(item) => ({
+          ...item,
+          id: crypto.randomUUID(),
+          label: `${item.label} copy`,
+        })}
+        onItemsChange={(next) => setCatalog([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+
+      <SortableArea
+        areaId="board"
+        group="tasks"
+        items={board}
+        itemKey="id"
+        onItemsChange={(next) => setBoard([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
 ```
 
 React, Vue, Svelte는 `copyItem(item, context)`를 사용합니다. Vanilla는

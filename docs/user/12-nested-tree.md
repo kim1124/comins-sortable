@@ -3,24 +3,19 @@
 Nested areas declare their parent item so collision can reject a move from a
 parent into its own descendant.
 
-```tsx
-<SortableArea
-  areaId={`children-${parent.id}`}
-  parent={{ areaId: 'root', itemId: parent.id }}
-  group="tree"
-  items={parent.children}
-  itemKey="id"
-  onItemsChange={(next) => updateChildren(parent.id, next)}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
-```
-
 `createSortableTree` is the framework-neutral adapter for one immutable tree
 value. It does not render components or own state.
 
+## Complete example
+
 ```ts
 import { createSortableTree } from 'comins-sortable/core';
+
+export type Node = {
+  id: string;
+  label: string;
+  children: readonly Node[];
+};
 
 const tree = createSortableTree<Node>({
   rootAreaId: 'root',
@@ -30,9 +25,31 @@ const tree = createSortableTree<Node>({
   getChildrenAreaId: (node) => `children-${node.id}`,
 });
 
-const areas = tree.getAreas(nodes);
-const nextNodes = tree.updateArea(nodes, areaId, nextItems);
+export const initialNodes: readonly Node[] = [
+  {
+    id: 'planning',
+    label: 'Planning',
+    children: [{ id: 'scope', label: 'Define scope', children: [] }],
+  },
+  { id: 'delivery', label: 'Delivery', children: [] },
+];
+
+export function getTreeAreas(nodes: readonly Node[]) {
+  return tree.getAreas(nodes);
+}
+
+export function updateTreeArea(
+  nodes: readonly Node[],
+  areaId: string,
+  nextItems: readonly Node[],
+) {
+  return tree.updateArea(nodes, areaId, nextItems);
+}
 ```
+
+Render every result from `getTreeAreas(nodes)` as a framework Area. Pass its
+`areaId`, `items`, and optional `parent` without changing them, then replace the
+tree state with the value returned by `updateTreeArea`.
 
 Use `applyChange` when one framework Root change should be folded into the
 whole tree transaction. Unknown areas, duplicate node or area IDs, and cycles

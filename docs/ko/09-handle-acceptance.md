@@ -2,24 +2,48 @@
 
 selector로 drag activation을 제한하고 callback으로 destination을 제어합니다.
 
+## 전체 예제
+
 ```tsx
-<SortableArea
-  areaId="tasks"
-  items={items}
-  itemKey="id"
-  handle=".drag-handle"
-  ignore="button, a, input, textarea, select"
-  activationDistance={4}
-  accept={(context) => context.source.areaId !== 'locked'}
-  onItemsChange={(next) => setItems([...next])}
->
-  {(item) => (
-    <div>
-      <button className="drag-handle" aria-label={`${item.label} 이동`}>⠿</button>
-      <span>{item.label}</span>
-    </div>
-  )}
-</SortableArea>
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Item = { id: string; label: string };
+
+export function HandleExample() {
+  const [items, setItems] = useState<Item[]>([
+    { id: 'task-1', label: 'Plan' },
+    { id: 'task-2', label: 'Build' },
+  ]);
+
+  return (
+    <SortableRoot<Item>>
+      <SortableArea
+        areaId="tasks"
+        items={items}
+        itemKey="id"
+        handle=".drag-handle"
+        ignore="a, input, textarea, select"
+        activationDistance={4}
+        accept={(context) => context.source.areaId !== 'locked'}
+        onItemsChange={(next) => setItems([...next])}
+      >
+        {(item) => (
+          <div>
+            <button
+              type="button"
+              className="drag-handle"
+              aria-label={`Drag ${item.label}`}
+            >
+              ⠿
+            </button>
+            <span>{item.label}</span>
+          </div>
+        )}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
 ```
 
 명시적인 `handle`은 `ignore`보다 우선합니다. 접근 가능한 handle은 실제 button으로

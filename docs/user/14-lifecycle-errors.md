@@ -3,16 +3,48 @@
 Scope callbacks expose the drag lifecycle without transferring state ownership
 to the library.
 
-```ts
-const lifecycle = {
-  onBeforeDragStart: (context) => canStart(context),
-  onDragStart: (context) => log('start', context),
-  onDrag: (context) => log('drag', context),
-  onInsertDragArea: (event) => log('destination', event.destination),
-  onChange: (change) => audit(change),
-  onAfterDrag: (result) => log(result.status, result.reason),
-  onError: (error) => report(error),
-};
+## Complete example
+
+```tsx
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Item = { id: string; label: string; locked?: boolean };
+
+export function LifecycleExample() {
+  const [items, setItems] = useState<Item[]>([
+    { id: 'task-1', label: 'Plan' },
+    { id: 'task-2', label: 'Build' },
+  ]);
+
+  return (
+    <SortableRoot<Item>
+      onBeforeDragStart={(context) => {
+        const item = items.find(({ id }) => id === context.itemId);
+        return item?.locked !== true;
+      }}
+      onDragStart={(context) => console.info('start', context)}
+      onDrag={(context) => console.info('drag', context)}
+      onInsertDragArea={(event) => {
+        console.info('destination', event.destination);
+      }}
+      onChange={(change) => console.info('change', change)}
+      onAfterDrag={(result) => {
+        console.info('complete', result.status, result.reason);
+      }}
+      onError={(error) => console.error('sortable error', error)}
+    >
+      <SortableArea
+        areaId="tasks"
+        items={items}
+        itemKey="id"
+        onItemsChange={(next) => setItems([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
 ```
 
 Returning `false` from `onBeforeDragStart` abandons pending activation without

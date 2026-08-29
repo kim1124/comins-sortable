@@ -2,24 +2,48 @@
 
 Use selectors to control activation and callbacks to control destinations.
 
+## Complete example
+
 ```tsx
-<SortableArea
-  areaId="tasks"
-  items={items}
-  itemKey="id"
-  handle=".drag-handle"
-  ignore="button, a, input, textarea, select"
-  activationDistance={4}
-  accept={(context) => context.source.areaId !== 'locked'}
-  onItemsChange={(next) => setItems([...next])}
->
-  {(item) => (
-    <div>
-      <button className="drag-handle" aria-label={`Drag ${item.label}`}>⠿</button>
-      <span>{item.label}</span>
-    </div>
-  )}
-</SortableArea>
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Item = { id: string; label: string };
+
+export function HandleExample() {
+  const [items, setItems] = useState<Item[]>([
+    { id: 'task-1', label: 'Plan' },
+    { id: 'task-2', label: 'Build' },
+  ]);
+
+  return (
+    <SortableRoot<Item>>
+      <SortableArea
+        areaId="tasks"
+        items={items}
+        itemKey="id"
+        handle=".drag-handle"
+        ignore="a, input, textarea, select"
+        activationDistance={4}
+        accept={(context) => context.source.areaId !== 'locked'}
+        onItemsChange={(next) => setItems([...next])}
+      >
+        {(item) => (
+          <div>
+            <button
+              type="button"
+              className="drag-handle"
+              aria-label={`Drag ${item.label}`}
+            >
+              ⠿
+            </button>
+            <span>{item.label}</span>
+          </div>
+        )}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
 ```
 
 An explicit `handle` takes precedence over `ignore`. Use a real button for an

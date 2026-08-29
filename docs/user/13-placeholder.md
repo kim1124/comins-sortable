@@ -2,21 +2,38 @@
 
 Every area supports consumer classes and an optional visual preset.
 
+## Complete example
+
 ```tsx
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
 import 'comins-sortable/styles.css';
 
-<SortableArea
-  areaId="tasks"
-  items={items}
-  itemKey="id"
-  placeholder={{
-    className: 'project-drop-placeholder',
-    preset: 'skeleton',
-  }}
-  onItemsChange={(next) => setItems([...next])}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
+type Item = { id: string; label: string };
+
+export function PlaceholderExample() {
+  const [items, setItems] = useState<Item[]>([
+    { id: 'task-1', label: 'Plan' },
+    { id: 'task-2', label: 'Build' },
+  ]);
+
+  return (
+    <SortableRoot<Item>>
+      <SortableArea
+        areaId="tasks"
+        items={items}
+        itemKey="id"
+        placeholder={{
+          className: 'project-drop-placeholder',
+          preset: 'skeleton',
+        }}
+        onItemsChange={(next) => setItems([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
 ```
 
 `className` is added beside the stable `comins-sortable__placeholder` class.

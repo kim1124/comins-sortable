@@ -3,29 +3,46 @@
 하나의 Area는 자신의 제어 배열을 재정렬합니다. 같은 scope와 `group`을 사용하는
 Area 사이에서는 item을 이동할 수 있습니다.
 
-```tsx
-<SortableRoot<Item>>
-  <SortableArea
-    areaId="todo"
-    group="tasks"
-    items={todo}
-    itemKey="id"
-    onItemsChange={(next) => setTodo([...next])}
-  >
-    {(item) => <div>{item.label}</div>}
-  </SortableArea>
+## 전체 예제
 
-  <SortableArea
-    areaId="done"
-    group="tasks"
-    items={done}
-    itemKey="id"
-    emptyInsertThreshold={24}
-    onItemsChange={(next) => setDone([...next])}
-  >
-    {(item) => <div>{item.label}</div>}
-  </SortableArea>
-</SortableRoot>
+```tsx
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Item = { id: string; label: string };
+
+export function TransferExample() {
+  const [todo, setTodo] = useState<Item[]>([
+    { id: 'task-1', label: 'Plan' },
+    { id: 'task-2', label: 'Build' },
+  ]);
+  const [done, setDone] = useState<Item[]>([]);
+
+  return (
+    <SortableRoot<Item>>
+      <SortableArea
+        areaId="todo"
+        group="tasks"
+        items={todo}
+        itemKey="id"
+        onItemsChange={(next) => setTodo([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+
+      <SortableArea
+        areaId="done"
+        group="tasks"
+        items={done}
+        itemKey="id"
+        emptyInsertThreshold={24}
+        onItemsChange={(next) => setDone([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
 ```
 
 transaction은 Root `onChange` 전에 source에서 item을 제거하고 destination에

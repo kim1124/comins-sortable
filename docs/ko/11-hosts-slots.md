@@ -3,23 +3,48 @@
 React의 `as`와 Vue의 `tag`는 Area 계약을 바꾸지 않고 정렬 host를 변경합니다.
 Svelte와 Vanilla는 item 자식을 소유하는 element를 직접 등록합니다.
 
+## 전체 예제
+
 ```tsx
-<table>
-  <SortableArea
-    as="tbody"
-    areaId="rows"
-    items={rows}
-    itemKey="id"
-    animation={160}
-    onItemsChange={(next) => setRows([...next])}
-  >
-    {(row) => (
-      <tr>
-        <td>{row.name}</td>
-      </tr>
-    )}
-  </SortableArea>
-</table>
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Row = { id: string; name: string; owner: string };
+
+export function TableRowsExample() {
+  const [rows, setRows] = useState<Row[]>([
+    { id: 'project-1', name: '웹사이트', owner: '민수' },
+    { id: 'project-2', name: '모바일 앱', owner: '지영' },
+  ]);
+
+  return (
+    <SortableRoot<Row>>
+      <table>
+        <thead>
+          <tr>
+            <th>프로젝트</th>
+            <th>담당자</th>
+          </tr>
+        </thead>
+        <SortableArea
+          as="tbody"
+          areaId="rows"
+          items={rows}
+          itemKey="id"
+          animation={160}
+          onItemsChange={(next) => setRows([...next])}
+        >
+          {(row) => (
+            <tr>
+              <td>{row.name}</td>
+              <td>{row.owner}</td>
+            </tr>
+          )}
+        </SortableArea>
+      </table>
+    </SortableRoot>
+  );
+}
 ```
 
 테이블 열 정렬은 row host와 header-cell item에 `direction="horizontal"`을

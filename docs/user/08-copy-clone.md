@@ -3,33 +3,50 @@
 Return `copy` from a source group's `pull` policy and provide a factory that
 creates a new stable ID. The source array remains unchanged.
 
+## Complete example
+
 ```tsx
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+
+type Item = { id: string; label: string };
 const sourceGroup = { name: 'tasks', pull: 'copy' as const };
 
-<SortableArea
-  areaId="catalog"
-  group={sourceGroup}
-  items={catalog}
-  itemKey="id"
-  copyItem={(item) => ({
-    ...item,
-    id: crypto.randomUUID(),
-    label: `${item.label} copy`,
-  })}
-  onItemsChange={(next) => setCatalog([...next])}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
+export function CopyExample() {
+  const [catalog, setCatalog] = useState<Item[]>([
+    { id: 'template-1', label: 'Template' },
+  ]);
+  const [board, setBoard] = useState<Item[]>([]);
 
-<SortableArea
-  areaId="board"
-  group="tasks"
-  items={board}
-  itemKey="id"
-  onItemsChange={(next) => setBoard([...next])}
->
-  {(item) => <div>{item.label}</div>}
-</SortableArea>
+  return (
+    <SortableRoot<Item>>
+      <SortableArea
+        areaId="catalog"
+        group={sourceGroup}
+        items={catalog}
+        itemKey="id"
+        copyItem={(item) => ({
+          ...item,
+          id: crypto.randomUUID(),
+          label: `${item.label} copy`,
+        })}
+        onItemsChange={(next) => setCatalog([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+
+      <SortableArea
+        areaId="board"
+        group="tasks"
+        items={board}
+        itemKey="id"
+        onItemsChange={(next) => setBoard([...next])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
 ```
 
 React, Vue, and Svelte use `copyItem(item, context)`. Vanilla uses
