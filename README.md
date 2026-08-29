@@ -34,6 +34,64 @@ versions, tags, and GitHub Releases remain separately maintainer-gated.
 npm install comins-sortable
 ```
 
+## Run the Playground locally
+
+The published npm package does not include the Playground source. Clone this
+repository to run all 23 examples with Vanilla JavaScript, React, Vue, and
+Svelte adapters:
+
+```sh
+git clone https://github.com/kim1124/comins-sortable.git
+cd comins-sortable
+npm ci --ignore-scripts
+npm run dev
+```
+
+Open [the React simple-sorting example](http://127.0.0.1:4003/examples/simple/react).
+The development server uses the fixed `127.0.0.1:4003` address and fails
+instead of selecting another port when that port is occupied.
+
+## Quick Start with React
+
+Comins Sortable is controlled: the application owns the item array and commits
+each proposed order through `onItemsChange`.
+
+```tsx
+import { useState } from 'react';
+import { SortableArea, SortableRoot } from 'comins-sortable/react';
+import 'comins-sortable/styles.css';
+
+type Item = { id: string; label: string };
+
+export function TaskList() {
+  const [items, setItems] = useState<Item[]>([
+    { id: 'task-1', label: 'Plan' },
+    { id: 'task-2', label: 'Build' },
+  ]);
+
+  return (
+    <SortableRoot<Item>>
+      <SortableArea
+        areaId="tasks"
+        items={items}
+        itemKey="id"
+        onItemsChange={(nextItems) => setItems([...nextItems])}
+      >
+        {(item) => <div>{item.label}</div>}
+      </SortableArea>
+    </SortableRoot>
+  );
+}
+```
+
+## User Guides
+
+- [Documentation index](https://github.com/kim1124/comins-sortable/blob/main/docs/README.md)
+- [English Quick Start](https://github.com/kim1124/comins-sortable/blob/main/docs/user/01-quick-start.md)
+- [Korean Quick Start](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/01-quick-start.md)
+- [All English feature guides](https://github.com/kim1124/comins-sortable/tree/main/docs/user)
+- [모든 한글 기능 가이드](https://github.com/kim1124/comins-sortable/tree/main/docs/ko)
+
 ## Tree API
 
 `createSortableTree` is a framework-neutral, schema-adapted public API. It maps
