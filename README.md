@@ -13,7 +13,7 @@ The animation is captured from the real Comins Sortable Playground.
 
 ## Status
 
-The next public candidate is `comins-sortable@0.1.1`. Its
+The current public release is `comins-sortable@0.1.1`. Its
 Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
 reorder, transfer, and copy interactions with commit verification and rollback.
 The Playground currently provides 23 routes. Seventeen implement the planned
@@ -25,8 +25,8 @@ feedback. Runtime dependencies are not allowed.
 React, React DOM, Vue, and Svelte are optional peers.
 
 Version `0.1.0` was withdrawn on 2026-08-28 after a public identity metadata
-incident and cannot be reused. No version is currently available from npm.
-Publishing `0.1.1`, tags, and GitHub Releases remain separately maintainer-gated.
+incident and cannot be reused. Version `0.1.1` is available from npm. Future
+versions, tags, and GitHub Releases remain separately maintainer-gated.
 
 ## Installation
 
