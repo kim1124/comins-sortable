@@ -67,7 +67,7 @@ test('adopts the approved public package boundary under Contract v1.7', () => {
   assert.match(agents, /Vanilla JavaScript,\n  React, Vue, and Svelte/);
   assert.match(security, /credential\/PII incident/i);
   assert.match(security, /npm pack --json --ignore-scripts/);
-  assert.match(readme, /next public candidate is `comins-sortable@0\.1\.1`/);
+  assert.match(readme, /current public release is `comins-sortable@0\.1\.1`/);
   assert.match(readme, /Vanilla JavaScript, React, Vue, and Svelte/);
   assert.match(readme, /docs\/assets\/sortable-playground\.gif/);
   for (const tag of [
