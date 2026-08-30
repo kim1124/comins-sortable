@@ -12,6 +12,8 @@ import {
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { checkUserGuideExamples } from '../scripts/check-user-guide-examples.mjs';
+
 const root = fileURLToPath(new URL('..', import.meta.url));
 const guideNames = [
   '01-quick-start.md',
@@ -121,6 +123,10 @@ test('provides complete examples in every English and Korean feature guide', () 
       assert.match(source, /onItemsChange=/);
     }
   }
+});
+
+test('typechecks every complete English and Korean feature example', () => {
+  assert.deepEqual(checkUserGuideExamples(), { examples: 16 });
 });
 
 test('maps every shipped Playground example to the user guide index', () => {
