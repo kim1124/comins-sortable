@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
   type ReactElement,
+  type CSSProperties,
 } from 'react';
 
 import {
@@ -37,6 +38,15 @@ const adapterNames = {
   svelte: 'Svelte',
 } as const;
 
+const defaultToggles: Readonly<Record<string, boolean>> = {
+  'accept-destination': true,
+  'invert-swap': false,
+};
+
+const defaultValues: Readonly<Record<string, number>> = {
+  'swap-threshold': 0.5,
+};
+
 async function loadDemoModule(route: PlaygroundRoute): Promise<PlaygroundDemoModule> {
   return loadPlaygroundDemo(route.adapterId);
 }
@@ -48,16 +58,20 @@ export function PlaygroundApp(): ReactElement {
   );
   const [model, setModel] = useState<PlaygroundModel>({});
   const [events, setEvents] = useState<readonly PlaygroundEvent[]>([]);
+  const [dragStart, setDragStart] = useState<(PlaygroundEvent & { sequence: number }) | null>(null);
   const [operation, setOperation] = useState<PlaygroundOperation | null>(null);
   const [source, setSource] = useState('');
   const [showCode, setShowCode] = useState(false);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [toggles, setToggles] = useState<Record<string, boolean>>({
-    'accept-destination': true,
-  });
+  const [toggles, setToggles] = useState<Record<string, boolean>>(() => ({ ...defaultToggles }));
+  const [values, setValues] = useState<Record<string, number>>(() => ({ ...defaultValues }));
   const runtimeTarget = useRef<HTMLDivElement | null>(null);
   const runtimeHost = useRef<PlaygroundRuntimeHost | null>(null);
+  const sourcePanel = useRef<HTMLElement | null>(null);
   const scenario = scenarioById(route.exampleId);
+  // Show the upward path used by the comparison instructions on every adapter.
+  const threshold = values['swap-threshold'] ?? 0.5;
+  const upwardBoundary = (toggles['invert-swap'] ? (1 - threshold) / 2 : (1 + threshold) / 2) * 100;
 
   useEffect(() => {
     const canonical = playgroundPath(route);
@@ -76,11 +90,19 @@ export function PlaygroundApp(): ReactElement {
   }, [locale]);
 
   useEffect(() => {
+    if (!showCode) return;
+    sourcePanel.current?.scrollIntoView({ block: 'start' });
+  }, [showCode]);
+
+  useEffect(() => {
     if (runtimeTarget.current === null) return;
     if (runtimeHost.current === null) {
       runtimeHost.current = new PlaygroundRuntimeHost(runtimeTarget.current, {
         publishEvent: (event) => {
           setEvents((current) => [...current.slice(-19), event]);
+          if (event.name === 'dragStart') {
+            setDragStart((current) => ({ ...event, sequence: (current?.sequence ?? 0) + 1 }));
+          }
         },
         publishModel: setModel,
         publishOperation: setOperation,
@@ -90,7 +112,10 @@ export function PlaygroundApp(): ReactElement {
     let cancelled = false;
     setStatus('loading');
     setEvents([]);
+    setDragStart(null);
     setOperation(null);
+    setToggles({ ...defaultToggles });
+    setValues({ ...defaultValues });
     void loadDemoModule(route)
       .then(async (demoModule) => {
         if (cancelled) return;
@@ -121,9 +146,16 @@ export function PlaygroundApp(): ReactElement {
     setRoute(next);
   };
 
-  const dispatch = (controlId: string, kind: 'button' | 'toggle'): void => {
+  const dispatch = (controlId: string, kind: 'button' | 'toggle' | 'range', value?: number): void => {
     if (controlId === 'reset') {
+      setToggles({ ...defaultToggles });
+      setValues({ ...defaultValues });
       runtimeHost.current?.reset();
+      return;
+    }
+    if (kind === 'range' && value !== undefined) {
+      setValues((current) => ({ ...current, [controlId]: value }));
+      runtimeHost.current?.dispatch(controlId, value);
       return;
     }
     if (kind === 'toggle') {
@@ -185,6 +217,9 @@ export function PlaygroundApp(): ReactElement {
               <span className="cs-playground__route">examples / {route.exampleId}</span>
               <h1>{scenario.title[locale]}</h1>
               <p>{scenario.description[locale]}</p>
+              <p>{locale === 'ko'
+                ? '왼쪽 핸들을 잡아 이동하고, 본문 글자는 드래그로 선택하여 복사할 수 있습니다.'
+                : 'Drag the left handle to move an item. Select text in the card body to copy it.'}</p>
               <div className="cs-playground__api-list" aria-label="API">
                 {scenario.api.map((api) => <code key={api}>{api}</code>)}
               </div>
@@ -220,7 +255,20 @@ export function PlaygroundApp(): ReactElement {
               <p>{locale === 'ko' ? '실행 중 옵션을 변경할 수 있습니다.' : 'Change options while the demo is running.'}</p>
             </div>
             <div className="cs-playground__control-actions">
-              {scenario.controls.map((control) => (
+              {scenario.controls.map((control) => control.kind === 'range' ? (
+                <label key={control.id} className="cs-playground__range">
+                  <span>{control.label[locale]} <output>{values[control.id] ?? control.defaultValue}</output></span>
+                  <input
+                    aria-label={control.label[locale]}
+                    type="range"
+                    min={control.min}
+                    max={control.max}
+                    step={control.step}
+                    value={values[control.id] ?? control.defaultValue}
+                    onChange={(event) => dispatch(control.id, control.kind, Number(event.currentTarget.value))}
+                  />
+                </label>
+              ) : (
                 <button
                   key={control.id}
                   type="button"
@@ -243,10 +291,24 @@ export function PlaygroundApp(): ReactElement {
             </div>
             {status === 'loading' && <p className="cs-playground__notice">{message('loading', locale)}</p>}
             {status === 'error' && <p className="cs-playground__notice" role="alert">{message('error', locale)}</p>}
-            <div ref={runtimeTarget} className="cs-playground__runtime" data-playground-runtime />
+            {route.exampleId === 'thresholds' && (
+              <div className="cs-playground__threshold-guide" data-threshold-guide>
+                <p>{locale === 'ko'
+                  ? 'Design을 위쪽 Research 카드로 천천히 이동하세요. 포인터가 색칠된 영역에 들어가면 Research 앞으로 순서가 바뀝니다. 0.2와 0.8을 비교해 보세요.'
+                  : 'Slowly drag Design upward onto Research. Its order changes before Research when the pointer enters the shaded area. Compare 0.2 with 0.8.'}</p>
+                <span>{locale === 'ko'
+                  ? `↑ 위로 이동: 카드 상단 ${Math.round(upwardBoundary)}%까지 전환 영역 · 아래로 이동할 때는 반대 방향 적용`
+                  : `↑ Moving up: top ${Math.round(upwardBoundary)}% is active · moving down uses the opposite edge`}</span>
+              </div>
+            )}
+            <div ref={runtimeTarget}
+              className={`cs-playground__runtime${route.exampleId === 'thresholds' ? ' cs-playground__runtime--thresholds' : ''}`}
+              style={route.exampleId === 'thresholds' ? { '--cs-demo-threshold-up': `${upwardBoundary}%` } as CSSProperties : undefined}
+              data-playground-runtime />
           </section>
           <output hidden data-playground-model>{JSON.stringify(model)}</output>
           <output hidden data-playground-operation>{JSON.stringify(operation)}</output>
+          <output hidden data-playground-drag-start>{JSON.stringify(dragStart)}</output>
 
           <section className="cs-playground__panel cs-playground__events" aria-label={message('events', locale)}>
             <div className="cs-playground__panel-heading"><span>{message('events', locale)}</span><span>{events.length}</span></div>
@@ -256,7 +318,11 @@ export function PlaygroundApp(): ReactElement {
           </section>
 
           {showCode && (
-            <section className="cs-playground__panel cs-playground__source" aria-label={message('code', locale)}>
+            <section
+              ref={sourcePanel}
+              className="cs-playground__panel cs-playground__source"
+              aria-label={message('code', locale)}
+            >
               <div className="cs-playground__panel-heading"><span>{route.adapterId}.ts</span><span>read only</span></div>
               <pre><code>{source}</code></pre>
             </section>

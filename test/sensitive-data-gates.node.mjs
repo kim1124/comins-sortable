@@ -51,14 +51,14 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts the approved public package boundary under Contract v1.7', () => {
+test('adopts the approved public package boundary under Contract v1.8', () => {
   const agents = read('AGENTS.md');
   const readme = read('README.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /managed-start contract=v1\.7/);
-  assert.match(readme, /Contract v1\.7/);
+  assert.match(agents, /managed-start contract=v1\.8/);
+  assert.match(readme, /Contract v1\.8/);
   assert.match(agents, /comins-governance\/blob\/main\/COMINS_CONTRACT\.md/);
   assert.match(agents, /Governance is the only\s+common-policy owner/i);
   assert.match(agents, /module owns their CI implementation/i);
@@ -113,25 +113,40 @@ test('adopts the approved public package boundary under Contract v1.7', () => {
   assert.equal(licenseResult.stdout, '');
   assert.equal(licenseResult.stderr, '');
   const manifest = JSON.parse(read('package.json'));
-  assert.equal(manifest.version, '0.1.1');
+  assert.equal(manifest.version, '0.1.2');
   assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
   assert.equal(existsSync(join(root, 'package-lock.json')), true);
   assert.equal(existsSync(join(root, '.github/workflows/publish.yml')), true);
 });
 
-test('runs browser gates after security and package verification', () => {
+test('selects browser and performance gates by changed surface', () => {
   const verify = read('.github/workflows/verify.yml');
-  const browserJob = verify.match(/\n  browser:\n[\s\S]*$/)?.[0];
+  const changesJob = verify.match(/\n  changes:\n[\s\S]*?\n  security:\n/)?.[0];
+  const browserJob = verify.match(/\n  browser:\n[\s\S]*?\n  performance:\n/)?.[0];
+  const performanceJob = verify.match(/\n  performance:\n[\s\S]*$/)?.[0];
 
+  assert.ok(changesJob);
   assert.ok(browserJob);
-  assert.match(browserJob, /needs:\n\s+- security\n\s+- verify/);
+  assert.ok(performanceJob);
+  assert.match(changesJob, /package: \$\{\{ steps\.scope\.outputs\.package \}\}/);
+  assert.match(changesJob, /browser: \$\{\{ steps\.scope\.outputs\.browser \}\}/);
+  assert.match(changesJob, /performance: \$\{\{ steps\.scope\.outputs\.performance \}\}/);
+  assert.match(changesJob, /src\/\*\|example\/\*\|test\/playwright\/\*/);
+  assert.match(changesJob, /test\/playground\/performance\.spec\.ts\|playwright\.performance\.config\.ts/);
+  assert.match(browserJob, /needs:\n\s+- changes\n\s+- security\n\s+- verify/);
+  assert.match(browserJob, /if: \$\{\{ needs\.changes\.outputs\.browser == 'true' \}\}/);
   assert.equal((browserJob.match(/playwright install/g) ?? []).length, 1);
   assert.match(
     browserJob,
     /npx --no-install playwright install --with-deps chromium firefox webkit[\s\S]*npm run verify:e2e[\s\S]*npm run verify:playground/,
   );
+  assert.doesNotMatch(browserJob, /verify:performance/);
   assert.doesNotMatch(browserJob, /- run: npm run verify$/m);
+  assert.match(performanceJob, /needs:\n\s+- changes\n\s+- browser/);
+  assert.match(performanceJob, /if: \$\{\{ needs\.changes\.outputs\.performance == 'true' \}\}/);
+  assert.match(performanceJob, /playwright install --with-deps chromium/);
+  assert.match(performanceJob, /npm run verify:performance/);
 });
 
 test('pins shared Gitleaks, hooks, and the credential-free workflow', () => {

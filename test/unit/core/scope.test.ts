@@ -93,6 +93,25 @@ test('scope validates placeholder options before registering an area', () => {
   }), hasCode('INVALID_OPTION'));
 });
 
+test('scope validates advanced sorting options before registering an area', () => {
+  const platform = fakePlatform();
+  const scope = createSortableScopeInternal({}, platform);
+
+  for (const options of [
+    { swapThreshold: -0.1 },
+    { swapThreshold: 1.1 },
+    { selectedClass: 'two classes' },
+    { selectedClass: '  ' },
+  ]) {
+    const area = fakeElement('UL', { ownerDocument: platform.document });
+    assert.throws(() => scope.registerArea(area, {
+      areaId: `invalid-${String(options.swapThreshold ?? options.selectedClass)}`,
+      item: '[data-sortable-item]',
+      ...options,
+    }), hasCode('INVALID_OPTION'));
+  }
+});
+
 test('scope register, update, unregister, cancel, and destroy are idempotent', () => {
   const fixture = scopeFixture();
 
@@ -137,6 +156,153 @@ test('scope reuses cached geometry across unchanged pointer frames', () => {
   fixture.repeatMove();
 
   assert.equal(rectReads, afterDirtyRefresh);
+});
+
+test('quick release commits the latest queued pointer destination', () => {
+  const fixture = scopeFixture();
+
+  fixture.begin('todo', 1);
+  fixture.queueMove('todo', 0);
+  fixture.release();
+  fixture.platform.flushFrame();
+
+  assert.deepEqual(fixture.ids('todo'), ['b', 'a']);
+});
+
+test('multi drag supports additive and range selection then transfers as one group', () => {
+  const changes: import('../../../src/core.js').SortableChange[] = [];
+  const fixture = scopeFixture({
+    todoItemIds: ['a', 'b', 'c', 'd'],
+    doneItemIds: ['x'],
+    multiDrag: true,
+    selectedClass: 'is-selected',
+    onChange: (change) => changes.push(change),
+  });
+
+  fixture.select('todo', 0, { ctrlKey: true });
+  fixture.select('todo', 2, { shiftKey: true });
+  assert.deepEqual(
+    [0, 1, 2, 3].map((index) => fixture.item('todo', index).classList.contains('is-selected')),
+    [true, true, true, false],
+  );
+
+  fixture.begin('todo', 1);
+  fixture.move('done', 0);
+  fixture.release();
+  fixture.platform.flushFrame();
+
+  assert.deepEqual(fixture.ids('todo'), ['d']);
+  assert.deepEqual(fixture.ids('done'), ['a', 'b', 'c', 'x']);
+  assert.deepEqual(changes[changes.length - 1]?.itemIds, ['a', 'b', 'c']);
+});
+
+test('multi drag compares same-area destinations in the selection-excluded index space', () => {
+  const fixture = scopeFixture({
+    todoItemIds: ['a', 'b', 'c', 'd', 'e'],
+    doneItemIds: ['x'],
+    multiDrag: true,
+  });
+
+  fixture.select('todo', 0, { ctrlKey: true });
+  fixture.select('todo', 2, { shiftKey: true });
+  fixture.begin('todo', 1);
+  fixture.move('todo', 4);
+
+  const placeholder = fixture.area('todo').querySelector(
+    '[data-comins-sortable-placeholder]',
+  );
+  assert.equal(
+    (placeholder?.nextSibling as Element | null)?.getAttribute('data-sortable-id'),
+    'e',
+  );
+});
+
+test('multi drag accepts Command/Meta as the additive selection modifier', () => {
+  const fixture = scopeFixture({ multiDrag: true });
+
+  fixture.select('todo', 0, { metaKey: true });
+  fixture.select('todo', 1, { metaKey: true });
+
+  assert.equal(fixture.item('todo', 0).hasAttribute('data-comins-sortable-selected'), true);
+  assert.equal(fixture.item('todo', 1).hasAttribute('data-comins-sortable-selected'), true);
+});
+
+test('swap mode exchanges the source and hovered item instead of inserting', () => {
+  const fixture = scopeFixture({
+    todoItemIds: ['a', 'b', 'c', 'd'],
+    doneItemIds: ['x'],
+    swap: true,
+  });
+
+  fixture.begin('todo', 0);
+  fixture.move('todo', 3);
+  assert.equal(
+    fixture.item('todo', 3).hasAttribute('data-comins-sortable-swap-target'),
+    true,
+  );
+  fixture.release();
+  fixture.platform.flushFrame();
+
+  assert.deepEqual(fixture.ids('todo'), ['d', 'b', 'c', 'a']);
+  assert.equal(fixture.results[fixture.results.length - 1]?.change?.operation, 'swap');
+  assert.equal(fixture.area('todo').querySelector('[data-comins-sortable-swap-target]'), null);
+});
+
+test('copy drag leaves no source placeholder until it enters a destination', () => {
+  const fixture = scopeFixture({
+    groupTodo: { name: 'tasks', pull: 'copy' },
+    prepareCopy: ({ itemId }) => `${String(itemId)}-copy`,
+  });
+
+  fixture.begin('todo', 0);
+  assert.equal(fixture.placeholderCount(), 0);
+  fixture.move('done', 0);
+  assert.equal(fixture.placeholderCount(), 1);
+  fixture.move('todo', 0);
+  assert.equal(fixture.placeholderCount(), 0);
+  fixture.move('done', 0);
+  assert.equal(fixture.placeholderCount(), 1);
+  fixture.release();
+  fixture.platform.flushFrame();
+  assert.deepEqual(fixture.ids('todo'), ['a', 'b']);
+  assert.deepEqual(fixture.ids('done'), ['a-copy', 'c', 'd']);
+});
+
+test('end insertion keeps its placeholder before a trailing non-sortable slot', () => {
+  const fixture = scopeFixture();
+  const footer = fakeElement('DIV', {
+    ownerDocument: fixture.platform.document,
+    attributes: { 'data-demo-slot': 'footer' },
+  });
+  fixture.area('todo').appendChild(footer);
+
+  fixture.begin('todo', 0);
+  fixture.move('todo', 99);
+
+  const placeholder = fixture.area('todo').querySelector(
+    '[data-comins-sortable-placeholder]',
+  );
+  assert.equal(placeholder?.nextSibling, footer);
+});
+
+test('rejected destination exposes its reason during drag and clears it on exit', () => {
+  const fixture = scopeFixture({ acceptDone: false });
+
+  fixture.begin('todo', 0);
+  fixture.move('done', 0);
+  assert.equal(
+    fixture.area('done').getAttribute('data-comins-sortable-rejection'),
+    'not-accepted',
+  );
+  assert.equal(
+    fixture.item('todo', 0).getAttribute('data-comins-sortable-rejection'),
+    'not-accepted',
+  );
+
+  fixture.moveOutside();
+  assert.equal(fixture.area('done').hasAttribute('data-comins-sortable-rejection'), false);
+  assert.equal(fixture.item('todo', 0).hasAttribute('data-comins-sortable-rejection'), false);
+  fixture.release();
 });
 
 test('activation-time ID failures report without starting an after-drag lifecycle', () => {

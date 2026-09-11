@@ -85,3 +85,73 @@ test('feedback moves by pointer delta and restores only changed source state', (
   assert.equal(feedback.placeholder.parentElement, null);
   assert.equal(platform.document.activeElement, source);
 });
+
+test('copy feedback keeps the source in flow and moves a separate preview', () => {
+  const platform = fakePlatform();
+  const parent = fakeElement('UL', { ownerDocument: platform.document });
+  const source = fakeElement('LI', {
+    ownerDocument: platform.document,
+    id: 'consumer-item',
+    parentElement: parent,
+    style: { position: 'relative', transform: 'scale(1)' },
+    rect: { left: 5, top: 10, right: 105, bottom: 40, width: 100, height: 30 },
+  });
+  parent.appendChild(source);
+
+  const feedback = createFeedback(source, platform, {}, 'copy');
+  const body = platform.document.body as unknown as { fixtureChildren: Element[] };
+  const preview = body.fixtureChildren[0] as HTMLElement | undefined;
+
+  assert.equal(source.parentElement, parent);
+  assert.equal(source.hasAttribute('data-comins-sortable-dragging'), false);
+  assert.notEqual(preview, source);
+  assert.equal(preview?.hasAttribute('data-comins-sortable-dragging'), true);
+  assert.equal(preview?.getAttribute('aria-hidden'), 'true');
+  assert.equal(preview?.id, '');
+
+  feedback.move({
+    type: 'mouse',
+    clientX: 15,
+    clientY: 8,
+    deltaX: 10,
+    deltaY: -2,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+  });
+
+  assert.equal(preview?.style.transform, 'translate(10px, -2px)');
+  assert.equal(source.style.position, 'relative');
+  assert.equal(source.style.transform, 'scale(1)');
+  feedback.destroy();
+  assert.equal(body.fixtureChildren.length, 0);
+  assert.equal(source.parentElement, parent);
+});
+
+test('table move feedback removes the source from table layout and restores it', () => {
+  const platform = fakePlatform();
+  const parent = fakeElement('TR', { ownerDocument: platform.document });
+  const source = fakeElement('TH', {
+    ownerDocument: platform.document,
+    parentElement: parent,
+    style: { display: 'table-cell' },
+    rect: { left: 20, top: 10, right: 120, bottom: 50, width: 100, height: 40 },
+  });
+  parent.appendChild(source);
+
+  const feedback = createFeedback(source, platform);
+  feedback.place(parent, source);
+  const body = platform.document.body as unknown as { fixtureChildren: Element[] };
+  const preview = body.fixtureChildren[0] as HTMLElement | undefined;
+
+  assert.equal(source.style.display, 'none');
+  assert.equal(source.hasAttribute('data-comins-sortable-dragging'), false);
+  assert.notEqual(preview, source);
+  assert.equal(preview?.hasAttribute('data-comins-sortable-dragging'), true);
+  assert.equal(feedback.placeholder.tagName, 'TH');
+
+  feedback.destroy();
+  assert.equal(source.style.display, 'table-cell');
+  assert.equal(body.fixtureChildren.length, 0);
+});

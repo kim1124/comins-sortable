@@ -54,11 +54,11 @@ expose the Vue root element, to the real registered element.
 React `header` and `footer`, Vue slots, or a narrowed Vanilla/Svelte `item`
 selector keep non-sortable content in the same host. Non-item siblings must not
 match the item selector and must remain outside the controlled item array.
+When the pointer is over one of these non-sortable siblings, it is not treated
+as an insertion position and exposes `not-accepted` feedback instead.
 
 Playground:
 
-- <http://127.0.0.1:4003/examples/table/react>
-- <http://127.0.0.1:4003/examples/table-column/react>
 - <http://127.0.0.1:4003/examples/third-party/react>
 - <http://127.0.0.1:4003/examples/footer-slot/react>
 - <http://127.0.0.1:4003/examples/header-slot/react>

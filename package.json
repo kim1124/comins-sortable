@@ -1,6 +1,6 @@
 {
   "name": "comins-sortable",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -66,8 +66,10 @@
     "playground:preview": "vite preview --config vite.example.config.ts",
     "test:e2e": "playwright test --config=playwright.config.ts",
     "test:playground": "playwright test --config=playwright.playground.config.ts",
+    "test:performance": "playwright test --config=playwright.performance.config.ts",
     "verify:e2e": "npm run test:e2e",
     "verify:playground": "npm run playground:build && npm run test:playground",
+    "verify:performance": "npm run playground:build && npm run test:performance",
     "verify:package-artifact": "node scripts/verify-package-artifact.mjs",
     "verify:full": "npm run verify && npm run verify:e2e",
     "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types"

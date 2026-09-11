@@ -3,6 +3,10 @@
 Return `copy` from a source group's `pull` policy and provide a factory that
 creates a new stable ID. The source array remains unchanged.
 
+The original source item remains rendered in its list during the drag. A
+separate drag preview follows the pointer and only the destination placeholder
+marks the pending copy; drop and cancel both remove all temporary feedback.
+
 ## Complete example
 
 ```tsx
@@ -53,6 +57,11 @@ React, Vue, and Svelte use `copyItem(item, context)`. Vanilla uses
 `copyElement(source, context)` and must return a detached element whose ID is
 new and matches `getItemId`. An attached, missing, or duplicate copy fails
 closed without changing either area.
+
+Vanilla evaluates relative selectors such as `:scope > .item` in the registered
+area. The inserted copy must match the destination's item selector and resolve
+to its prepared ID through the destination's `getItemId`. A mismatch is rolled
+back before the consumer's `onChange` callback is called.
 
 `pull` may also be a callback. The modifier-copy example reads the activation
 snapshot and returns `copy` for Alt/Option, otherwise `move`.

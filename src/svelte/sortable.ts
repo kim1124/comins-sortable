@@ -35,6 +35,11 @@ export interface SvelteSortableOptions<T> {
   ignore?: string;
   activationDistance?: number;
   emptyInsertThreshold?: number;
+  swapThreshold?: number;
+  invertSwap?: boolean;
+  swap?: boolean;
+  multiDrag?: boolean;
+  selectedClass?: string;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
@@ -368,6 +373,11 @@ function toAreaOptions<T>(
     ignore: options.ignore,
     activationDistance: options.activationDistance,
     emptyInsertThreshold: options.emptyInsertThreshold,
+    swapThreshold: options.swapThreshold,
+    invertSwap: options.invertSwap,
+    swap: options.swap,
+    multiDrag: options.multiDrag,
+    selectedClass: options.selectedClass,
     autoScroll: options.autoScroll,
     animation: options.animation,
     placeholder: options.placeholder,
@@ -385,6 +395,11 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && left.ignore === right.ignore
     && left.activationDistance === right.activationDistance
     && left.emptyInsertThreshold === right.emptyInsertThreshold
+    && left.swapThreshold === right.swapThreshold
+    && left.invertSwap === right.invertSwap
+    && left.swap === right.swap
+    && left.multiDrag === right.multiDrag
+    && left.selectedClass === right.selectedClass
     && left.autoScroll === right.autoScroll
     && sameAnimation(left.animation, right.animation)
     && left.placeholder?.preset === right.placeholder?.preset

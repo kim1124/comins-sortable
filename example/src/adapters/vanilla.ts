@@ -6,6 +6,10 @@ import {
   copyDemoItem,
   demoModel,
   demoTreeArea,
+  demoTreeAreas,
+  treeChildAreaId,
+  applyDemoChange,
+  reverseDemoChildren,
   hasSecondArea,
   isCopyExample,
   isNestedExample,
@@ -15,7 +19,7 @@ import {
 } from './demo-data.js';
 import source from './vanilla.ts?raw';
 
-function card(item: DemoItem, withHandle: boolean): HTMLElement {
+function card(item: DemoItem): HTMLElement {
   const element = document.createElement('article');
   element.className = `cs-demo-card cs-demo-card--${item.tone}`;
   element.dataset.sortableId = item.id;
@@ -36,12 +40,12 @@ function card(item: DemoItem, withHandle: boolean): HTMLElement {
   detail.textContent = item.detail;
   copy.append(title, detail);
 
-  if (withHandle) element.append(handle);
+  element.append(handle);
   element.append(copy);
   return element;
 }
 
-function area(areaId: 'todo' | 'done', title: string, items: readonly DemoItem[], withHandle: boolean): HTMLElement {
+function area(areaId: 'todo' | 'done', title: string, items: readonly DemoItem[]): HTMLElement {
   const section = document.createElement('section');
   section.className = 'cs-demo-column';
   section.dataset.demoColumn = areaId;
@@ -51,7 +55,7 @@ function area(areaId: 'todo' | 'done', title: string, items: readonly DemoItem[]
   list.className = 'cs-demo-list';
   list.dataset.demoArea = areaId;
   list.setAttribute('role', 'list');
-  for (const item of items) list.append(card(item, withHandle));
+  for (const item of items) list.append(card(item));
   section.append(heading, list);
   return section;
 }
@@ -64,58 +68,21 @@ function slot(position: 'header' | 'footer'): HTMLElement {
   return element;
 }
 
-function table(items: readonly DemoItem[], columns: boolean): { table: HTMLTableElement; area: HTMLElement } {
-  const element = document.createElement('table');
-  element.className = 'cs-demo-table';
-  element.dataset.demoColumn = 'todo';
-  if (columns) {
-    const thead = element.createTHead();
-    const row = thead.insertRow();
-    row.dataset.demoArea = 'todo';
-    for (const item of items) {
-      const heading = document.createElement('th');
-      heading.className = 'cs-demo-column-header';
-      heading.dataset.sortableId = item.id;
-      heading.scope = 'col';
-      heading.textContent = item.title;
-      row.append(heading);
-    }
-    const detail = element.createTBody().insertRow();
-    for (const item of items) detail.insertCell().textContent = item.detail;
-    return { table: element, area: row };
-  }
-  const heading = element.createTHead().insertRow();
-  for (const label of ['Task', 'Detail']) {
-    const cell = document.createElement('th');
-    cell.textContent = label;
-    heading.append(cell);
-  }
-  const body = element.createTBody();
-  body.dataset.demoArea = 'todo';
-  for (const item of items) {
-    const row = body.insertRow();
-    row.className = 'cs-demo-row';
-    row.dataset.sortableId = item.id;
-    const title = document.createElement('th');
-    title.scope = 'row';
-    title.textContent = item.title;
-    row.append(title);
-    row.insertCell().textContent = item.detail;
-  }
-  return { table: element, area: body };
-}
-
 export const vanillaDemoModule: PlaygroundDemoModule = {
   adapterId: 'vanilla',
   source,
   mount(container, input, bridge) {
     let sortable: Sortable | null = null;
+    let state = createDemoState(input.exampleId);
     let allowed = true;
     let destroyed = false;
     let copySequence = 0;
+    let swapThreshold = 0.5;
+    let invertSwap = false;
     let itemsById = new Map<string, DemoItem>();
 
     const publishModel = (): void => {
+      if (state.tree !== undefined) { bridge.publishModel(demoModel(state)); return; }
       const read = (areaId: string): string[] => Array.from(
         container.querySelectorAll(`[data-demo-area="${areaId}"] > [data-sortable-id]`),
         (element) => element.getAttribute('data-sortable-id') ?? '',
@@ -130,9 +97,64 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
       bridge.publishEvent({ name, status: result?.status, reason: result?.reason });
     };
 
+    const renderTree = (): void => {
+      const hosts = new Map<string, HTMLElement>();
+      const treeArea = (areaId: string): HTMLElement => {
+        const current = demoTreeArea(state, areaId);
+        const list = document.createElement('div');
+        list.className = 'cs-demo-list cs-demo-tree-list';
+        list.dataset.demoArea = areaId;
+        list.setAttribute('role', 'list');
+        hosts.set(areaId, list);
+        for (const item of current.items) {
+          const element = card(item);
+          if (item.acceptsChildren) {
+            const shell = document.createElement('div');
+            shell.className = 'cs-demo-nested-shell';
+            const label = document.createElement('strong');
+            label.textContent = `${item.title} ${input.locale === 'ko' ? '하위 항목' : 'children'}`;
+            shell.append(label, treeArea(treeChildAreaId(item)));
+            element.append(shell);
+          }
+          list.append(element);
+        }
+        return list;
+      };
+      const section = document.createElement('section');
+      section.className = 'cs-demo-column cs-demo-tree';
+      section.dataset.demoColumn = 'todo';
+      const root = treeArea('todo');
+      section.append(root);
+      container.append(section);
+      sortable = createSortable(root, {
+        areaId: 'todo', group: 'playground', item: '.cs-demo-card', handle: '.cs-demo-handle',
+        onBeforeDragStart: () => event('beforeDragStart'),
+        onDragStart: ({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) }),
+        onInsertDragArea: ({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId }),
+        onChange(change) {
+          state = applyDemoChange(state, change);
+          for (const area of demoTreeAreas(state)) {
+            if (area.parent !== undefined) sortable?.updateArea(area.areaId, { parent: area.parent });
+          }
+          event('change');
+          bridge.publishOperation(playgroundOperation(change));
+          publishModel();
+        },
+        onAfterDrag(result) { event('afterDrag', result); publishModel(); },
+      });
+      for (const current of demoTreeAreas(state)) {
+        if (current.parent === undefined) continue;
+        sortable.registerArea(hosts.get(current.areaId)!, {
+          areaId: current.areaId, group: 'playground', item: '.cs-demo-card', handle: '.cs-demo-handle', parent: current.parent,
+        });
+      }
+      bridge.publishOperation(null);
+      publishModel();
+    };
+
     const render = (): void => {
       sortable?.destroy();
-      const state = createDemoState(input.exampleId);
+      state = createDemoState(input.exampleId);
       const treeRoot = input.exampleId === 'tree' ? demoTreeArea(state, 'todo') : null;
       const treeChild = input.exampleId === 'tree' ? demoTreeArea(state, 'child') : null;
       const todoItems = treeRoot?.items ?? state.todo;
@@ -142,31 +164,26 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
         [...state.todo, ...state.done, ...state.child].map((item) => [item.id, item]),
       );
       allowed = true;
+      swapThreshold = 0.5;
+      invertSwap = false;
       container.replaceChildren();
+      if (input.exampleId === 'tree') { renderTree(); return; }
 
       const board = document.createElement('div');
-      board.className = `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}`;
-      let todo: HTMLElement;
-      let todoList: HTMLElement;
-      if (input.exampleId === 'table' || input.exampleId === 'table-column') {
-        const rendered = table(todoItems, input.exampleId === 'table-column');
-        todo = rendered.table;
-        todoList = rendered.area;
-        board.append(todo);
-      } else {
-        todo = area('todo', input.locale === 'ko' ? '진행할 작업' : 'To do', todoItems, input.exampleId === 'handle');
-        todoList = todo.querySelector<HTMLElement>('[data-demo-area="todo"]')!;
-        if (input.exampleId === 'third-party' || input.exampleId === 'functional-third-party') {
-          todoList.classList.add('cs-demo-component-host');
-          todoList.dataset.demoComponentHost = 'vanilla';
-        }
-        if (input.exampleId === 'header-slot' || input.exampleId === 'two-list-slots') todoList.prepend(slot('header'));
-        if (input.exampleId === 'footer-slot' || input.exampleId === 'two-list-slots') todoList.append(slot('footer'));
-        board.append(todo);
+      board.className = `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`;
+      const todo = area('todo', input.locale === 'ko' ? '진행할 작업' : 'To do', todoItems);
+      const todoList = todo.querySelector<HTMLElement>('[data-demo-area="todo"]')!;
+      if ((input.exampleId === 'grid' || input.exampleId === 'swap-grid')) todoList.classList.add('cs-demo-list--grid');
+      if (input.exampleId === 'third-party' || input.exampleId === 'functional-third-party') {
+        todoList.classList.add('cs-demo-component-host');
+        todoList.dataset.demoComponentHost = 'vanilla';
       }
+      if (input.exampleId === 'header-slot' || input.exampleId === 'two-list-slots') todoList.prepend(slot('header'));
+      if (input.exampleId === 'footer-slot' || input.exampleId === 'two-list-slots') todoList.append(slot('footer'));
+      board.append(todo);
       let done: HTMLElement | null = null;
       if (hasSecondArea(input.exampleId)) {
-        done = area('done', input.locale === 'ko' ? '완료' : 'Done', state.done, input.exampleId === 'handle');
+        done = area('done', input.locale === 'ko' ? '완료' : 'Done', state.done);
         const doneList = done.querySelector<HTMLElement>('[data-demo-area="done"]')!;
         if (input.exampleId === 'two-list-slots') {
           doneList.prepend(slot('header'));
@@ -189,7 +206,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           childList.classList.add('cs-demo-component-host');
           childList.dataset.demoComponentHost = 'vanilla';
         }
-        for (const item of childItems) childList.append(card(item, false));
+        for (const item of childItems) childList.append(card(item));
         shell.append(title, childList);
         parent.append(shell);
       }
@@ -214,31 +231,27 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
                 pull: (context) => context.pointer.altKey ? 'copy' : 'move',
               }
             : 'playground',
-        item: input.exampleId === 'table'
-          ? '.cs-demo-row'
-          : input.exampleId === 'table-column'
-            ? '.cs-demo-column-header'
-            : '.cs-demo-card',
+        item: '.cs-demo-card', handle: '.cs-demo-handle',
         copyElement: isCopyExample(input.exampleId)
           ? (source) => {
               const sourceItem = itemsById.get(source.getAttribute('data-sortable-id') ?? '');
               if (sourceItem === undefined) throw new Error('Unknown demo copy source');
               const copy = copyDemoItem(sourceItem, input.exampleId, ++copySequence);
               itemsById.set(copy.id, copy);
-              return card(copy, false);
+              return card(copy);
             }
           : undefined,
-        handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
         autoScroll: input.exampleId === 'auto-scroll',
-        animation: input.exampleId === 'transition'
-          ? 180
-          : input.exampleId === 'transitions'
-            ? { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }
-            : false,
+        animation: input.exampleId === 'transition' ? 180 : false,
+        direction: (input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? 'grid' : undefined,
+        swapThreshold: input.exampleId === 'thresholds' ? swapThreshold : undefined,
+        invertSwap: input.exampleId === 'thresholds' ? invertSwap : undefined,
+        swap: (input.exampleId === 'swap' || input.exampleId === 'swap-grid'),
+        multiDrag: input.exampleId === 'transitions',
+        selectedClass: input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined,
         placeholder: placeholderForExample(input.exampleId),
-        direction: input.exampleId === 'table-column' ? 'horizontal' : undefined,
         onBeforeDragStart: () => event('beforeDragStart'),
-        onDragStart: () => event('dragStart'),
+        onDragStart: ({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) }),
         onInsertDragArea: ({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId }),
         onChange,
         onAfterDrag,
@@ -247,7 +260,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
         sortable.registerArea(done.querySelector<HTMLElement>('[data-demo-area="done"]')!, {
           areaId: 'done',
           group: 'playground',
-          item: '.cs-demo-card',
+          item: '.cs-demo-card', handle: '.cs-demo-handle',
           emptyInsertThreshold: input.exampleId === 'empty' ? 42 : undefined,
           accept: input.exampleId === 'accept' ? () => allowed : undefined,
         });
@@ -256,7 +269,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
         sortable.registerArea(childList, {
           areaId: 'child',
           group: 'playground',
-          item: '.cs-demo-card',
+          item: '.cs-demo-card', handle: '.cs-demo-handle',
           parent: treeChild?.parent ?? { areaId: 'todo', itemId: 'research' },
           animation: 160,
         });
@@ -270,8 +283,17 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
     return {
       dispatch(controlId, value) {
         if (controlId === 'accept-destination' && typeof value === 'boolean') allowed = value;
+        if (controlId === 'swap-threshold' && typeof value === 'number') {
+          swapThreshold = value;
+          sortable?.updateArea('todo', { swapThreshold });
+        }
+        if (controlId === 'invert-swap' && typeof value === 'boolean') {
+          invertSwap = value;
+          sortable?.updateArea('todo', { invertSwap });
+        }
         const targetArea = controlId === 'reverse-child' ? 'child' : 'todo';
         if (controlId === 'reverse-items' || controlId === 'reverse-child') {
+          if (state.tree !== undefined && controlId === 'reverse-child') state = reverseDemoChildren(state);
           const target = container.querySelector<HTMLElement>(`[data-demo-area="${targetArea}"]`);
           const items = Array.from(target?.children ?? []).filter((element) => element.hasAttribute('data-sortable-id'));
           for (const item of items.reverse()) target?.append(item);

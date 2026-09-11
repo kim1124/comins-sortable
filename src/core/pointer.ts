@@ -32,7 +32,7 @@ export interface PointerSensorOptions {
   handle?: string;
   ignore?: string;
   onActivate(snapshot: PointerSnapshot): boolean | void;
-  onMove(snapshot: PointerSnapshot): void;
+  onMove(snapshot: PointerSnapshot, releasing: boolean): void;
   onCancel(reason: AfterDragReason): void;
   onRelease(snapshot: PointerSnapshot): void;
   onEnd?(): void;
@@ -43,6 +43,7 @@ export interface PointerSensor {
   pointerMove(input: PointerInput): void;
   pointerUp(input: PointerInput): void;
   pointerCancel(input: PointerInput): void;
+  refresh(): void;
   cancel(reason: AfterDragReason): void;
   unmount(): void;
   destroy(): void;
@@ -147,7 +148,21 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     }
   };
 
-  const processFrame = (): void => {
+  const processActiveMove = (pointer: PendingPointer, releasing = false): void => {
+    try {
+      options.onMove(snapshot(pointer), releasing);
+    } catch (error) {
+      cleanup();
+      try {
+        options.onCancel('error');
+      } catch (cancelError) {
+        options.platform.report(cancelError);
+      }
+      options.platform.report(error);
+    }
+  };
+
+  const processFrame = (releasing = false): void => {
     const pointer = current;
     if (pointer === null) {
       return;
@@ -174,17 +189,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       return;
     }
 
-    try {
-      options.onMove(nextSnapshot);
-    } catch (error) {
-      cleanup();
-      try {
-        options.onCancel('error');
-      } catch (cancelError) {
-        options.platform.report(cancelError);
-      }
-      options.platform.report(error);
-    }
+    processActiveMove(pointer, releasing);
   };
 
   const pointerMove = (input: PointerInput): void => {
@@ -197,7 +202,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       input.preventDefault?.();
     }
     if (pointer.frameId === null) {
-      pointer.frameId = options.platform.requestFrame(processFrame);
+      pointer.frameId = options.platform.requestFrame(() => processFrame());
     }
   };
 
@@ -207,6 +212,21 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       return;
     }
     pointer.latest = latestInput(input);
+    const wasActive = pointer.active;
+    if (pointer.frameId !== null) {
+      options.platform.cancelFrame(pointer.frameId);
+      pointer.frameId = null;
+      processFrame(true);
+      if (current !== pointer) {
+        return;
+      }
+      if (!wasActive && pointer.active) {
+        processActiveMove(pointer, true);
+        if (current !== pointer) {
+          return;
+        }
+      }
+    }
     const active = pointer.active;
     const finalSnapshot = snapshot(pointer);
     cleanup();
@@ -239,14 +259,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     if (target === null || source === null || !source.contains(target)) {
       return false;
     }
-    const handle = options.handle === undefined
-      ? null
-      : closestWithin(target, source, options.handle);
-    if (options.handle !== undefined && handle === null) {
-      return false;
-    }
-    const ignoreSelector = options.ignore ?? DEFAULT_IGNORE_SELECTOR;
-    if (handle === null && closestWithin(target, source, ignoreSelector) !== null) {
+    if (!allowsPointerTarget(target, source, options)) {
       return false;
     }
 
@@ -313,6 +326,11 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     pointerMove,
     pointerUp,
     pointerCancel,
+    refresh() {
+      if (current?.active && current.frameId === null) {
+        current.frameId = options.platform.requestFrame(() => processFrame());
+      }
+    },
     cancel,
     unmount: () => cancel('unmounted'),
     destroy: () => {
@@ -323,6 +341,19 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       cancel('destroyed');
     },
   };
+}
+
+export function allowsPointerTarget(
+  target: Element,
+  source: Element,
+  options: { handle?: string; ignore?: string },
+): boolean {
+  const handle = options.handle === undefined
+    ? null
+    : closestWithin(target, source, options.handle);
+  if (options.handle !== undefined && handle === null) return false;
+  return handle !== null
+    || closestWithin(target, source, options.ignore ?? DEFAULT_IGNORE_SELECTOR) === null;
 }
 
 function canStartPointer(input: PointerInput): boolean {

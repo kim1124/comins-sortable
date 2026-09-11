@@ -129,3 +129,99 @@ export function buildCopyChange(
     ],
   };
 }
+
+export function buildMultiReorderChange(
+  itemIds: readonly SortableId[],
+  selectedItemIds: readonly SortableId[],
+  source: SortableLocation,
+  destination: SortableLocation,
+): SortableChange | null {
+  assertIndex(source.index, itemIds.length, false);
+  const selected = orderedSelection(itemIds, selectedItemIds);
+  if (!selected.includes(itemIds[source.index] as SortableId)) {
+    throw new RangeError('sortable selection must include the source item');
+  }
+  const remaining = itemIds.filter((itemId) => !selected.includes(itemId));
+  assertIndex(destination.index, remaining.length, true);
+  const next = [...remaining];
+  next.splice(destination.index, 0, ...selected);
+  if (sameOrder(next, itemIds)) return null;
+
+  return {
+    operation: 'reorder',
+    itemId: itemIds[source.index] as SortableId,
+    itemIds: selected,
+    source,
+    destination,
+    orders: [{ areaId: source.areaId, itemIds: next }],
+  };
+}
+
+export function buildMultiTransferChange(
+  sourceItemIds: readonly SortableId[],
+  destinationItemIds: readonly SortableId[],
+  selectedItemIds: readonly SortableId[],
+  source: SortableLocation,
+  destination: SortableLocation,
+): SortableChange {
+  assertIndex(source.index, sourceItemIds.length, false);
+  assertIndex(destination.index, destinationItemIds.length, true);
+  const selected = orderedSelection(sourceItemIds, selectedItemIds);
+  if (!selected.includes(sourceItemIds[source.index] as SortableId)) {
+    throw new RangeError('sortable selection must include the source item');
+  }
+  const nextSource = sourceItemIds.filter((itemId) => !selected.includes(itemId));
+  const nextDestination = [...destinationItemIds];
+  nextDestination.splice(destination.index, 0, ...selected);
+
+  return {
+    operation: 'transfer',
+    itemId: sourceItemIds[source.index] as SortableId,
+    itemIds: selected,
+    source,
+    destination,
+    orders: [
+      { areaId: source.areaId, itemIds: nextSource },
+      { areaId: destination.areaId, itemIds: nextDestination },
+    ],
+  };
+}
+
+export function buildSwapChange(
+  itemIds: readonly SortableId[],
+  source: SortableLocation,
+  destination: SortableLocation,
+): SortableChange | null {
+  assertIndex(source.index, itemIds.length, false);
+  assertIndex(destination.index, itemIds.length, false);
+  if (source.areaId !== destination.areaId || source.index === destination.index) return null;
+  const next = [...itemIds];
+  const sourceItemId = itemIds[source.index] as SortableId;
+  const targetItemId = itemIds[destination.index] as SortableId;
+  next[source.index] = targetItemId;
+  next[destination.index] = sourceItemId;
+  return {
+    operation: 'swap',
+    itemId: sourceItemId,
+    swapItemId: targetItemId,
+    source,
+    destination,
+    orders: [{ areaId: source.areaId, itemIds: next }],
+  };
+}
+
+function orderedSelection(
+  itemIds: readonly SortableId[],
+  selectedItemIds: readonly SortableId[],
+): SortableId[] {
+  const selected = new Set(selectedItemIds);
+  const ordered = itemIds.filter((itemId) => selected.has(itemId));
+  if (ordered.length === 0 || ordered.length !== selected.size) {
+    throw new RangeError('sortable selection contains an unknown item');
+  }
+  return ordered;
+}
+
+function sameOrder(left: readonly SortableId[], right: readonly SortableId[]): boolean {
+  return left.length === right.length && left.every((itemId, index) => itemId === right[index]);
+}

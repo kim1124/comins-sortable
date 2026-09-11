@@ -1,12 +1,213 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { dragItem, movePointerToDropTarget } from '../playwright/helpers/drag.js';
+import { exampleIds } from '../../example/src/app/navigation.js';
+import { beginDrag, domIds, dragItem, movePointerToDropTarget, waitForFrameworkRender } from './helpers/drag.js';
 
 type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
 const adapters: readonly Adapter[] = ['vanilla', 'react', 'vue', 'svelte'];
 
+async function selectCardTitle(page: Page, itemId: string): Promise<void> {
+  const title = page.locator(`[data-sortable-id="${itemId}"] > .cs-demo-card__copy > strong`);
+  await title.scrollIntoViewIfNeeded();
+  const bounds = await title.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const rect = range.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  });
+  await page.mouse.move(bounds.x + 0.5, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width - 0.5, bounds.y + bounds.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString())).toBe(await title.innerText());
+  await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(0);
+}
+
+for (const adapter of adapters) {
+  test(`${adapter} copied cards retain their handle and selectable text @text-copy`, async ({ page }) => {
+    await page.goto(`/examples/custom-clone/${adapter}`);
+    await waitForRuntime(page);
+    await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+    await expectModelAndDom(page, { todo: ['research', 'design', 'build'], done: ['design-copy-1', 'review'] });
+    await selectCardTitle(page, 'design-copy-1');
+    const copiedDrag = await beginDrag(page, 'done', 'design-copy-1');
+    // Enter the list first so the destination geometry includes its placeholder.
+    await copiedDrag.moveBefore('todo', 'research');
+    await copiedDrag.moveBefore('todo', 'build');
+    await copiedDrag.drop();
+    await expectModelAndDom(page, { todo: ['research', 'design', 'design-copy-1', 'build'], done: ['review'] });
+    await selectCardTitle(page, 'design-copy-1');
+  });
+
+  test(`${adapter} text remains selectable before and after moving and cancelling @text-copy`, async ({ page }) => {
+    await page.goto(`/examples/handle/${adapter}`);
+    await waitForRuntime(page);
+    await selectCardTitle(page, 'research');
+    await expectModelAndDom(page, { todo: ['research', 'design', 'build', 'review'] });
+    const drag = await beginDrag(page, 'todo', 'design', { handle: '.cs-demo-handle' });
+    await expect(page.locator('[data-playground-dragging]')).toHaveCount(1);
+    const title = page.locator('[data-sortable-id="research"] > .cs-demo-card__copy');
+    await expect.poll(() => title.evaluate((element) => {
+      const css = getComputedStyle(element);
+      return css.getPropertyValue('user-select') || css.getPropertyValue('-webkit-user-select');
+    })).toBe('none');
+    await drag.moveBefore('todo', 'research');
+    await drag.drop();
+    await expectModelAndDom(page, { todo: ['design', 'research', 'build', 'review'] });
+    await expect(page.locator('[data-playground-dragging]')).toHaveCount(0);
+    await selectCardTitle(page, 'design');
+    for (const ending of ['escape', 'blur', 'pointercancel'] as const) {
+      await beginDrag(page, 'todo', 'research', { handle: '.cs-demo-handle' });
+      if (ending === 'escape') await page.keyboard.press('Escape');
+      else if (ending === 'blur') await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      else await page.evaluate(() => document.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1 })));
+      await page.mouse.up();
+      await expect(page.locator('[data-playground-dragging]')).toHaveCount(0);
+      await expectModelAndDom(page, { todo: ['design', 'research', 'build', 'review'] });
+      await selectCardTitle(page, 'research');
+    }
+  });
+}
+
+for (const adapter of adapters) {
+  test(`${adapter} selection input preserves right-click state and scopes context menus @feedback`, async ({ page }) => {
+    await page.goto(`/examples/transitions/${adapter}`);
+    await waitForRuntime(page);
+    await page.locator('[data-sortable-id="research"] > .cs-demo-handle').click({ modifiers: ['Meta'] });
+    await page.locator('[data-sortable-id="build"] > .cs-demo-handle').click({ modifiers: ['Meta'] });
+    const selected = page.locator('[data-comins-sortable-selected]');
+    await expect(selected).toHaveCount(2);
+    await page.locator('[data-sortable-id="design"]').click({ button: 'right' });
+    await expect.poll(() => selected.evaluateAll((items) => items.map((item) => item.getAttribute('data-sortable-id'))))
+      .toEqual(['research', 'build']);
+    await page.keyboard.press('Escape');
+    await selectCardTitle(page, 'design');
+    await expect.poll(() => selected.evaluateAll((items) => items.map((item) => item.getAttribute('data-sortable-id'))))
+      .toEqual(['research', 'build']);
+    const menuCancelled = async (selector: string, ctrlKey: boolean) => page.locator(selector).evaluate((element, ctrl) => {
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, ctrlKey: ctrl });
+      element.dispatchEvent(event);
+      return event.defaultPrevented;
+    }, ctrlKey);
+    expect(await menuCancelled('[data-sortable-id="design"] > .cs-demo-handle', true)).toBe(true);
+    expect(await menuCancelled('[data-sortable-id="design"] > .cs-demo-card__copy', true)).toBe(false);
+    expect(await menuCancelled('[data-sortable-id="design"]', false)).toBe(false);
+    expect(await menuCancelled('[data-demo-area="todo"]', true)).toBe(false);
+    await expect(page.getByText(/macOS에서는 Command/)).toBeVisible();
+    await page.goto(`/examples/simple/${adapter}`);
+    await waitForRuntime(page);
+    expect(await menuCancelled('[data-sortable-id="design"]', true)).toBe(false);
+  });
+
+  test(`${adapter} swap grid exchanges two cells across rows and keeps all other positions @feedback`, async ({ page }) => {
+    await page.goto(`/examples/swap-grid/${adapter}`);
+    await waitForRuntime(page);
+    await expect(page.getByRole('heading', { name: '스왑 그리드', exact: true })).toBeVisible();
+    const target = page.locator('[data-sortable-id="grid-10"]');
+    await target.scrollIntoViewIfNeeded();
+    const drag = await beginDrag(page, 'todo', 'grid-1');
+    const box = await target.boundingBox();
+    if (!box) throw new Error('Missing swap grid target');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(target).toHaveAttribute('data-comins-sortable-swap-target', '');
+    await drag.drop();
+    const expected = Array.from({ length: 20 }, (_, i) => `grid-${i + 1}`);
+    [expected[0], expected[9]] = [expected[9]!, expected[0]!];
+    await expectModelAndDom(page, { todo: expected });
+    await expectOperation(page, 'swap', 'grid-1', { areaId: 'todo', index: 0 }, { areaId: 'todo', index: 9 });
+    await expect(page.locator('[data-comins-sortable-swap-target]')).toHaveCount(0);
+  });
+
+  test(`${adapter} tree moves a complete subtree and rejects cycles after reparenting @feedback`, async ({ page }) => {
+    await page.goto(`/examples/tree/${adapter}`);
+    await waitForRuntime(page);
+    await expectModelAndDom(page, {
+      todo: ['research', 'design', 'build'], child: ['review', 'release'],
+      'tree-children-review': ['document', 'observe'], 'tree-children-design': [],
+    });
+    await dragItem(page, 'child', 'review', { areaId: 'tree-children-design' });
+    const moved = {
+      todo: ['research', 'design', 'build'], child: ['release'],
+      'tree-children-review': ['document', 'observe'], 'tree-children-design': ['review'],
+    };
+    await expectModelAndDom(page, moved);
+    await expect(page.locator('[data-sortable-id="design"] [data-sortable-id="review"] [data-sortable-id="document"]')).toHaveCount(1);
+    // A host inside the moving source is not hittable. Expose it independently
+    // to verify the logical parent relationship after the real subtree transfer.
+    await page.locator('[data-demo-area="tree-children-review"]').evaluate((host) => {
+      const marker = document.createElement('span');
+      marker.dataset.cycleHostMarker = '';
+      host.before(marker);
+      const portal = document.createElement('div');
+      portal.dataset.cycleHostPortal = '';
+      portal.style.cssText = 'position:fixed;top:120px;right:20px;width:220px;z-index:100;background:white';
+      document.body.append(portal);
+      portal.append(host);
+    });
+    const drag = await beginDrag(page, 'todo', 'design');
+    const target = page.locator('[data-sortable-id="document"]');
+    const box = await target.boundingBox();
+    if (!box) throw new Error('Missing descendant target');
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(page.locator('[data-comins-sortable-dragging]')).toHaveAttribute('data-comins-sortable-rejection', 'nested-cycle');
+    await drag.drop();
+    await page.evaluate(() => {
+      const marker = document.querySelector('[data-cycle-host-marker]')!;
+      marker.replaceWith(document.querySelector('[data-demo-area="tree-children-review"]')!);
+      document.querySelector('[data-cycle-host-portal]')?.remove();
+    });
+    await expectModelAndDom(page, moved);
+    await expect(page.locator('[data-comins-sortable-placeholder], [data-comins-sortable-dragging]')).toHaveCount(0);
+  });
+}
+
+for (const adapter of adapters) {
+  test(`${adapter} activates the requested nested parent @drag-contract`, async ({ page }, testInfo) => {
+    await page.goto(`/examples/nested/${adapter}`);
+    await waitForRuntime(page);
+    await page.evaluate(() => {
+      document.addEventListener('pointerdown', (event) => {
+        const hit = document.elementFromPoint(event.clientX, event.clientY);
+        const source = document.querySelector('[data-comins-sortable-area="todo"] [data-sortable-id="research"]');
+        document.documentElement.dataset.activationProbe = JSON.stringify({
+          point: { x: event.clientX, y: event.clientY },
+          viewport: { width: innerWidth, height: innerHeight },
+          sourceRect: source?.getBoundingClientRect().toJSON(),
+          hitAreaId: hit?.closest('[data-comins-sortable-area]')?.getAttribute('data-comins-sortable-area'),
+          hitItemId: hit?.closest('[data-sortable-id]')?.getAttribute('data-sortable-id'),
+        });
+      }, { once: true, capture: true });
+    });
+    try {
+      const drag = await beginDrag(page, 'todo', 'research');
+      const actual = await page.locator('[data-comins-sortable-dragging]').evaluate((element) => ({
+        areaId: element.parentElement?.getAttribute('data-comins-sortable-area'),
+        itemId: element.getAttribute('data-sortable-id'),
+      }));
+      await testInfo.attach('activation-identity', {
+        body: JSON.stringify({
+          requested: { areaId: 'todo', itemId: 'research' },
+          actual,
+          input: await page.locator('html').getAttribute('data-activation-probe'),
+        }),
+        contentType: 'application/json',
+      });
+      expect(actual).toEqual({ areaId: 'todo', itemId: 'research' });
+      await drag.moveBefore('todo', 'build');
+      await drag.drop();
+      await expectModelAndDom(page, { todo: ['design', 'research', 'build'], child: ['review', 'release'] });
+      await expectOperation(page, 'reorder', 'research', { areaId: 'todo', index: 0 }, { areaId: 'todo', index: 1 });
+    } finally {
+      await page.keyboard.press('Escape');
+      await page.mouse.up();
+    }
+  });
+}
+
 async function waitForRuntime(page: Page): Promise<void> {
   await expect(page.locator('.cs-playground__status')).toHaveText('Live');
+  const route = new URL(page.url()).pathname.replace('/examples/', '');
+  await expect(page.locator('[data-playground-runtime]')).toHaveAttribute('data-playground-mounted', route);
   await expect(page.locator('[data-comins-sortable-area="todo"]')).toBeVisible();
 }
 
@@ -14,10 +215,39 @@ async function model(page: Page): Promise<Record<string, string[]>> {
   return JSON.parse(await page.locator('[data-playground-model]').innerText()) as Record<string, string[]>;
 }
 
+async function expectModelAndDom(page: Page, expected: Record<string, string[]>): Promise<void> {
+  await expect.poll(() => model(page)).toMatchObject(expected);
+  for (const [areaId, ids] of Object.entries(expected)) {
+    await expect.poll(() => domIds(page, areaId)).toEqual(ids);
+  }
+}
+
 async function lastOperation(page: Page): Promise<string | null> {
   const raw = await page.locator('[data-playground-operation]').innerText();
   const operation = JSON.parse(raw) as { operation: string } | null;
   return operation?.operation ?? null;
+}
+
+async function expectOperation(
+  page: Page,
+  operation: string,
+  itemId: string,
+  source: { areaId: string; index: number },
+  destination: { areaId: string; index: number },
+): Promise<void> {
+  await expect.poll(async () => JSON.parse(await page.locator('[data-playground-operation]').innerText()))
+    .toEqual({ operation, itemId, source, destination });
+}
+
+for (const adapter of adapters) {
+  test(`${adapter} mounts every documented Playground route`, async ({ page }) => {
+    for (const exampleId of exampleIds) {
+      await page.goto(`/examples/${exampleId}/${adapter}`);
+      await waitForRuntime(page);
+      await expect(page.locator('[data-playground-model]')).not.toHaveText('');
+      await expect(page.getByRole('button', { name: /View code|코드 보기/ })).toBeVisible();
+    }
+  });
 }
 
 test('normalizes routes, keeps locale on navigation, and renders actual source', async ({ page }) => {
@@ -31,12 +261,20 @@ test('normalizes routes, keeps locale on navigation, and renders actual source',
   await expect(page.getByLabel('제어 모델')).toHaveCount(0);
   await expect(page.getByLabel('마지막 작업')).toHaveCount(0);
 
+  for (const removedRoute of ['table', 'table-column']) {
+    await page.goto(`/examples/${removedRoute}/react`);
+    await expect(page).toHaveURL('/examples/simple/react');
+    await waitForRuntime(page);
+  }
+
   await page.getByRole('button', { name: 'Switch to English' }).click();
   await expect(page).toHaveURL('/examples/simple/react');
   await expect(page.getByRole('heading', { name: 'Simple sorting' })).toBeVisible();
 
   await page.getByRole('button', { name: 'View code' }).click();
-  await expect(page.getByLabel('Source code')).toContainText('SortableArea');
+  const sourceCode = page.getByLabel('Source code');
+  await expect(sourceCode).toContainText('SortableArea');
+  await expect(sourceCode).toBeInViewport();
   await expect(page.getByRole('listitem')).toHaveCount(4);
 });
 
@@ -58,17 +296,31 @@ for (const adapter of adapters) {
 }
 
 for (const adapter of adapters) {
-  test(`${adapter} Tree route transfers through the official headless model`, async ({ page }) => {
+  test(`${adapter} Tree route transfers through the official headless model @drag-contract`, async ({ page }) => {
     await page.goto(`/examples/tree/${adapter}`);
     await waitForRuntime(page);
 
-    await expect(page.getByRole('heading', { name: 'Tree API' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '트리 데이터 정렬' })).toBeVisible();
     await dragItem(page, 'todo', 'design', { areaId: 'child', beforeId: 'review' });
 
     await expect.poll(async () => (await model(page)).todo).toEqual(['research', 'build']);
     await expect.poll(async () => (await model(page)).child).toEqual(['design', 'review', 'release']);
     await expect(page.locator('[data-comins-sortable-area="child"]'))
       .toHaveAttribute('data-comins-sortable-area', 'child');
+
+    await dragItem(page, 'todo', 'build', { areaId: 'child', beforeId: 'review' });
+    await expect.poll(async () => (await model(page)).todo).toEqual(['research']);
+    await expect.poll(async () => (await model(page)).child)
+      .toEqual(['design', 'build', 'review', 'release']);
+
+    const returning = await beginDrag(page, 'child', 'design');
+    await returning.moveBefore('todo', 'research');
+    await returning.drop();
+    await expect.poll(async () => (await model(page)).todo).toEqual(['design', 'research']);
+    await expect.poll(async () => (await model(page)).child).toEqual(['build', 'review', 'release']);
+    await expect(page.locator('[data-sortable-id="design"]')).toHaveCount(1);
+    await expectModelAndDom(page, { todo: ['design', 'research'], child: ['build', 'review', 'release'] });
+    await expectOperation(page, 'transfer', 'design', { areaId: 'child', index: 0 }, { areaId: 'todo', index: 0 });
   });
 
   test(`${adapter} placeholder routes expose consumer styling and skeleton feedback`, async ({ page }) => {
@@ -103,12 +355,7 @@ for (const adapter of adapters) {
 }
 
 async function activateDrag(page: Page, itemId: string): Promise<void> {
-  const source = page.locator(`[data-comins-sortable-area="todo"] > [data-sortable-id="${itemId}"]`);
-  const box = await source.boundingBox();
-  if (box === null) throw new Error(`Missing drag source: ${itemId}`);
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 12, box.y + box.height / 2 + 12);
+  await beginDrag(page, 'todo', itemId);
   await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCount(1);
 }
 
@@ -123,7 +370,7 @@ for (const adapter of adapters) {
       };
     });
 
-    for (const route of ['transition', 'transitions'] as const) {
+    for (const route of ['transition'] as const) {
       await page.goto(`/examples/${route}/${adapter}`);
       await waitForRuntime(page);
       const before = Number(await page.locator('html').getAttribute('data-sortable-animation-calls') ?? 0);
@@ -135,7 +382,7 @@ for (const adapter of adapters) {
       )).toBeGreaterThan(before);
     }
 
-    for (const route of ['table', 'table-column', 'third-party', 'footer-slot', 'header-slot'] as const) {
+    for (const route of ['third-party', 'footer-slot', 'header-slot'] as const) {
       await page.goto(`/examples/${route}/${adapter}`);
       await waitForRuntime(page);
       if (route === 'third-party') {
@@ -180,6 +427,175 @@ for (const adapter of adapters) {
 }
 
 for (const adapter of adapters) {
+  test(`${adapter} multi-drag selects with modifiers and moves the ordered group @drag-contract`, async ({ page }) => {
+    await page.goto(`/examples/transitions/${adapter}`);
+    await waitForRuntime(page);
+
+    await page.keyboard.down('Control');
+    await page.locator('[data-sortable-id="research"] > .cs-demo-handle').click();
+    await page.keyboard.up('Control');
+    await page.keyboard.down('Shift');
+    await page.locator('[data-sortable-id="build"] > .cs-demo-handle').click();
+    await page.keyboard.up('Shift');
+
+    const selected = page.locator('[data-comins-sortable-selected]');
+    await expect(selected).toHaveCount(3);
+    await expect(selected.first()).toHaveClass(/cs-demo-card--selected/);
+    await expect.poll(() => selected.first().evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { background: style.backgroundColor, border: style.borderColor };
+    })).toEqual({ background: 'rgb(228, 244, 236)', border: 'rgb(23, 99, 67)' });
+
+    const drag = await beginDrag(page, 'todo', 'design');
+    await drag.moveBefore('todo', 'release');
+    await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCount(1);
+    await drag.drop();
+    await expectModelAndDom(page, { todo: [
+      'review', 'research', 'design', 'build', 'release', 'document', 'observe', 'measure',
+    ] });
+    await expect(selected).toHaveCount(3);
+
+    await page.goto(`/examples/transitions/${adapter}`);
+    await waitForRuntime(page);
+    await page.keyboard.down('Meta');
+    await page.locator('[data-sortable-id="research"] > .cs-demo-handle').click();
+    await page.locator('[data-sortable-id="build"] > .cs-demo-handle').click();
+    await page.keyboard.up('Meta');
+    await expect(selected).toHaveCount(2);
+    await dragItem(page, 'todo', 'research', { areaId: 'todo', beforeId: 'measure' });
+    await expectModelAndDom(page, { todo: [
+      'design', 'review', 'release', 'document', 'observe', 'research', 'build', 'measure',
+    ] });
+    await expect(selected).toHaveCount(2);
+  });
+
+  test(`${adapter} thresholds change the result of the same pointer path @drag-contract`, async ({ page }) => {
+    for (const scenario of [
+      { threshold: '0.2', invert: false, fraction: 0.75, reorder: false },
+      { threshold: '0.8', invert: false, fraction: 0.75, reorder: true },
+      { threshold: '0.2', invert: true, fraction: 0.25, reorder: true },
+      { threshold: '0.8', invert: true, fraction: 0.25, reorder: false },
+    ]) {
+      await test.step(JSON.stringify(scenario), async () => {
+        await page.goto(`/examples/thresholds/${adapter}`);
+        await waitForRuntime(page);
+        const range = page.getByRole('slider', { name: '전환 임계값' });
+        await range.fill(scenario.threshold);
+        await expect(range).toHaveValue(scenario.threshold);
+        const invert = page.getByRole('button', { name: '임계 영역 반전' });
+        if (scenario.invert) await invert.click();
+        await expect(invert).toHaveAttribute('aria-pressed', String(scenario.invert));
+        const activeFraction = (scenario.invert ? 1 - Number(scenario.threshold) : 1 + Number(scenario.threshold)) / 2;
+        await expect(page.locator('[data-threshold-guide]')).toContainText(`카드 상단 ${Math.round(activeFraction * 100)}%`);
+        await expect.poll(() => page.locator('[data-sortable-id="research"]').evaluate((element) => {
+          const shade = getComputedStyle(element, '::before');
+          return Math.round(parseFloat(shade.height) / element.clientHeight * 100);
+        })).toBe(Math.round(activeFraction * 100));
+        const drag = await beginDrag(page, 'todo', 'design');
+        const target = await page.locator('[data-sortable-id="research"] > .cs-demo-handle').boundingBox();
+        if (target === null) throw new Error('Missing threshold target');
+        await page.mouse.move(target.x + target.width / 2, target.y + target.height * scenario.fraction);
+        await waitForFrameworkRender(page);
+        await drag.drop();
+        await expectModelAndDom(page, { todo: [
+          ...(scenario.reorder ? ['design', 'research'] : ['research', 'design']),
+          'build', 'review', 'release', 'document',
+        ] });
+        await expect.poll(() => lastOperation(page)).toBe(scenario.reorder ? 'reorder' : null);
+      });
+    }
+  });
+
+  test(`${adapter} grid uses two-dimensional positions for first and last moves @drag-contract`, async ({ page }) => {
+    await page.goto(`/examples/grid/${adapter}`);
+    await waitForRuntime(page);
+    await expect(page.locator('.cs-demo-list--grid > [data-sortable-id]')).toHaveCount(20);
+    await dragItem(page, 'todo', 'grid-20', { areaId: 'todo', beforeId: 'grid-1' });
+    const others = Array.from({ length: 19 }, (_, index) => `grid-${index + 1}`);
+    await expectModelAndDom(page, { todo: ['grid-20', ...others] });
+    await expectOperation(page, 'reorder', 'grid-20', { areaId: 'todo', index: 19 }, { areaId: 'todo', index: 0 });
+    await dragItem(page, 'todo', 'grid-20', { areaId: 'todo', beforeId: 'grid-16' });
+    await expectModelAndDom(page, { todo: [...others.slice(0, 15), 'grid-20', ...others.slice(15)] });
+    const drag = await beginDrag(page, 'todo', 'grid-20');
+    const last = page.locator('[data-sortable-id="grid-19"]');
+    await last.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    await waitForFrameworkRender(page);
+    const box = await last.boundingBox();
+    if (box === null) throw new Error('Missing last grid item');
+    await movePointerToDropTarget(page, { x: box.x + box.width - 8, y: box.y + box.height / 2 }, 'todo');
+    const placeholder = page.locator('[data-comins-sortable-placeholder]');
+    const location = await placeholder.boundingBox();
+    if (location === null) throw new Error('Missing grid placeholder');
+    await page.mouse.move(location.x + location.width / 2, location.y + location.height / 2);
+    await waitForFrameworkRender(page);
+    expect(await placeholder.evaluate((element) => element.nextElementSibling?.getAttribute('data-sortable-id') ?? null)).toBe(null);
+    await drag.drop();
+    await expectModelAndDom(page, { todo: [...others, 'grid-20'] });
+    await expectOperation(page, 'reorder', 'grid-20', { areaId: 'todo', index: 15 }, { areaId: 'todo', index: 19 });
+  });
+
+  test(`${adapter} swap exchanges only the dragged and target positions @drag-contract`, async ({ page }) => {
+    await page.goto(`/examples/swap/${adapter}`);
+    await waitForRuntime(page);
+    const drag = await beginDrag(page, 'todo', 'research');
+    const target = page.locator('[data-sortable-id="review"]');
+    await target.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    const targetBox = await target.boundingBox();
+    if (targetBox === null) throw new Error('Missing swap target');
+    await page.mouse.move(
+      targetBox.x + targetBox.width / 2,
+      targetBox.y + targetBox.height / 2,
+      { steps: 3 },
+    );
+    await expect(target).toHaveAttribute('data-comins-sortable-swap-target', '');
+    await drag.drop();
+    await expectModelAndDom(page, { todo: [
+      'review', 'design', 'build', 'research', 'release', 'document',
+    ] });
+    await expect.poll(() => lastOperation(page)).toBe('swap');
+    await expectOperation(page, 'swap', 'research', { areaId: 'todo', index: 0 }, { areaId: 'todo', index: 3 });
+  });
+}
+
+for (const adapter of adapters) {
+  test(`${adapter} copy drag keeps its source visible while only destination feedback moves`, async ({ page }) => {
+    await page.goto(`/examples/clone/${adapter}`);
+    await waitForRuntime(page);
+    const source = page.locator('[data-comins-sortable-area="todo"] > [data-sortable-id="design"]');
+    const before = await source.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        x: rect.x + scrollX,
+        y: rect.y + scrollY,
+        width: rect.width,
+        height: rect.height,
+      };
+    });
+
+    const drag = await beginDrag(page, 'todo', 'design');
+    await expect(source).not.toHaveAttribute('data-comins-sortable-dragging', '');
+    await expect(source).toBeVisible();
+    await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
+    await drag.moveBefore('done', 'review');
+    await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveJSProperty(
+      'parentElement.dataset.cominsSortableArea',
+      'done',
+    );
+    expect(await source.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        x: rect.x + scrollX,
+        y: rect.y + scrollY,
+        width: rect.width,
+        height: rect.height,
+      };
+    })).toEqual(before);
+
+    await drag.drop();
+    await expect.poll(async () => (await model(page)).todo)
+      .toEqual(['research', 'design', 'build']);
+  });
+
   test(`${adapter} clone route preserves its source and inserts one copied item`, async ({ page }) => {
     await page.goto(`/examples/clone/${adapter}`);
     await waitForRuntime(page);
@@ -239,6 +655,47 @@ for (const adapter of adapters) {
   });
 }
 
+test('non-sortable slots reject drops with global warning feedback', async ({ page }) => {
+  for (const target of [
+    { route: 'header-slot', slot: 'header' },
+    { route: 'footer-slot', slot: 'footer' },
+    { route: 'two-list-slots', slot: 'header' },
+  ] as const) {
+    await page.goto(`/examples/${target.route}/react`);
+    await waitForRuntime(page);
+    const before = await model(page);
+    const drag = await beginDrag(page, 'todo', 'design');
+    const slot = page.locator(
+      `[data-comins-sortable-area="todo"] > [data-demo-slot="${target.slot}"]`,
+    );
+    await slot.scrollIntoViewIfNeeded();
+    await expect.poll(async () => {
+      const slotBox = await slot.boundingBox();
+      if (slotBox === null) return null;
+      await page.mouse.move(
+        slotBox.x + slotBox.width / 2,
+        slotBox.y + slotBox.height / 2,
+        { steps: 2 },
+      );
+      await page.evaluate(() => new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      }));
+      return slot.getAttribute('data-comins-sortable-rejection');
+    }).toBe('not-accepted');
+    await expect(slot).toHaveAttribute('data-comins-sortable-rejection', 'not-accepted');
+    await expect(page.locator('[data-comins-sortable-dragging]'))
+      .toHaveAttribute('data-comins-sortable-rejection', 'not-accepted');
+    await expect.poll(() => slot.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { outlineStyle: style.outlineStyle, outlineColor: style.outlineColor };
+    })).toEqual({ outlineStyle: 'solid', outlineColor: 'rgb(220, 38, 38)' });
+
+    await drag.drop();
+    await expect.poll(() => model(page)).toEqual(before);
+    await expect(page.locator('[data-comins-sortable-rejection]')).toHaveCount(0);
+  }
+});
+
 for (const adapter of adapters) {
   test(`${adapter} empty example keeps the remaining single card at the standard height`, async ({ page }) => {
     await page.goto(`/examples/empty/${adapter}`);
@@ -258,7 +715,7 @@ for (const adapter of adapters) {
   });
 }
 
-test('handle, empty destination, and rejection scenarios change only through product behavior', async ({ page, browserName }) => {
+test('handle, empty destination, and rejection scenarios change only through product behavior', async ({ page }) => {
   await page.goto('/examples/handle/react');
   await waitForRuntime(page);
   const initial = (await model(page)).todo;
@@ -272,29 +729,11 @@ test('handle, empty destination, and rejection scenarios change only through pro
   await page.mouse.move(targetBox.x + 8, targetBox.y + 8);
   await page.mouse.up();
   await expect.poll(async () => (await model(page)).todo).toEqual(initial);
-  if (browserName === 'webkit') {
-    await page.reload();
-    await waitForRuntime(page);
-  }
 
-  const handle = page.locator('[data-sortable-id="design"] .cs-demo-handle');
-  const handleBox = await handle.boundingBox();
-  const currentTargetBox = await targetCard.boundingBox();
-  if (handleBox === null || currentTargetBox === null) throw new Error('Missing accessible handle');
-  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(handleBox.x + handleBox.width / 2 + 12, handleBox.y + handleBox.height / 2 + 12);
-  await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(1);
-  await movePointerToDropTarget(
-    page,
-    { x: currentTargetBox.x + 8, y: currentTargetBox.y + 8 },
-    'todo',
-    'research',
-  );
-  await page.mouse.up();
-  await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(0);
-  await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCount(0);
-  await expect.poll(async () => (await model(page)).todo).not.toEqual(initial);
+  const handleDrag = await beginDrag(page, 'todo', 'design', { handle: '.cs-demo-handle' });
+  await handleDrag.moveBefore('todo', 'research');
+  await handleDrag.drop();
+  await expectModelAndDom(page, { todo: ['design', 'research', 'build', 'review'] });
 
   await page.goto('/examples/empty/svelte');
   await waitForRuntime(page);
@@ -310,13 +749,48 @@ test('handle, empty destination, and rejection scenarios change only through pro
 });
 
 for (const adapter of adapters) {
+  test(`${adapter} accept control returns to its runtime default after reset and remount @drag-contract`, async ({ page }) => {
+    await page.goto(`/examples/accept/${adapter}`);
+    await waitForRuntime(page);
+    const toggle = page.getByRole('button', { name: '대상 이동 허용' });
+
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    const rejectedDrag = await beginDrag(page, 'todo', 'design');
+    await rejectedDrag.moveBefore('done', 'review', false);
+    await expect(page.locator('[data-comins-sortable-area="done"]')).toHaveAttribute('data-comins-sortable-rejection', 'not-accepted');
+    await expect(page.locator('[data-comins-sortable-dragging]')).toHaveAttribute('data-comins-sortable-rejection', 'not-accepted');
+    await rejectedDrag.drop();
+    await expectModelAndDom(page, { todo: ['research', 'design', 'build'], done: ['review'] });
+    await expect.poll(() => lastOperation(page)).toBe(null);
+    await page.getByRole('button', { name: '데이터 초기화' }).click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+    await expectModelAndDom(page, { todo: ['research', 'build'], done: ['design', 'review'] });
+    await page.getByRole('button', { name: '데이터 초기화' }).click();
+
+    await toggle.click();
+    await page.getByRole('tab', { name: '기본 정렬', exact: true }).click();
+    await waitForRuntime(page);
+    await page.getByRole('tab', { name: '이동 허용과 거부', exact: true }).click();
+    await waitForRuntime(page);
+    await expect(page.locator('[data-playground-runtime]'))
+      .toHaveAttribute('data-playground-mounted', `accept/${adapter}`);
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
+    await expectModelAndDom(page, { todo: ['research', 'build'], done: ['design', 'review'] });
+  });
+}
+
+for (const adapter of adapters) {
   test(`${adapter} auto-scroll route moves its live scroll container`, async ({ page }) => {
     await page.goto(`/examples/auto-scroll/${adapter}`);
     await waitForRuntime(page);
     const board = page.locator('.cs-demo-board--scroll');
     await board.scrollIntoViewIfNeeded();
     const boardBox = await board.boundingBox();
-    const sourceBox = await page.locator('[data-sortable-id="research"]').boundingBox();
+    const sourceBox = await page.locator('[data-sortable-id="research"] > .cs-demo-handle').boundingBox();
     if (boardBox === null || sourceBox === null) throw new Error('Missing auto-scroll geometry');
 
     await expect.poll(() => board.evaluate((element) => element.scrollTop)).toBe(0);

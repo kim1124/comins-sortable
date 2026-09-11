@@ -216,6 +216,23 @@ test('pointerup releases an active drag and clears capture and resources', () =>
   assert.equal(platform.frameCount(), 0);
 });
 
+test('pointerup flushes a pending activation frame for a fast drag', () => {
+  const { events, platform, sensor } = sensorFixture();
+  const item = fakeElement('LI');
+
+  sensor.pointerDown(pointer({ target: item }), item);
+  sensor.pointerMove(pointer({ clientX: 12, target: item }));
+  assert.equal(platform.frameCount(), 1);
+
+  sensor.pointerUp(pointer({ clientX: 12, target: item }));
+
+  assert.deepEqual(events, ['activate', 'move', 'release']);
+  assert.deepEqual(item.capturedPointers, [1]);
+  assert.deepEqual(item.releasedPointers, [1]);
+  assert.equal(platform.listenerCount(), 0);
+  assert.equal(platform.frameCount(), 0);
+});
+
 test('pointer capture failure aborts activation and reports after cleanup', () => {
   const { events, platform, sensor } = sensorFixture();
   const item = fakeElement('LI');

@@ -38,6 +38,7 @@ export type {
   SortableReorderChange,
   SortableScope,
   SortableScopeOptions,
+  SortableSwapChange,
   SortableTransferMode,
   SortableTransferChange,
 } from './core/model.js';

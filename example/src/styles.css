@@ -62,6 +62,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 .cs-playground__control-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .cs-playground__control-actions button { background: #f5f8f6; border: 1px solid #d6e0db; border-radius: 8px; cursor: pointer; padding: 8px 11px; }
 .cs-playground__control-actions button.is-active { background: #dff4e9; border-color: #69b58f; color: #155d40; }
+.cs-playground__range { align-items: stretch; background: #f5f8f6; border: 1px solid #d6e0db; border-radius: 8px; display: grid; gap: 4px; min-width: 170px; padding: 7px 10px; }
+.cs-playground__range span { color: #52665d; display: flex; font-size: 11px; font-weight: 700; justify-content: space-between; }
+.cs-playground__range input { accent-color: #176343; margin: 0; width: 100%; }
 
 .cs-playground__panel { background: #fff; border: 1px solid #dce5e0; border-radius: 16px; box-shadow: 0 12px 35px rgba(28,60,48,.055); min-width: 0; overflow: hidden; }
 .cs-playground__panel-heading { align-items: center; border-bottom: 1px solid #e4ebe7; color: #728079; display: flex; font-size: 11px; font-weight: 800; justify-content: space-between; letter-spacing: .08em; min-height: 43px; padding: 0 16px; text-transform: uppercase; }
@@ -95,16 +98,21 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 .cs-demo-list-shell > [data-comins-sortable-area]:empty { align-items: center; border: 1px dashed #b8c9c1; border-radius: 10px; display: flex; justify-content: center; }
 .cs-demo-list:empty::after,
 .cs-demo-list-shell > [data-comins-sortable-area]:empty::after { color: #91a099; content: "Drop here"; font-size: 11px; }
-.cs-demo-card { align-items: center; background: #fff; border: 1px solid #dfe7e3; border-left: 4px solid #80bda4; border-radius: 10px; box-shadow: 0 3px 9px rgba(31,68,53,.06); cursor: grab; display: flex; gap: 10px; min-height: 64px; padding: 10px 12px; touch-action: none; user-select: none; }
-.cs-demo-card:active { cursor: grabbing; }
+.cs-demo-card { align-items: center; background: #fff; border: 1px solid #dfe7e3; border-left: 4px solid #80bda4; border-radius: 10px; box-shadow: 0 3px 9px rgba(31,68,53,.06); cursor: default; display: flex; gap: 10px; min-height: 64px; padding: 10px 12px; }
+.cs-demo-handle:active { cursor: grabbing; }
 .cs-demo-card--blue { border-left-color: #5caee5; }
 .cs-demo-card--amber { border-left-color: #e4ad44; }
 .cs-demo-card--violet { border-left-color: #9b7bdd; }
-.cs-demo-card__copy { min-width: 0; }
+.cs-demo-card--selected { background: #e4f4ec; border-color: #176343; box-shadow: 0 0 0 2px rgb(23 99 67 / 18%); }
+.cs-demo-card__copy { min-width: 0; cursor: text; -webkit-user-select: text; user-select: text; }
 .cs-demo-card__copy strong, .cs-demo-card__copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-demo-card__copy strong { font-size: 13px; }
 .cs-demo-card__copy small { color: #839089; font-size: 10px; margin-top: 4px; }
-.cs-demo-handle { background: #edf3f0; border: 0; border-radius: 6px; color: #688078; cursor: grab; font-size: 18px; line-height: 1; padding: 6px; touch-action: none; }
+.cs-demo-handle { background: #edf3f0; border: 0; border-radius: 6px; color: #688078; cursor: grab; font-size: 18px; line-height: 1; padding: 6px; flex-shrink: 0; align-self: center; touch-action: none; -webkit-user-select: none; user-select: none; }
+[data-playground-dragging] .cs-demo-card__copy,
+[data-playground-dragging] .cs-demo-card__copy *,
+[data-comins-sortable-dragging] .cs-demo-card__copy,
+[data-comins-sortable-dragging] .cs-demo-card__copy * { -webkit-user-select: none; user-select: none; }
 [data-comins-sortable-dragging] { opacity: .55; }
 [data-comins-sortable-placeholder] {
   --comins-sortable-placeholder-background: #daf1e5;
@@ -128,16 +136,23 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 .cs-demo-slot { background: #e8f1ed; border: 1px dashed #a9bdb4; border-radius: 8px; color: #557067; font-size: 11px; font-weight: 700; padding: 8px 10px; }
 .cs-demo-component-host { background: #f2f7f4; border: 1px solid #b8d1c5; border-radius: 11px; padding: 9px; }
 .cs-demo-board--nested { grid-template-columns: minmax(280px, 1fr); }
+.cs-demo-board--grid { grid-template-columns: minmax(0, 1fr); }
+.cs-demo-list--grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.cs-demo-list--grid .cs-demo-card { min-height: 88px; }
+.cs-playground__threshold-guide { margin: 16px 24px 0; padding: 12px 16px; border-left: 3px solid #176343; background: #edf6f1; }
+.cs-playground__threshold-guide p { margin: 0 0 6px; }
+.cs-playground__threshold-guide span { color: #365b4b; font-size: 12px; }
+.cs-playground__runtime--thresholds .cs-demo-card { position: relative; isolation: isolate; }
+.cs-playground__runtime--thresholds .cs-demo-card::before { content: ''; position: absolute; inset: 0 0 auto; height: var(--cs-demo-threshold-up); border-bottom: 2px dashed #176343; background: rgb(23 99 67 / 10%); border-radius: inherit; pointer-events: none; z-index: -1; box-sizing: border-box; }
+.cs-demo-tree-list { display: grid; gap: 9px; min-height: 56px; }
+.cs-demo-tree .cs-demo-nested-shell { margin-top: 8px; }
+.cs-demo-tree .cs-demo-card { flex-wrap: wrap; }
+.cs-demo-tree-list:empty { border: 1px dashed #94b6a6; border-radius: 8px; }
 .cs-demo-board--nested .cs-demo-card { align-items: stretch; flex-wrap: wrap; }
 .cs-demo-board--nested .cs-demo-card__copy { flex: 1; }
 .cs-demo-nested-shell { background: #f0f5f2; border-radius: 8px; display: grid; flex-basis: 100%; gap: 8px; padding: 9px; }
 .cs-demo-nested-shell > strong { color: #52665d; font-size: 11px; }
 .cs-demo-list--nested { border-left: 2px solid #88bda5; padding-left: 10px; }
-.cs-demo-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100%; }
-.cs-demo-table th, .cs-demo-table td { background: #fff; border-bottom: 1px solid #dce7e1; padding: 12px; text-align: left; }
-.cs-demo-table thead th { background: #eaf3ef; color: #345248; font-size: 12px; }
-.cs-demo-table [data-sortable-id] { cursor: grab; touch-action: none; user-select: none; }
-.cs-demo-table [data-comins-sortable-placeholder] { display: table-row; }
 
 @media (max-width: 900px) {
   .cs-playground__body { display: block; }

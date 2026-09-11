@@ -25,6 +25,7 @@ const featureGuideNames = [
   '12-nested-tree.md',
   '13-placeholder.md',
   '14-lifecycle-errors.md',
+  '16-advanced-sorting.md',
 ];
 const locales = [
   { directory: 'user', heading: '## Complete example' },

@@ -40,13 +40,15 @@ function moduleFor(
 
 function element(calls: string[] = []): HTMLElement {
   return {
+    dataset: {},
     replaceChildren: () => calls.push('clear'),
   } as unknown as HTMLElement;
 }
 
 test('adapter transition destroys the previous runtime before mounting the next', async () => {
   const calls: string[] = [];
-  const host = new PlaygroundRuntimeHost(element(calls), sink);
+  const target = element(calls);
+  const host = new PlaygroundRuntimeHost(target, sink);
 
   await host.mount(moduleFor('react', calls), input('react'));
   await host.mount(moduleFor('vue', calls), input('vue'));
@@ -58,6 +60,7 @@ test('adapter transition destroys the previous runtime before mounting the next'
     'clear',
     'mount:vue',
   ]);
+  assert.equal(target.dataset.playgroundMounted, 'simple/vue');
 });
 
 test('stale bridge publications are ignored after adapter transition', async () => {
@@ -86,11 +89,42 @@ test('stale bridge publications are ignored after adapter transition', async () 
 
 test('destroy is idempotent and releases the current runtime', async () => {
   const calls: string[] = [];
-  const host = new PlaygroundRuntimeHost(element(calls), sink);
+  const target = element(calls);
+  const host = new PlaygroundRuntimeHost(target, sink);
 
   await host.mount(moduleFor('svelte', calls), input('svelte'));
   host.destroy();
   host.destroy();
 
   assert.deepEqual(calls, ['clear', 'mount:svelte', 'destroy:svelte', 'clear']);
+  assert.equal(target.dataset.playgroundMounted, undefined);
+});
+
+test('drag selection guard ends on completion and cannot leak across runtime replacement', async () => {
+  const target = element();
+  const host = new PlaygroundRuntimeHost(target, sink);
+  let bridge!: PlaygroundBridge;
+  const module: PlaygroundDemoModule = {
+    adapterId: 'react', source: '',
+    mount: (_container, _input, next) => {
+      bridge = next;
+      return { destroy() {}, dispatch() {}, reset() {} };
+    },
+  };
+  await host.mount(module, input('react'));
+  bridge.publishEvent({ name: 'beforeDragStart' });
+  assert.equal(target.dataset.playgroundDragging, undefined);
+  bridge.publishEvent({ name: 'dragStart' });
+  assert.equal(target.dataset.playgroundDragging, '');
+  bridge.publishEvent({ name: 'afterDrag', status: 'cancelled', reason: 'escape' });
+  assert.equal(target.dataset.playgroundDragging, undefined);
+  bridge.publishEvent({ name: 'dragStart' });
+  const stale = bridge;
+  await host.mount(module, input('react'));
+  assert.equal(target.dataset.playgroundDragging, undefined);
+  stale.publishEvent({ name: 'dragStart' });
+  assert.equal(target.dataset.playgroundDragging, undefined);
+  bridge.publishEvent({ name: 'dragStart' });
+  host.destroy();
+  assert.equal(target.dataset.playgroundDragging, undefined);
 });

@@ -4,6 +4,17 @@ import type { AfterDragResult, SortableChange } from '../../src/core.js';
 const app = document.querySelector('#app');
 if (app === null) throw new Error('Missing fixture root');
 
+const parameters = new URLSearchParams(location.search);
+const nestedParent = parameters.has('nested-parent')
+  ? { areaId: 'todo', itemId: 'a' } : undefined;
+const itemSelector = parameters.has('scoped-items') ? ':scope > .fixture-item' : ':scope > *';
+const copyItems = parameters.has('copy-items');
+if (parameters.has('page-scroll')) {
+  const top = document.createElement('div'); top.style.height = '400px';
+  const bottom = document.createElement('div'); bottom.style.height = '800px';
+  document.body.prepend(top); document.body.append(bottom);
+}
+
 let sortable: Sortable | null = null;
 let events: string[] = [];
 let lastOperation: { operation: string; sourceAreaId: string; destinationAreaId: string; itemId: string; destinationIndex: number } | null = null;
@@ -20,12 +31,15 @@ function record(change: SortableChange): void {
   lastOperation = { operation: change.operation, sourceAreaId: change.source.areaId, destinationAreaId: change.destination.areaId, itemId: String(change.itemId), destinationIndex: change.destination.index };
 }
 function result(result: AfterDragResult): void { log(`after:${result.status}:${result.reason}`); }
-function card(id: string): HTMLDivElement { const element = document.createElement('div'); element.tabIndex = 0; element.setAttribute('role', 'listitem'); element.setAttribute('data-sortable-id', id); element.setAttribute('aria-label', `Item ${id}`); element.setAttribute('aria-selected', 'false'); element.textContent = id; return element; }
+function card(id: string): HTMLDivElement { const element = document.createElement('div'); element.className = 'fixture-item'; element.tabIndex = 0; element.setAttribute('role', 'listitem'); element.setAttribute('data-sortable-id', id); element.setAttribute('aria-label', `Item ${id}`); element.setAttribute('aria-selected', 'false'); element.textContent = id; return element; }
 function section(id: string, title: string, values: string[]): HTMLElement {
   const sectionElement = document.createElement('section'); sectionElement.setAttribute('data-area-section', id);
   const heading = document.createElement('h2'); heading.textContent = title;
   const area = document.createElement('div'); area.setAttribute('data-test-area', id); area.setAttribute('role', 'list');
   for (const value of values) area.append(card(value));
+  if (parameters.has('slots')) {
+    const footer = document.createElement('footer'); footer.textContent = 'Footer'; footer.setAttribute('data-test-footer', id); area.append(footer);
+  }
   sectionElement.append(heading, area); return sectionElement;
 }
 function mount(): void {
@@ -37,11 +51,22 @@ function mount(): void {
   const output = document.createElement('output'); output.setAttribute('data-test-events', ''); app.append(scroll, clear, output);
   const todo = document.querySelector('[data-test-area="todo"]')!; const done = document.querySelector('[data-test-area="done"]')!;
   sortable = createSortable(todo, {
-    areaId: 'todo', group: 'fixture', item: ':scope > *', autoScroll: true,
-    onBeforeDragStart: () => { log('before'); }, onDragStart: () => log('start'), onDrag: () => log('drag'), onInsertDragArea: () => log('insert'),
+    areaId: 'todo', group: copyItems ? { name: 'fixture', pull: 'copy' } : 'fixture', item: itemSelector, autoScroll: true,
+    swap: parameters.has('swap'),
+    copyElement: copyItems ? (source) => {
+      const copy = source.cloneNode(true) as Element;
+      copy.setAttribute('data-sortable-id', `${source.getAttribute('data-sortable-id')}-copy`);
+      if (parameters.has('invalid-copy')) copy.classList.remove('fixture-item');
+      return copy;
+    } : undefined,
+    onError: copyItems ? () => log('error') : undefined,
+    onBeforeDragStart: () => { log('before'); }, onDragStart: (context) => {
+      log('start');
+      if (copyItems) log(`source:${context.source.areaId}:${context.itemId}`);
+    }, onDrag: () => log('drag'), onInsertDragArea: () => log('insert'),
     onChange: (change) => { record(change); log('change'); if (throwOnChange) throw new Error('fixture change error'); }, onAfterDrag: result,
   });
-  unregisterDone = sortable.registerArea(done, { areaId: 'done', group: 'fixture', item: ':scope > *', autoScroll: true, accept: () => !rejectDone });
+  unregisterDone = sortable.registerArea(done, { areaId: 'done', parent: nestedParent, group: 'fixture', item: itemSelector, autoScroll: true, accept: () => !rejectDone });
 }
 mount();
 

@@ -8,8 +8,10 @@ export const exampleIds = [
   'handle',
   'transition',
   'transitions',
-  'table',
-  'table-column',
+  'thresholds',
+  'swap',
+  'grid',
+  'swap-grid',
   'third-party',
   'footer-slot',
   'header-slot',
@@ -34,8 +36,9 @@ export const parityExampleIds = [
   'handle',
   'transition',
   'transitions',
-  'table',
-  'table-column',
+  'thresholds',
+  'grid',
+  'swap',
   'third-party',
   'footer-slot',
   'header-slot',
@@ -45,7 +48,7 @@ export const parityExampleIds = [
   'functional-third-party',
 ] as const satisfies readonly (typeof exampleIds)[number][];
 
-export const plannedParityExampleCount = 17;
+export const plannedParityExampleCount = 18;
 
 export type PlaygroundAdapterId = (typeof adapterIds)[number];
 export type PlaygroundExampleId = (typeof exampleIds)[number];

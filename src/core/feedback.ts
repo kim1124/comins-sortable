@@ -4,6 +4,7 @@ import type { SortablePlatform } from './platform.js';
 
 const FEEDBACK_PROPERTIES = [
   'boxSizing',
+  'display',
   'height',
   'left',
   'margin',
@@ -22,6 +23,8 @@ export interface SortableFeedback {
   readonly placeholder: Element;
   move(pointer: PointerSnapshot): void;
   place(parent: Element, before: Element | null): void;
+  clear(): void;
+  setRejection(reason: 'disabled' | 'not-accepted' | 'nested-cycle' | null): void;
   rollback(): void;
   destroy(): void;
 }
@@ -34,9 +37,17 @@ export function createFeedback(
   source: Element,
   platform: SortablePlatform,
   options: SortablePlaceholderOptions = {},
+  mode: 'move' | 'copy' = 'move',
 ): SortableFeedback {
   void platform;
   const styledSource = asStyledElement(source);
+  const detachedPreview = mode === 'copy' || isTableLayoutItem(source);
+  const dragElement = detachedPreview ? createDragPreview(source) : source;
+  const previewParent = detachedPreview ? source.ownerDocument.body : null;
+  if (detachedPreview && previewParent === null) {
+    throw new SortableError('INVALID_ELEMENT');
+  }
+  const styledDragElement = asStyledElement(dragElement);
   const placeholder = source.ownerDocument.createElement(source.tagName);
   const styledPlaceholder = asStyledElement(placeholder);
   const rect = source.getBoundingClientRect();
@@ -45,6 +56,8 @@ export function createFeedback(
   ) as Record<FeedbackProperty, string>;
   const hadDraggingAttribute = source.hasAttribute('data-comins-sortable-dragging');
   const draggingAttribute = source.getAttribute('data-comins-sortable-dragging');
+  const hadRejectionAttribute = source.hasAttribute('data-comins-sortable-rejection');
+  const rejectionAttribute = source.getAttribute('data-comins-sortable-rejection');
   const originalParent = source.parentElement;
   const originalNext = source.nextSibling;
   const activeElement = source.ownerDocument.activeElement;
@@ -67,18 +80,25 @@ export function createFeedback(
   styledPlaceholder.style.width = `${rect.width}px`;
   styledPlaceholder.style.height = `${rect.height}px`;
 
-  source.setAttribute('data-comins-sortable-dragging', '');
-  styledSource.style.boxSizing = 'border-box';
-  styledSource.style.width = `${rect.width}px`;
-  styledSource.style.height = `${rect.height}px`;
-  styledSource.style.left = `${rect.left}px`;
-  styledSource.style.top = `${rect.top}px`;
-  styledSource.style.margin = '0';
-  styledSource.style.pointerEvents = 'none';
-  styledSource.style.position = 'fixed';
-  styledSource.style.transform = 'translate(0px, 0px)';
-  styledSource.style.transition = 'none';
-  styledSource.style.zIndex = '2147483647';
+  if (detachedPreview && mode === 'move') {
+    styledSource.style.display = 'none';
+  }
+
+  dragElement.setAttribute('data-comins-sortable-dragging', '');
+  styledDragElement.style.boxSizing = 'border-box';
+  styledDragElement.style.width = `${rect.width}px`;
+  styledDragElement.style.height = `${rect.height}px`;
+  styledDragElement.style.left = `${rect.left}px`;
+  styledDragElement.style.top = `${rect.top}px`;
+  styledDragElement.style.margin = '0';
+  styledDragElement.style.pointerEvents = 'none';
+  styledDragElement.style.position = 'fixed';
+  styledDragElement.style.transform = 'translate(0px, 0px)';
+  styledDragElement.style.transition = 'none';
+  styledDragElement.style.zIndex = '2147483647';
+  if (detachedPreview) {
+    previewParent?.appendChild(dragElement);
+  }
 
   const destroy = (): void => {
     if (disposed) {
@@ -86,13 +106,23 @@ export function createFeedback(
     }
     disposed = true;
     placeholder.remove();
-    for (const property of FEEDBACK_PROPERTIES) {
-      styledSource.style[property] = originalStyles[property];
+    if (detachedPreview) {
+      dragElement.remove();
     }
-    if (hadDraggingAttribute) {
-      source.setAttribute('data-comins-sortable-dragging', draggingAttribute ?? '');
-    } else {
-      source.removeAttribute('data-comins-sortable-dragging');
+    if (mode === 'move') {
+      for (const property of FEEDBACK_PROPERTIES) {
+        styledSource.style[property] = originalStyles[property];
+      }
+      if (hadDraggingAttribute) {
+        source.setAttribute('data-comins-sortable-dragging', draggingAttribute ?? '');
+      } else {
+        source.removeAttribute('data-comins-sortable-dragging');
+      }
+      if (hadRejectionAttribute) {
+        source.setAttribute('data-comins-sortable-rejection', rejectionAttribute ?? '');
+      } else {
+        source.removeAttribute('data-comins-sortable-rejection');
+      }
     }
     if (isFocusable(focusTarget)) {
       focusTarget.focus();
@@ -102,13 +132,25 @@ export function createFeedback(
   return {
     placeholder,
     move(pointer) {
-      styledSource.style.transform = `translate(${pointer.deltaX}px, ${pointer.deltaY}px)`;
+      styledDragElement.style.transform = `translate(${pointer.deltaX}px, ${pointer.deltaY}px)`;
     },
     place(parent, before) {
       parent.insertBefore(placeholder, before);
     },
+    clear() {
+      placeholder.remove();
+    },
+    setRejection(reason) {
+      if (reason !== null) {
+        dragElement.setAttribute('data-comins-sortable-rejection', reason);
+      } else if (hadRejectionAttribute) {
+        dragElement.setAttribute('data-comins-sortable-rejection', rejectionAttribute ?? '');
+      } else {
+        dragElement.removeAttribute('data-comins-sortable-rejection');
+      }
+    },
     rollback() {
-      if (originalParent !== null) {
+      if (mode === 'move' && originalParent !== null) {
         const before = originalNext !== null && originalNext.parentNode === originalParent
           ? originalNext
           : null;
@@ -118,6 +160,28 @@ export function createFeedback(
     },
     destroy,
   };
+}
+
+function createDragPreview(source: Element): Element {
+  const preview = source.cloneNode(true) as Element;
+  sanitizeDragPreview(preview);
+  preview.setAttribute('aria-hidden', 'true');
+  preview.setAttribute('inert', '');
+  return preview;
+}
+
+function isTableLayoutItem(source: Element): boolean {
+  return source.tagName === 'TR' || source.tagName === 'TH' || source.tagName === 'TD';
+}
+
+function sanitizeDragPreview(element: Element): void {
+  element.removeAttribute('id');
+  element.removeAttribute('data-comins-sortable-item');
+  element.removeAttribute('data-sortable-id');
+  element.removeAttribute('data-comins-sortable-rejection');
+  for (const child of Array.from(element.children)) {
+    sanitizeDragPreview(child);
+  }
 }
 
 function placeholderClassNames(className: string | undefined): readonly string[] {

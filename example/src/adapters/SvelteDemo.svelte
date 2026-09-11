@@ -1,9 +1,10 @@
 <script lang="ts">
+  import SvelteTreeArea from './SvelteTreeArea.svelte';
   import { onDestroy } from 'svelte';
   import { createSortableScope, sortable } from '../../../src/svelte.js';
   import type { AfterDragResult, FrameworkSortableChange } from '../../../src/core.js';
   import type { PlaygroundBridge, PlaygroundDemoInput } from '../playground/types.js';
-  import { copyDemoItem, createDemoState, demoModel, demoTreeArea, hasSecondArea, isCopyExample, isNestedExample, placeholderForExample, playgroundOperation, updateDemoTreeArea, type DemoItem } from './demo-data.js';
+  import { copyDemoItem, createDemoState, demoModel, demoTreeArea, reverseDemoChildren, hasSecondArea, isCopyExample, isNestedExample, placeholderForExample, playgroundOperation, updateDemoTreeArea, type DemoItem } from './demo-data.js';
 
   interface DemoCommands {
     dispatch(controlId: string, value?: string | number | boolean): void;
@@ -18,6 +19,8 @@
   let state = createDemoState(input.exampleId);
   let allowed = true;
   let copySequence = 0;
+  let swapThreshold = 0.5;
+  let invertSwap = false;
   const secondArea = hasSecondArea(input.exampleId);
   const todoGroup = input.exampleId === 'clone' || input.exampleId === 'custom-clone'
     ? { name: 'playground', pull: 'copy' as const }
@@ -34,7 +37,7 @@
   };
   const scope = createSortableScope<DemoItem>({
     onBeforeDragStart: () => event('beforeDragStart'),
-    onDragStart: () => event('dragStart'),
+    onDragStart: ({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) }),
     onInsertDragArea: ({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId }),
     onChange: (change: FrameworkSortableChange<DemoItem>) => {
       event('change');
@@ -43,7 +46,7 @@
     onAfterDrag: (result) => event('afterDrag', result),
   });
 
-  const setItems = (areaId: 'todo' | 'done' | 'child', items: readonly DemoItem[]) => {
+  const setItems = (areaId: string, items: readonly DemoItem[]) => {
     state = input.exampleId === 'tree' && areaId !== 'done'
       ? updateDemoTreeArea(state, areaId, items)
       : { ...state, [areaId]: [...items] };
@@ -51,6 +54,8 @@
   const reset = () => {
     copySequence = 0;
     allowed = true;
+    swapThreshold = 0.5;
+    invertSwap = false;
     state = createDemoState(input.exampleId);
     bridge.publishOperation(null);
   };
@@ -59,7 +64,9 @@
     dispatch(controlId, value) {
       if (controlId === 'accept-destination' && typeof value === 'boolean') allowed = value;
       if (controlId === 'reverse-items') state = { ...state, todo: [...state.todo].reverse() };
-      if (controlId === 'reverse-child') state = { ...state, child: [...state.child].reverse() };
+      if (controlId === 'reverse-child') state = reverseDemoChildren(state);
+      if (controlId === 'swap-threshold' && typeof value === 'number') swapThreshold = value;
+      if (controlId === 'invert-swap' && typeof value === 'boolean') invertSwap = value;
     },
     reset,
     destroyScope: () => scope.destroy(),
@@ -72,20 +79,17 @@
     areaId: 'todo',
     group: todoGroup,
     items: input.exampleId === 'tree' ? demoTreeArea(state, 'todo').items : state.todo,
-    itemKey: 'id' as const,
-    handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
+    itemKey: 'id' as const, handle: '.cs-demo-handle',
     autoScroll: input.exampleId === 'auto-scroll',
-    animation: input.exampleId === 'transition'
-      ? 180
-      : input.exampleId === 'transitions'
-        ? { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }
-        : false,
+    animation: input.exampleId === 'transition' ? 180 : false,
+    direction: (input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? 'grid' as const : undefined,
+    swapThreshold: input.exampleId === 'thresholds' ? swapThreshold : undefined,
+    invertSwap: input.exampleId === 'thresholds' ? invertSwap : undefined,
+    swap: (input.exampleId === 'swap' || input.exampleId === 'swap-grid'),
+    multiDrag: input.exampleId === 'transitions',
+    selectedClass: input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined,
     placeholder: placeholderForExample(input.exampleId),
-    item: input.exampleId === 'table'
-      ? '.cs-demo-row'
-      : input.exampleId === 'table-column'
-        ? '.cs-demo-column-header'
-        : '.cs-demo-card',
+    item: '.cs-demo-card',
     copyItem: isCopyExample(input.exampleId)
       ? (item: DemoItem) => copyDemoItem(item, input.exampleId, ++copySequence)
       : undefined,
@@ -96,7 +100,7 @@
     areaId: 'done',
     group: 'playground',
     items: state.done,
-    itemKey: 'id' as const,
+    itemKey: 'id' as const, handle: '.cs-demo-handle',
     item: '.cs-demo-card',
     emptyInsertThreshold: input.exampleId === 'empty' ? 42 : undefined,
     accept: input.exampleId === 'accept' ? () => allowed : undefined,
@@ -110,7 +114,7 @@
       ? demoTreeArea(state, 'child').parent
       : { areaId: 'todo', itemId: 'research' },
     items: input.exampleId === 'tree' ? demoTreeArea(state, 'child').items : state.child,
-    itemKey: 'id' as const,
+    itemKey: 'id' as const, handle: '.cs-demo-handle',
     item: '.cs-demo-card',
     animation: 160,
     onItemsChange: (items: readonly DemoItem[]) => setItems('child', items),
@@ -120,32 +124,18 @@
 <div
   class:cs-demo-board--scroll={input.exampleId === 'auto-scroll'}
   class:cs-demo-board--nested={isNestedExample(input.exampleId)}
+  class:cs-demo-board--grid={(input.exampleId === 'grid' || input.exampleId === 'swap-grid')}
   class="cs-demo-board"
 >
-  {#if input.exampleId === 'table'}
-    <table class="cs-demo-table" data-demo-column="todo">
-      <thead><tr><th>Task</th><th>Detail</th></tr></thead>
-      <tbody data-demo-area="todo" use:sortable={todoOptions}>
-        {#each state.todo as item (item.id)}
-          <tr class="cs-demo-row" data-sortable-id={item.id}><th scope="row">{item.title}</th><td>{item.detail}</td></tr>
-        {/each}
-      </tbody>
-    </table>
-  {:else if input.exampleId === 'table-column'}
-    <table class="cs-demo-table" data-demo-column="todo">
-      <thead>
-        <tr data-demo-area="todo" use:sortable={todoOptions}>
-          {#each state.todo as item (item.id)}
-            <th class="cs-demo-column-header" data-sortable-id={item.id} scope="col">{item.title}</th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody><tr>{#each state.todo as item (item.id)}<td>{item.detail}</td>{/each}</tr></tbody>
-    </table>
+  {#if input.exampleId === 'tree'}
+    <section class="cs-demo-column cs-demo-tree" data-demo-column="todo">
+      <SvelteTreeArea {scope} {state} areaId="todo" locale={input.locale} onItemsChange={setItems} />
+    </section>
   {:else}
   <section class="cs-demo-column" data-demo-column="todo">
     <header><div><strong>To do</strong><small>{state.todo.length} items</small></div></header>
     <div
+      class:cs-demo-list--grid={(input.exampleId === 'grid' || input.exampleId === 'swap-grid')}
       class="cs-demo-list"
       class:cs-demo-component-host={input.exampleId === 'third-party' || input.exampleId === 'functional-third-party'}
       data-demo-component-host={input.exampleId === 'third-party' || input.exampleId === 'functional-third-party' ? 'svelte' : undefined}
@@ -158,7 +148,7 @@
       {/if}
       {#each state.todo as item (item.id)}
         <article class={`cs-demo-card cs-demo-card--${item.tone}`} data-sortable-id={item.id} role="listitem" tabindex="0">
-          {#if input.exampleId === 'handle'}<button type="button" class="cs-demo-handle" aria-label={`Drag ${item.title}`}>⠿</button>{/if}
+          <button type="button" class="cs-demo-handle" aria-label={`Drag ${item.title}`}>⠿</button>
           <span class="cs-demo-card__copy"><strong>{item.title}</strong><small>{item.detail}</small></span>
           {#if isNestedExample(input.exampleId) && item.id === 'research'}
             <div class="cs-demo-nested-shell">
@@ -173,6 +163,7 @@
               >
                 {#each state.child as child (child.id)}
                   <article class={`cs-demo-card cs-demo-card--${child.tone}`} data-sortable-id={child.id} role="listitem" tabindex="0">
+                    <button type="button" class="cs-demo-handle" aria-label={`Drag ${child.title}`}>⠿</button>
                     <span class="cs-demo-card__copy"><strong>{child.title}</strong><small>{child.detail}</small></span>
                   </article>
                 {/each}
@@ -194,6 +185,7 @@
         {#if input.exampleId === 'two-list-slots'}<div class="cs-demo-slot" data-demo-slot="header">Pinned header</div>{/if}
         {#each state.done as item (item.id)}
           <article class={`cs-demo-card cs-demo-card--${item.tone}`} data-sortable-id={item.id} role="listitem" tabindex="0">
+            <button type="button" class="cs-demo-handle" aria-label={`Drag ${item.title}`}>⠿</button>
             <span class="cs-demo-card__copy"><strong>{item.title}</strong><small>{item.detail}</small></span>
           </article>
         {/each}
