@@ -53,7 +53,7 @@ jobs:
                 ;;
             esac
             case "$path" in
-              src/*|example/*|test/playwright/*|test/playground/*|playwright.config.ts|playwright.playground.config.ts|vite.example.config.ts)
+              src/*|example/*|test/playwright/*|test/playground/*|playwright.config.ts|playwright.playground.config.ts|playwright.performance.config.ts|vite.example.config.ts)
                 browser=true
                 ;;
             esac

@@ -149,6 +149,35 @@ test('selects browser and performance gates by changed surface', () => {
   assert.match(performanceJob, /npm run verify:performance/);
 });
 
+test('performance-config-only changes select every prerequisite gate', () => {
+  const changesJob = read('.github/workflows/verify.yml')
+    .match(/\n  changes:\n([\s\S]*?)\n  security:\n/)?.[1];
+  const script = changesJob?.match(/        run: \|\n([\s\S]*)/)?.[1]
+    .replace(/^          /gm, '');
+  assert.ok(script);
+
+  const cwd = repository();
+  const base = commit(cwd, 'baseline');
+  writeFileSync(join(cwd, 'playwright.performance.config.ts'), '// changed configuration\n');
+  git(cwd, 'add', 'playwright.performance.config.ts');
+  git(cwd, 'commit', '--quiet', '-m', 'change performance configuration');
+  const head = git(cwd, 'rev-parse', 'HEAD');
+  const output = join(cwd, 'scope-output');
+  const result = spawnSync('bash', ['-c', script], {
+    cwd,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      EVENT_NAME: 'pull_request',
+      PR_BASE_SHA: base,
+      PR_HEAD_SHA: head,
+      GITHUB_OUTPUT: output,
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(output, 'utf8'), 'package=true\nbrowser=true\nperformance=true\n');
+});
+
 test('pins shared Gitleaks, hooks, and the credential-free workflow', () => {
   const config = read('.gitleaks.toml');
   const preCommit = read('.githooks/pre-commit');

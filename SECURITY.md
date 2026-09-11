@@ -6,9 +6,8 @@ Report potential vulnerabilities privately through this repository's GitHub Secu
 
 ## Scope
 
-The latest published `0.x` version receives security fixes. No version is
-currently available from npm. Older pre-1.0 versions are unsupported after a
-newer version is published.
+The latest published `0.x` version receives security fixes. Older pre-1.0
+versions are unsupported after a newer version is published.
 
 ## Release Controls
 
