@@ -100,6 +100,59 @@ test('explicit handle takes precedence over the ignore selector', () => {
   assert.deepEqual(events, ['activate']);
 });
 
+test('accepted mouse attempts suppress native text dragging until release', () => {
+  const { platform, sensor } = sensorFixture();
+  const item = fakeElement('LI');
+  let pointerDownPrevented = false;
+  assert.equal(sensor.pointerDown(pointer({
+    target: item,
+    preventDefault: () => { pointerDownPrevented = true; },
+  }), item), true);
+  assert.equal(pointerDownPrevented, false);
+
+  const pendingDrag = new Event('dragstart', { cancelable: true });
+  platform.dispatchDocument('dragstart', pendingDrag);
+  assert.equal(pendingDrag.defaultPrevented, true);
+
+  sensor.pointerMove(pointer({ clientX: 4, target: item }));
+  platform.flushFrame();
+  const activeDrag = new Event('dragstart', { cancelable: true });
+  platform.dispatchDocument('dragstart', activeDrag);
+  assert.equal(activeDrag.defaultPrevented, true);
+
+  sensor.pointerUp(pointer({ target: item }));
+  const nextDrag = new Event('dragstart', { cancelable: true });
+  platform.dispatchDocument('dragstart', nextDrag);
+  assert.equal(nextDrag.defaultPrevented, false);
+  assert.equal(platform.listenerCount(), 0);
+});
+
+test('native dragging remains available outside accepted mouse attempts', () => {
+  for (const input of [
+    { pointerType: 'mouse', button: 2, handle: true, accepted: false },
+    { pointerType: 'mouse', button: 0, handle: false, accepted: false },
+    { pointerType: 'touch', button: 0, handle: true, accepted: true },
+    { pointerType: 'pen', button: 0, handle: true, accepted: true },
+  ]) {
+    const { platform, sensor } = sensorFixture({ handle: '.handle' });
+    const item = fakeElement('LI');
+    const target = fakeElement('SPAN', {
+      parentElement: item,
+      selectors: input.handle ? ['.handle'] : [],
+    });
+    item.fixtureChildren.push(target);
+    assert.equal(sensor.pointerDown(pointer({
+      target, pointerType: input.pointerType, button: input.button,
+    }), item), input.accepted);
+
+    const nativeDrag = new Event('dragstart', { cancelable: true });
+    platform.dispatchDocument('dragstart', nativeDrag);
+    assert.equal(nativeDrag.defaultPrevented, false);
+    sensor.destroy();
+    assert.equal(platform.listenerCount(), 0);
+  }
+});
+
 test('pointer activates at four CSS pixels and captures the active pointer', () => {
   const { events, platform, sensor, snapshots } = sensorFixture();
   const item = fakeElement('LI');
@@ -210,7 +263,7 @@ test('pointerup releases an active drag and clears capture and resources', () =>
 
   platform.dispatchDocument('pointerup', pointer({ clientX: 5, target: item }));
 
-  assert.deepEqual(events, ['activate', 'release']);
+  assert.deepEqual(events, ['activate', 'move', 'release']);
   assert.deepEqual(item.releasedPointers, [1]);
   assert.equal(platform.listenerCount(), 0);
   assert.equal(platform.frameCount(), 0);
@@ -231,6 +284,22 @@ test('pointerup flushes a pending activation frame for a fast drag', () => {
   assert.deepEqual(item.releasedPointers, [1]);
   assert.equal(platform.listenerCount(), 0);
   assert.equal(platform.frameCount(), 0);
+});
+
+test('pointerup resolves the destination after the last move frame only activated the drag', () => {
+  const { events, platform, sensor, snapshots } = sensorFixture();
+  const item = fakeElement('LI');
+  sensor.pointerDown(pointer({ target: item }), item);
+  sensor.pointerMove(pointer({ clientX: 120, clientY: 80, target: item }));
+  platform.flushFrame();
+  assert.deepEqual(events, ['activate']);
+
+  sensor.pointerUp(pointer({ clientX: 125, clientY: 85, target: item }));
+
+  assert.deepEqual(events, ['activate', 'move', 'release']);
+  assert.equal(snapshots[snapshots.length - 1]?.clientX, 125);
+  assert.equal(snapshots[snapshots.length - 1]?.clientY, 85);
+  assert.equal(platform.listenerCount(), 0);
 });
 
 test('pointer capture failure aborts activation and reports after cleanup', () => {
@@ -259,7 +328,7 @@ test('lost pointer capture cannot block release cleanup or the release callback'
   };
 
   assert.doesNotThrow(() => sensor.pointerUp(pointer({ target: item })));
-  assert.deepEqual(events, ['activate', 'release']);
+  assert.deepEqual(events, ['activate', 'move', 'release']);
   assert.equal(platform.reports.length, 1);
   assert.equal(platform.listenerCount(), 0);
 });

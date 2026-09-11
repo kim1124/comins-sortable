@@ -66,6 +66,7 @@ interface PendingPointer {
   pointerType: PointerSnapshot['type'];
   origin: Coordinates;
   latest: Coordinates & Modifiers;
+  lastMove: (Coordinates & Modifiers) | null;
   frameId: number | null;
   active: boolean;
   captureTarget: Element;
@@ -150,6 +151,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
 
   const processActiveMove = (pointer: PendingPointer, releasing = false): void => {
     try {
+      pointer.lastMove = pointer.latest;
       options.onMove(snapshot(pointer), releasing);
     } catch (error) {
       cleanup();
@@ -212,7 +214,6 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       return;
     }
     pointer.latest = latestInput(input);
-    const wasActive = pointer.active;
     if (pointer.frameId !== null) {
       options.platform.cancelFrame(pointer.frameId);
       pointer.frameId = null;
@@ -220,11 +221,18 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       if (current !== pointer) {
         return;
       }
-      if (!wasActive && pointer.active) {
-        processActiveMove(pointer, true);
-        if (current !== pointer) {
-          return;
-        }
+    }
+    // The last frame may only have activated the drag. Resolve the release
+    // input without repeating an already applied move and its callbacks.
+    const lastMove = pointer.lastMove;
+    const latest = pointer.latest;
+    if (pointer.active && (lastMove === null
+      || lastMove.clientX !== latest.clientX || lastMove.clientY !== latest.clientY
+      || lastMove.altKey !== latest.altKey || lastMove.ctrlKey !== latest.ctrlKey
+      || lastMove.metaKey !== latest.metaKey || lastMove.shiftKey !== latest.shiftKey)) {
+      processActiveMove(pointer, true);
+      if (current !== pointer) {
+        return;
       }
     }
     const active = pointer.active;
@@ -273,6 +281,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       pointerType,
       origin: { clientX: input.clientX, clientY: input.clientY },
       latest: latestInput(input),
+      lastMove: null,
       frameId: null,
       active: false,
       captureTarget: source,
@@ -280,6 +289,15 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     };
 
     const listenerOptions = { signal: abortController.signal };
+    if (pointerType === 'mouse') {
+      // A native selection drag can start before activation and steal this
+      // mouse gesture. Its target may be a Text node, not the sortable item.
+      options.platform.document.addEventListener(
+        'dragstart',
+        (event) => event.preventDefault(),
+        listenerOptions,
+      );
+    }
     options.platform.document.addEventListener(
       'pointermove',
       ((event: PointerEvent) => pointerMove(event)) as EventListener,

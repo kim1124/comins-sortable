@@ -23,6 +23,23 @@ async function selectCardTitle(page: Page, itemId: string): Promise<void> {
   await expect(page.locator('[data-comins-sortable-dragging]')).toHaveCount(0);
 }
 
+test('one-move handle drags commit after the activation frame @text-copy', async ({ page }) => {
+  await page.goto('/examples/handle/react');
+  await waitForRuntime(page);
+  const handle = page.getByRole('button', { name: 'Drag Design', exact: true });
+  await handle.scrollIntoViewIfNeeded();
+  const origin = await handle.boundingBox();
+  const target = await page.locator('[data-sortable-id="research"]').boundingBox();
+  if (origin === null || target === null) throw new Error('Missing one-move drag geometry');
+  await page.mouse.move(origin.x + origin.width / 2, origin.y + origin.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + 8, target.y + 8);
+  await expect(page.locator('[data-sortable-id="design"]')).toHaveAttribute('data-comins-sortable-dragging', '');
+  await page.mouse.up();
+  await expectModelAndDom(page, { todo: ['design', 'research', 'build', 'review'] });
+  await expect(page.locator('[data-comins-sortable-dragging], [data-comins-sortable-placeholder]')).toHaveCount(0);
+});
+
 for (const adapter of adapters) {
   test(`${adapter} copied cards retain their handle and selectable text @text-copy`, async ({ page }) => {
     await page.goto(`/examples/custom-clone/${adapter}`);
@@ -721,6 +738,7 @@ test('handle, empty destination, and rejection scenarios change only through pro
   const initial = (await model(page)).todo;
   const sourceCard = page.locator('[data-sortable-id="design"]');
   const targetCard = page.locator('[data-sortable-id="research"]');
+  await sourceCard.scrollIntoViewIfNeeded();
   const sourceBox = await sourceCard.boundingBox();
   const targetBox = await targetCard.boundingBox();
   if (sourceBox === null || targetBox === null) throw new Error('Missing handle scenario geometry');

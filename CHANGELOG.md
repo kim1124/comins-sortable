@@ -19,6 +19,11 @@ All notable behavior and public API changes to this project are recorded here.
 
 ### Fixed
 
+- Prevent native text dragging from interrupting an accepted sortable mouse
+  gesture, while retaining normal text selection, focus, and native dragging
+  outside the gesture.
+- Resolve the final drop position when a single pointer-move frame activated
+  the drag but no further movement occurred before release.
 - Apply handle/ignore input boundaries before multi-selection and honor explicit
   button handles when suppressing Ctrl context menus.
 - Preserve selection on secondary mouse buttons and suppress Ctrl context menus
