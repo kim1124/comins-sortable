@@ -37,12 +37,25 @@ export function HandleExample() {
             >
               ⠿
             </button>
-            <span>{item.label}</span>
+            <span className="card-label">{item.label}</span>
           </div>
         )}
       </SortableArea>
     </SortableRoot>
   );
+}
+```
+
+```css
+.drag-handle {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.card-label {
+  -webkit-user-select: text;
+  user-select: text;
 }
 ```
 
@@ -57,6 +70,17 @@ export function HandleExample() {
 본문 선택을 차단합니다. 이동 완료·취소 뒤에는 본문을 다시 선택할 수 있습니다.
 `multiDrag`와 함께 사용하면 보조키와 핸들 클릭으로 항목을 선택합니다.
 핸들 밖의 본문이나 무시 대상에서 시작한 입력은 항목 선택을 바꾸지 않습니다.
+
+핸들은 포인터 활성화 범위를 제한합니다. 설명이 있는 button을 사용해도 키보드
+정렬 기능이 추가되지는 않습니다. 활성 드래그 중 본문 선택을 차단하는 처리는
+Playground의 스타일·lifecycle 구성이고, 패키지가 전역 `user-select`를 설정하지는
+않습니다. 소비자 앱에서 같은 처리가 필요하면 해당 위젯 범위에만 적용하고
+`onAfterDrag`와 unmount에서 해제합니다.
+
+Core는 수락한 마우스 정렬 입력이 진행되는 동안만 브라우저의 네이티브
+`dragstart`를 막아 기존 텍스트 선택이 정렬 입력을 가로채지 않도록 합니다.
+선택 범위를 지우지 않으며, 이동 후 특정 값만 다시 선택해서 복사할 수 있습니다.
+정렬 대상으로 수락하지 않은 본문·링크 등의 입력은 이 차단 대상이 아닙니다.
 
 `accept(context)`는 destination 후보를 제어합니다. group의 `put`은 어떤 source
 group이 들어올 수 있는지 제한합니다. `disabled`는 runtime에 source 또는

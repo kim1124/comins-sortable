@@ -46,8 +46,14 @@ window. It continues while the pointer remains near an edge and stops on drop,
 cancel, blur, unmount, or destroy. The container must have real overflow and a
 bounded size; the option does not create scrollable CSS.
 
+External page or ancestor scrolling also refreshes collision geometry during
+a drag, including a stationary pointer or a drop immediately after scrolling.
+This correction does not require enabling Core's `autoScroll` option.
+
 Use `direction="horizontal"` for horizontal lists. `auto` resolves direction
 from measured item centers.
 
-Playground: `transition`, `transitions`, and `auto-scroll` under
+Playground: `transition` and `auto-scroll` under
 <http://127.0.0.1:4003/examples/transition/react>.
+
+The `transitions` route now demonstrates multi-drag; see [Advanced Sorting](./16-advanced-sorting.md).

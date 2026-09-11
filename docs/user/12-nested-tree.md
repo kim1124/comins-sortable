@@ -51,6 +51,10 @@ Render every result from `getTreeAreas(nodes)` as a framework Area. Pass its
 `areaId`, `items`, and optional `parent` without changing them, then replace the
 tree state with the value returned by `updateTreeArea`.
 
+`getAreas` returns area descriptors; it does not construct nested DOM. Render
+child areas inside their corresponding parent item when a hierarchical view is
+required. A flat rendering of those descriptors is not a recursive tree view.
+
 `updateArea` replaces only the direct items of the selected area. Existing
 nodes retain their current descendant collections, including when framework
 source and destination setters apply one cross-area move sequentially.

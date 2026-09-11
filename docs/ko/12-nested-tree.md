@@ -1,5 +1,9 @@
 # 중첩 목록과 Tree
 
+`getAreas`는 Area 설명자를 반환하며 중첩 DOM을 만들지 않습니다. 계층형 화면이
+필요하면 각 자식 Area를 해당 부모 항목 안에 렌더합니다. 설명자를 평면으로
+나열하는 화면과 재귀적인 Tree 화면은 구분합니다.
+
 중첩 Area는 자신의 parent item을 선언합니다. 이 정보로 parent를 자신의 하위
 descendant로 이동하는 cycle을 collision 단계에서 거부합니다.
 

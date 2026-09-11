@@ -1,5 +1,8 @@
 # Advanced Sorting
 
+These features are added in 0.1.2 and are not part of npm 0.1.1. Before
+publication, try them in the repository Playground.
+
 Multi-drag, thresholds, grid collision, and swap are Area options shared by
 Vanilla, React, Vue, and Svelte.
 
@@ -36,6 +39,7 @@ export function AdvancedSortingExample() {
           areaId="items"
           items={items}
           itemKey="id"
+          handle=".drag-handle"
           direction={mode === 'grid' || mode === 'swap-grid' ? 'grid' : 'vertical'}
           areaProps={{ style: {
             display: 'grid',
@@ -49,13 +53,27 @@ export function AdvancedSortingExample() {
           swap={mode === 'swap' || mode === 'swap-grid'}
           onItemsChange={(next) => setItems([...next])}
         >
-          {(item) => <div>{item.label}</div>}
+          {(item) => (
+            <div>
+              <button
+                type="button"
+                className="drag-handle"
+                aria-label={`Drag ${item.label}`}
+                style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
+              >
+                ⠿
+              </button>
+              <span>{item.label}</span>
+            </div>
+          )}
         </SortableArea>
       </SortableRoot>
     </>
   );
 }
 ```
+
+## Multi-selection and text copying
 
 With `multiDrag`, use Command (⌘) on macOS or Ctrl on Windows/Linux to toggle
 individual items. Shift selects a contiguous range from the latest anchor.
@@ -69,6 +87,8 @@ and Ctrl context-menu suppression. In the Playground, modifier-click handles
 to select items and use the body for text selection and copying. Selecting body
 text preserves the existing multi-selection.
 
+## Sorting thresholds
+
 `swapThreshold` (0–1) controls where the pointer must enter a target card before
 its order changes. It is separate from `activationDistance`, which controls
 how far the pointer moves before a drag starts. In the Playground, drag Design
@@ -76,6 +96,8 @@ upward onto Research: the shaded top region shows where Research-before
 insertion activates. Without inversion, 0.2 shades the top 60% and 0.8 shades
 90%. With `invertSwap`, those regions become 40% and 10%. Moving downward uses
 the opposite edge. The guide and shaded region update with the controls.
+
+## Insertion and swap
 
 `direction="grid"` uses both axes and keeps the current destination stable
 while the pointer remains over its placeholder. Ordinary grid sorting inserts
@@ -85,3 +107,6 @@ and emits `swapItemId`. Swap Grid combines `direction="grid"` with `swap`.
 
 Playground: `transitions`, `thresholds`, `swap`, `grid`, and `swap-grid` under
 <http://127.0.0.1:4003/examples/transitions/react>.
+
+For `[A, B, C, D]`, inserting A after C produces `[B, C, A, D]`. Swapping A
+with C produces `[C, B, A, D]`.
