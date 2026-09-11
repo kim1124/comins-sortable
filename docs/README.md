@@ -55,7 +55,7 @@ handles. Table-row and table-column demos are no longer included.
 - [0.1.2 merged runtime, browser evidence, and publication boundary](./verification/0.1.2-release-candidate.md)
 - [0.1.2 performance and memory verification](./verification/0.1.2-performance.md)
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
-- [Playground GIF source and capture details](./assets/README.md)
+- [Playground GIF source and capture details](./playground-preview.md)
 
 The performance investigation and test gap audit are historical records. The
 candidate record above identifies the latest merged runtime and its evidence.

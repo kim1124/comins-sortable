@@ -1,9 +1,10 @@
 # Playground preview asset
 
-`sortable-playground.gif` is captured from the actual Comins Sortable Playground.
+[`assets/sortable-playground.gif`](./assets/sortable-playground.gif) is captured
+from the actual Comins Sortable Playground.
 It contains first-party UI and demo data from `example/` and is covered by the
 repository MIT license. Its asset declaration is in
-[`LICENSE_SCOPE.json`](../../LICENSE_SCOPE.json).
+[`LICENSE_SCOPE.json`](../LICENSE_SCOPE.json).
 
 ## Current capture
 
@@ -41,6 +42,7 @@ DOM are inspected; demo state is not injected to manufacture the animation.
 5. Decode every GIF frame and visually inspect each scene's start, drag, and
    result. Run the documentation and license checks after replacing the asset.
 
-Keep raw frames and diagnostic takes outside tracked source. The npm package
-excludes this directory; the README intentionally references the raw GitHub
+Keep raw frames and diagnostic takes outside tracked source. Keep this capture
+guide outside `assets/`, whose tracked files require asset declarations. The npm
+package excludes `docs/`; the README intentionally references the raw GitHub
 asset so the preview also works when the README is rendered on npm.
