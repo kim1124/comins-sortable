@@ -54,11 +54,11 @@ export function TableRowsExample() {
 React의 `header`·`footer`, Vue slot 또는 범위를 좁힌 Vanilla/Svelte `item`
 selector를 사용하면 같은 host에 비정렬 콘텐츠를 유지할 수 있습니다. 비정렬
 형제는 item selector와 일치해서는 안 되며 제어 item 배열에도 포함하지 않습니다.
+pointer가 이러한 비정렬 형제 위에 있으면 삽입 위치로 해석하지 않고
+`not-accepted` 거부 피드백을 표시합니다.
 
 Playground:
 
-- <http://127.0.0.1:4003/examples/table/react>
-- <http://127.0.0.1:4003/examples/table-column/react>
 - <http://127.0.0.1:4003/examples/third-party/react>
 - <http://127.0.0.1:4003/examples/footer-slot/react>
 - <http://127.0.0.1:4003/examples/header-slot/react>

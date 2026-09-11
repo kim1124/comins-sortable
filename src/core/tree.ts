@@ -84,7 +84,17 @@ export function createSortableTree<T>(
     nodes: readonly T[],
     updates: readonly { areaId: string; items: readonly T[] }[],
   ): readonly T[] => {
-    const knownAreaIds = new Set(inspect(nodes).map((area) => area.areaId));
+    const currentAreas = inspect(nodes);
+    const knownAreaIds = new Set(currentAreas.map((area) => area.areaId));
+    const currentChildrenByNodeId = new Map<SortableId, readonly T[]>();
+    for (const area of currentAreas) {
+      for (const item of area.items) {
+        currentChildrenByNodeId.set(
+          options.getNodeId(item),
+          options.getChildren(item),
+        );
+      }
+    }
     const updatesByAreaId = new Map<string, readonly T[]>();
     for (const update of updates) {
       requireAreaId(update.areaId);
@@ -99,12 +109,15 @@ export function createSortableTree<T>(
       const candidate = updatesByAreaId.get(areaId) ?? items;
       let childrenChanged = false;
       const next = candidate.map((item) => {
-        const children = options.getChildren(item);
+        const itemChildren = options.getChildren(item);
+        requireItems(itemChildren);
+        const children = currentChildrenByNodeId.get(options.getNodeId(item))
+          ?? itemChildren;
         requireItems(children);
         const childrenAreaId = options.getChildrenAreaId(item);
         requireAreaId(childrenAreaId);
         const nextChildren = rebuild(children, childrenAreaId);
-        if (nextChildren === children) {
+        if (nextChildren === itemChildren) {
           return item;
         }
         childrenChanged = true;

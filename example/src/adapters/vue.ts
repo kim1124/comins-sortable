@@ -22,6 +22,9 @@ import {
   copyDemoItem,
   demoModel,
   demoTreeArea,
+  treeChildAreaId,
+  reverseDemoChildren,
+  type DemoTreeNode,
   hasSecondArea,
   isCopyExample,
   isNestedExample,
@@ -47,14 +50,14 @@ const ComponentHost = defineComponent({
   },
 });
 
-function itemCard(item: DemoItem, withHandle: boolean, child?: VNode): VNode {
+function itemCard(item: DemoItem, child?: VNode): VNode {
   return h('article', {
     class: `cs-demo-card cs-demo-card--${item.tone}`,
     'data-sortable-id': item.id,
     role: 'listitem',
     tabindex: 0,
   }, [
-    withHandle ? h('button', { type: 'button', class: 'cs-demo-handle', 'aria-label': `Drag ${item.title}` }, '⠿') : null,
+    h('button', { type: 'button', class: 'cs-demo-handle', 'aria-label': `Drag ${item.title}` }, '⠿'),
     h('span', { class: 'cs-demo-card__copy' }, [h('strong', item.title), h('small', item.detail)]),
     child,
   ]);
@@ -70,6 +73,8 @@ export const vueDemoModule: PlaygroundDemoModule = {
       setup() {
         const state = ref<DemoState>(createDemoState(input.exampleId));
         const allowed = ref(true);
+        const swapThreshold = ref(0.5);
+        const invertSwap = ref(false);
         let copySequence = 0;
         const secondArea = hasSecondArea(input.exampleId);
         const todoGroup = input.exampleId === 'clone' || input.exampleId === 'custom-clone'
@@ -85,7 +90,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
         const event = (name: string, result?: AfterDragResult): void => {
           bridge.publishEvent({ name, status: result?.status, reason: result?.reason });
         };
-        const setItems = (areaId: 'todo' | 'done' | 'child', items: readonly DemoItem[]): void => {
+        const setItems = (areaId: string, items: readonly DemoItem[]): void => {
           state.value = input.exampleId === 'tree' && areaId !== 'done'
             ? updateDemoTreeArea(state.value, areaId, items)
             : { ...state.value, [areaId]: [...items] };
@@ -95,11 +100,15 @@ export const vueDemoModule: PlaygroundDemoModule = {
           dispatch(controlId, value) {
             if (controlId === 'accept-destination' && typeof value === 'boolean') allowed.value = value;
             if (controlId === 'reverse-items') state.value = { ...state.value, todo: [...state.value.todo].reverse() };
-            if (controlId === 'reverse-child') state.value = { ...state.value, child: [...state.value.child].reverse() };
+            if (controlId === 'reverse-child') state.value = reverseDemoChildren(state.value);
+            if (controlId === 'swap-threshold' && typeof value === 'number') swapThreshold.value = value;
+            if (controlId === 'invert-swap' && typeof value === 'boolean') invertSwap.value = value;
           },
           reset() {
             copySequence = 0;
             allowed.value = true;
+            swapThreshold.value = 0.5;
+            invertSwap.value = false;
             state.value = createDemoState(input.exampleId);
             bridge.publishOperation(null);
           },
@@ -107,11 +116,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
 
         watchEffect(() => bridge.publishModel(demoModel(state.value, secondArea)));
 
-        const animation = input.exampleId === 'transition'
-          ? 180
-          : input.exampleId === 'transitions'
-            ? { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' }
-            : false;
+        const animation = input.exampleId === 'transition' ? 180 : false;
         const childArea = (): VNode => {
           const treeArea = input.exampleId === 'tree' ? demoTreeArea(state.value, 'child') : null;
           return h('div', { class: 'cs-demo-nested-shell' }, [
@@ -127,13 +132,28 @@ export const vueDemoModule: PlaygroundDemoModule = {
             group: 'playground',
             parent: treeArea?.parent ?? { areaId: 'todo', itemId: 'research' },
             modelValue: treeArea?.items ?? state.value.child,
-            itemKey: 'id',
+            itemKey: 'id', handle: '.cs-demo-handle',
             animation: 160,
             'onUpdate:modelValue': (items: readonly DemoItem[]) => setItems('child', items),
           }, {
-            item: ({ item }: { item: DemoItem }) => itemCard(item, false),
+            item: ({ item }: { item: DemoItem }) => itemCard(item),
           }),
           ]);
+        };
+        const treeArea = (areaId: string): VNode => {
+          const current = demoTreeArea(state.value, areaId);
+          return h(SortableArea<DemoTreeNode>, {
+            areaId, group: 'playground', parent: current.parent,
+            modelValue: current.items, itemKey: 'id', handle: '.cs-demo-handle',
+            componentProps: { class: 'cs-demo-list cs-demo-tree-list', role: 'list', 'data-demo-area': areaId },
+            'onUpdate:modelValue': (items: readonly DemoTreeNode[]) => setItems(areaId, items),
+          }, {
+            item: ({ item }: { item: DemoTreeNode }) => itemCard(item,
+              item.acceptsChildren ? h('div', { class: 'cs-demo-nested-shell' }, [
+                h('strong', `${item.title} ${input.locale === 'ko' ? '하위 항목' : 'children'}`),
+                treeArea(treeChildAreaId(item)),
+              ]) : undefined),
+          });
         };
         const area = (areaId: 'todo' | 'done', items: readonly DemoItem[]): VNode => h(
           'section',
@@ -146,19 +166,24 @@ export const vueDemoModule: PlaygroundDemoModule = {
                   ? ComponentHost
                   : 'div',
                 componentProps: {
-                  class: 'cs-demo-list',
+                  class: `cs-demo-list${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-list--grid' : ''}`,
                   role: 'list',
                   'data-demo-area': areaId,
                 },
                 areaId,
                 group: areaId === 'todo' ? todoGroup : 'playground',
                 modelValue: items,
-                itemKey: 'id',
-                handle: input.exampleId === 'handle' ? '.cs-demo-handle' : undefined,
+                itemKey: 'id', handle: '.cs-demo-handle',
                 autoScroll: input.exampleId === 'auto-scroll',
                 animation,
                 placeholder: areaId === 'todo' ? placeholderForExample(input.exampleId) : undefined,
                 emptyInsertThreshold: areaId === 'done' && input.exampleId === 'empty' ? 42 : undefined,
+                direction: (input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? 'grid' : undefined,
+                swapThreshold: input.exampleId === 'thresholds' ? swapThreshold.value : undefined,
+                invertSwap: input.exampleId === 'thresholds' ? invertSwap.value : undefined,
+                swap: (input.exampleId === 'swap' || input.exampleId === 'swap-grid'),
+                multiDrag: input.exampleId === 'transitions',
+                selectedClass: input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined,
                 accept: areaId === 'done' && input.exampleId === 'accept' ? () => allowed.value : undefined,
                 copyItem: areaId === 'todo' && isCopyExample(input.exampleId)
                   ? (item: DemoItem) => copyDemoItem(item, input.exampleId, ++copySequence)
@@ -173,7 +198,6 @@ export const vueDemoModule: PlaygroundDemoModule = {
                   : undefined,
                 item: ({ item }: { item: DemoItem }) => itemCard(
                   item,
-                  input.exampleId === 'handle',
                   isNestedExample(input.exampleId) && areaId === 'todo' && item.id === 'research'
                     ? childArea()
                     : undefined,
@@ -183,40 +207,9 @@ export const vueDemoModule: PlaygroundDemoModule = {
           ],
         );
 
-        const table = (): VNode => input.exampleId === 'table-column'
-          ? h('table', { class: 'cs-demo-table', 'data-demo-column': 'todo' }, [
-              h('thead', [h(SortableArea<DemoItem>, {
-                tag: 'tr',
-                componentProps: { 'data-demo-area': 'todo' },
-                areaId: 'todo',
-                modelValue: state.value.todo,
-                itemKey: 'id',
-                direction: 'horizontal',
-                animation: 160,
-                'onUpdate:modelValue': (items: readonly DemoItem[]) => setItems('todo', items),
-              }, { item: ({ item }: { item: DemoItem }) => h('th', { 'data-sortable-id': item.id, scope: 'col' }, item.title) })]),
-              h('tbody', [h('tr', state.value.todo.map((item) => h('td', { key: item.id }, item.detail)))]),
-            ])
-          : h('table', { class: 'cs-demo-table', 'data-demo-column': 'todo' }, [
-              h('thead', [h('tr', [h('th', 'Task'), h('th', 'Detail')])]),
-              h(SortableArea<DemoItem>, {
-                tag: 'tbody',
-                componentProps: { 'data-demo-area': 'todo' },
-                areaId: 'todo',
-                modelValue: state.value.todo,
-                itemKey: 'id',
-                animation: 160,
-                'onUpdate:modelValue': (items: readonly DemoItem[]) => setItems('todo', items),
-              }, {
-                item: ({ item }: { item: DemoItem }) => h('tr', { 'data-sortable-id': item.id }, [
-                  h('th', { scope: 'row' }, item.title), h('td', item.detail),
-                ]),
-              }),
-            ]);
-
         return () => h(SortableRoot<DemoItem>, {
           onBeforeDragStart: () => event('beforeDragStart'),
-          onDragStart: () => event('dragStart'),
+          onDragStart: ({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) }),
           onInsertDragArea: ({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId }),
           onChange: (change: FrameworkSortableChange<DemoItem>) => {
             event('change');
@@ -225,11 +218,11 @@ export const vueDemoModule: PlaygroundDemoModule = {
           onAfterDrag: (result: AfterDragResult) => event('afterDrag', result),
         }, {
           default: () => h('div', {
-            class: `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}`,
+            class: `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`,
           }, [
-            input.exampleId === 'table' || input.exampleId === 'table-column'
-              ? table()
-              : area('todo', input.exampleId === 'tree' ? demoTreeArea(state.value, 'todo').items : state.value.todo),
+            input.exampleId === 'tree'
+              ? h('section', { class: 'cs-demo-column cs-demo-tree', 'data-demo-column': 'todo' }, [treeArea('todo')])
+              : area('todo', state.value.todo),
             secondArea ? area('done', state.value.done) : null,
           ]),
         });

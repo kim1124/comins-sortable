@@ -4,7 +4,10 @@ import test from 'node:test';
 import { reorder, transfer } from '../../../src/core.js';
 import {
   buildCopyChange,
+  buildMultiReorderChange,
+  buildMultiTransferChange,
   buildReorderChange,
+  buildSwapChange,
   buildTransferChange,
 } from '../../../src/core/operations.js';
 
@@ -114,5 +117,62 @@ test('copy change builder preserves the source and inserts the copied item ID', 
       { areaId: 'todo', itemIds: ['a', 'b'] },
       { areaId: 'done', itemIds: ['b-copy', 'c'] },
     ],
+  });
+});
+
+test('multi reorder moves selected IDs together in their original order', () => {
+  const change = buildMultiReorderChange(
+    ['a', 'b', 'c', 'd', 'e'],
+    ['b', 'd'],
+    { areaId: 'todo', index: 1 },
+    { areaId: 'todo', index: 3 },
+  );
+
+  assert.deepEqual(change, {
+    operation: 'reorder',
+    itemId: 'b',
+    itemIds: ['b', 'd'],
+    source: { areaId: 'todo', index: 1 },
+    destination: { areaId: 'todo', index: 3 },
+    orders: [{ areaId: 'todo', itemIds: ['a', 'c', 'e', 'b', 'd'] }],
+  });
+});
+
+test('multi transfer removes and inserts all selected IDs as one ordered group', () => {
+  const change = buildMultiTransferChange(
+    ['a', 'b', 'c', 'd'],
+    ['x', 'y'],
+    ['b', 'd'],
+    { areaId: 'todo', index: 1 },
+    { areaId: 'done', index: 1 },
+  );
+
+  assert.deepEqual(change, {
+    operation: 'transfer',
+    itemId: 'b',
+    itemIds: ['b', 'd'],
+    source: { areaId: 'todo', index: 1 },
+    destination: { areaId: 'done', index: 1 },
+    orders: [
+      { areaId: 'todo', itemIds: ['a', 'c'] },
+      { areaId: 'done', itemIds: ['x', 'b', 'd', 'y'] },
+    ],
+  });
+});
+
+test('swap change exchanges the dragged and target positions without insertion sorting', () => {
+  const change = buildSwapChange(
+    ['a', 'b', 'c', 'd'],
+    { areaId: 'todo', index: 0 },
+    { areaId: 'todo', index: 3 },
+  );
+
+  assert.deepEqual(change, {
+    operation: 'swap',
+    itemId: 'a',
+    swapItemId: 'd',
+    source: { areaId: 'todo', index: 0 },
+    destination: { areaId: 'todo', index: 3 },
+    orders: [{ areaId: 'todo', itemIds: ['d', 'b', 'c', 'a'] }],
   });
 });

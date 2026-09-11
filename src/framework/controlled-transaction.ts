@@ -1,5 +1,4 @@
 import { SortableError } from '../core/errors.js';
-import { reorder, transfer } from '../core/operations.js';
 import type {
   CopyItemContext,
   FrameworkSortableChange,
@@ -148,49 +147,34 @@ export class ControlledTransaction<T> implements ControlledTransaction<T> {
     change: SortableChange,
     snapshots: readonly BindingSnapshot<T>[],
   ): readonly SortableAreaUpdate<T>[] {
-    const snapshotsByAreaId = new Map(
-      snapshots.map((snapshot) => [snapshot.binding.areaId, snapshot]),
-    );
-    const source = snapshotsByAreaId.get(change.source.areaId);
-    const destination = snapshotsByAreaId.get(change.destination.areaId);
-    if (source === undefined || destination === undefined) {
-      throw new SortableError('INVALID_OPTION');
+    const itemById = new Map<string | number, T>();
+    for (const snapshot of snapshots) {
+      for (const item of snapshot.items) {
+        const itemId = snapshot.binding.getItemId(item);
+        if (itemById.has(itemId)) throw new SortableError('DUPLICATE_ITEM_ID');
+        itemById.set(itemId, item);
+      }
     }
-
-    const nextItemsByAreaId = new Map<string, readonly T[]>();
-    if (change.operation === 'reorder') {
-      nextItemsByAreaId.set(
-        source.binding.areaId,
-        reorder(source.items, change.source.index, change.destination.index),
-      );
-    } else if (change.operation === 'transfer') {
-      const next = transfer(
-        source.items,
-        destination.items,
-        change.source.index,
-        change.destination.index,
-      );
-      nextItemsByAreaId.set(source.binding.areaId, next.sourceItems);
-      nextItemsByAreaId.set(destination.binding.areaId, next.destinationItems);
-    } else {
+    if (change.operation === 'copy') {
       const prepared = this.preparedCopy;
-      const sourceItem = source.items[change.source.index];
       if (
         prepared === null
-        || prepared.sourceAreaId !== source.binding.areaId
+        || prepared.sourceAreaId !== change.source.areaId
         || prepared.itemId !== change.itemId
-        || sourceItem === undefined
-        || source.binding.getItemId(sourceItem) !== change.sourceItemId
       ) {
         throw new SortableError('INVALID_OPTION');
       }
-      const nextDestinationItems = [...destination.items];
-      nextDestinationItems.splice(change.destination.index, 0, prepared.item);
-      nextItemsByAreaId.set(destination.binding.areaId, nextDestinationItems);
+      itemById.set(prepared.itemId, prepared.item);
     }
-
-    return [...nextItemsByAreaId].map(([areaId, items]) => {
-      return { areaId, items };
+    return change.orders.filter((order) => (
+      change.operation !== 'copy' || order.areaId !== change.source.areaId
+    )).map((order) => {
+      const items = order.itemIds.map((itemId) => {
+        const item = itemById.get(itemId);
+        if (item === undefined) throw new SortableError('INVALID_OPTION');
+        return item;
+      });
+      return { areaId: order.areaId, items };
     });
   }
 

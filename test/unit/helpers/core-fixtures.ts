@@ -127,6 +127,27 @@ export function fakeElement(
     getBoundingClientRect() {
       return this.rect;
     },
+    cloneNode(deep = false) {
+      const clone = fakeElement(tagName, {
+        ownerDocument: this.ownerDocument,
+        rect: this.rect,
+        attributes: Object.fromEntries(attributes),
+        id: this.id,
+        textContent: this.textContent,
+        value: this.value,
+        style: { ...styleValues },
+        computedStyle: { ...this.computedStyle },
+      });
+      for (const className of classNames) {
+        clone.classList.add(className);
+      }
+      if (deep) {
+        for (const child of this.fixtureChildren) {
+          clone.appendChild(child.cloneNode(true) as FakeElement);
+        }
+      }
+      return clone;
+    },
     querySelectorAll(selector: string) {
       const found: FakeElement[] = [];
       const visit = (parent: typeof element) => {

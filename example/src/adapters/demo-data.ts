@@ -21,9 +21,11 @@ export interface DemoState {
   todo: DemoItem[];
   done: DemoItem[];
   child: DemoItem[];
+  tree?: readonly DemoTreeNode[];
 }
 
 export interface DemoTreeNode extends DemoItem {
+  acceptsChildren: boolean;
   children: readonly DemoTreeNode[];
 }
 
@@ -58,6 +60,16 @@ export function createDemoState(exampleId: PlaygroundExampleId): DemoState {
   ) {
     return { todo: items('research', 'design', 'build', 'review'), done: [], child: [] };
   }
+  if (exampleId === 'tree') {
+    const node = (id: string, children: readonly DemoTreeNode[] = [], acceptsChildren = false): DemoTreeNode => ({
+      ...catalog[id]!, children, acceptsChildren,
+    });
+    return { todo: [], done: [], child: [], tree: [
+      node('research', [node('review', [node('document'), node('observe')], true), node('release')], true),
+      node('design', [], true),
+      node('build'),
+    ] };
+  }
   if (isNestedExample(exampleId)) {
     return { todo: items('research', 'design', 'build'), done: [], child: items('review', 'release') };
   }
@@ -67,6 +79,33 @@ export function createDemoState(exampleId: PlaygroundExampleId): DemoState {
         'research', 'design', 'build', 'review', 'release',
         'document', 'observe', 'measure', 'improve',
       ),
+      done: [],
+      child: [],
+    };
+  }
+  if (exampleId === 'grid' || exampleId === 'swap-grid') {
+    const tones: DemoItem['tone'][] = ['mint', 'blue', 'amber', 'violet'];
+    return {
+      todo: Array.from({ length: 20 }, (_, index) => ({
+        id: `grid-${index + 1}`,
+        title: `Item ${index + 1}`,
+        detail: `Grid position ${index + 1}`,
+        tone: tones[index % tones.length] as DemoItem['tone'],
+      })),
+      done: [],
+      child: [],
+    };
+  }
+  if (exampleId === 'transitions') {
+    return {
+      todo: items('research', 'design', 'build', 'review', 'release', 'document', 'observe', 'measure'),
+      done: [],
+      child: [],
+    };
+  }
+  if (exampleId === 'thresholds' || exampleId === 'swap') {
+    return {
+      todo: items('research', 'design', 'build', 'review', 'release', 'document'),
       done: [],
       child: [],
     };
@@ -99,6 +138,18 @@ export function copyDemoItem(
 }
 
 export function applyDemoChange(state: DemoState, change: SortableChange): DemoState {
+  if (state.tree !== undefined) {
+    const byId = new Map(demoTree.getAreas(state.tree).flatMap((area) => area.items.map((item) => [item.id, item] as const)));
+    const updates = change.orders.map((order) => ({
+      areaId: order.areaId,
+      items: order.itemIds.map((id) => {
+        const item = byId.get(String(id));
+        if (item === undefined) throw new Error('Unknown demo tree node');
+        return item;
+      }),
+    }));
+    return { ...state, tree: demoTree.applyChange(state.tree, { ...change, updates }) };
+  }
   const itemById = new Map(
     [...state.todo, ...state.done, ...state.child].map((item) => [item.id, item] as const),
   );
@@ -128,6 +179,9 @@ export function applyDemoChange(state: DemoState, change: SortableChange): DemoS
 }
 
 export function demoModel(state: DemoState, includeDone = true): PlaygroundModel {
+  if (state.tree !== undefined) {
+    return Object.fromEntries(demoTreeAreas(state).map((area) => [area.areaId, area.items.map((item) => item.id)]));
+  }
   const model: Record<string, readonly string[]> = {
     todo: state.todo.map((item) => item.id),
   };
@@ -174,60 +228,32 @@ export function placeholderForExample(
   return undefined;
 }
 
-export function demoTreeArea(
-  state: DemoState,
-  areaId: 'todo' | 'child',
-): SortableTreeArea<DemoTreeNode> {
-  const area = demoTree.getAreas(toTree(state)).find((candidate) => candidate.areaId === areaId);
-  if (area === undefined) throw new Error(`Unknown demo tree area: ${areaId}`);
+export function demoTreeAreas(state: DemoState): readonly SortableTreeArea<DemoTreeNode>[] {
+  if (state.tree === undefined) throw new Error('Missing demo tree');
+  const all = demoTree.getAreas(state.tree);
+  const folders = new Set(all.flatMap((area) => area.items.filter((item) => item.acceptsChildren).map((item) => item.id)));
+  return all.filter((area) => area.parent === undefined || folders.has(String(area.parent.itemId)));
+}
+
+export function demoTreeArea(state: DemoState, areaId: string): SortableTreeArea<DemoTreeNode> {
+  const area = demoTreeAreas(state).find((candidate) => candidate.areaId === areaId);
+  if (area === undefined) throw new Error('Unknown demo tree area');
   return area;
 }
 
-export function updateDemoTreeArea(
-  state: DemoState,
-  areaId: 'todo' | 'child',
-  items: readonly DemoItem[],
-): DemoState {
-  const nextTree = demoTree.updateArea(
-    toTree(state),
-    areaId,
-    items as readonly DemoTreeNode[],
-  );
-  const research = findTreeNode(nextTree, 'research');
-  return {
-    ...state,
-    todo: nextTree.map(toDemoItem),
-    child: (research?.children ?? []).map(toDemoItem),
-  };
+export function treeChildAreaId(item: DemoTreeNode): string {
+  return item.id === 'research' ? 'child' : `tree-children-${item.id}`;
 }
 
-function toTree(state: DemoState): readonly DemoTreeNode[] {
-  return state.todo.map((item) => ({
-    ...item,
-    children: item.id === 'research'
-      ? state.child.map((child) => ({ ...child, children: [] }))
-      : [],
-  }));
+export function updateDemoTreeArea(state: DemoState, areaId: string, items: readonly DemoItem[]): DemoState {
+  if (state.tree === undefined) throw new Error('Missing demo tree');
+  return { ...state, tree: demoTree.updateArea(state.tree, areaId, items as readonly DemoTreeNode[]) };
 }
 
-function toDemoItem({ children: _children, ...item }: DemoTreeNode): DemoItem {
-  return item;
-}
-
-function findTreeNode(
-  nodes: readonly DemoTreeNode[],
-  itemId: string,
-): DemoTreeNode | undefined {
-  for (const node of nodes) {
-    if (node.id === itemId) return node;
-    const child = findTreeNode(node.children, itemId);
-    if (child !== undefined) return child;
-  }
-  return undefined;
-}
-
-export function isAnimationExample(exampleId: PlaygroundExampleId): boolean {
-  return exampleId === 'transition' || exampleId === 'transitions';
+export function reverseDemoChildren(state: DemoState): DemoState {
+  return state.tree === undefined
+    ? { ...state, child: [...state.child].reverse() }
+    : updateDemoTreeArea(state, 'child', [...demoTreeArea(state, 'child').items].reverse());
 }
 
 export function isCopyExample(exampleId: PlaygroundExampleId): boolean {

@@ -14,6 +14,7 @@ import type {
   SortablePlaceholderOptions,
 } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
+import { deferredElementRef } from '../framework/element-ref.js';
 import {
   createVueSortableController,
   VueSortableContext,
@@ -32,6 +33,11 @@ export interface VueSortableAreaProps<T> {
   ignore?: string;
   activationDistance?: number;
   emptyInsertThreshold?: number;
+  swapThreshold?: number;
+  invertSwap?: boolean;
+  swap?: boolean;
+  multiDrag?: boolean;
+  selectedClass?: string;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
@@ -61,6 +67,11 @@ const SortableAreaComponent = defineComponent({
     ignore: String,
     activationDistance: Number,
     emptyInsertThreshold: Number,
+    swapThreshold: Number,
+    invertSwap: { type: Boolean, default: undefined },
+    swap: { type: Boolean, default: undefined },
+    multiDrag: { type: Boolean, default: undefined },
+    selectedClass: String,
     autoScroll: { type: Boolean, default: undefined },
     accept: Function as PropType<(context: DragContext) => boolean>,
     copyItem: Function as PropType<(item: unknown, context: CopyItemContext) => unknown>,
@@ -79,14 +90,15 @@ const SortableAreaComponent = defineComponent({
       props: () => props,
       emitModelValue: (items) => emit('update:modelValue', items),
     });
+    const commitElement = deferredElementRef((element) => lifecycle.setElement(element));
     const setAreaElement = (element: Element | ComponentPublicInstance | null): void => {
       const resolved = element !== null && '$el' in element
         ? (element.$el as HTMLElement | null)
         : element as HTMLElement | null;
-      lifecycle.setElement(resolved);
+      commitElement(resolved);
     };
     onUpdated(() => lifecycle.update(props));
-    onBeforeUnmount(() => lifecycle.dispose());
+    onBeforeUnmount(() => commitElement(null));
 
     return () => {
       const children: VNodeChild[] = [];

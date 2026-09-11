@@ -36,6 +36,26 @@
   pointer-events: none;
 }
 
+.comins-sortable__selected,
+[data-comins-sortable-selected] {
+  outline: var(--comins-sortable-selected-outline, 2px solid #176343);
+  outline-offset: var(--comins-sortable-selected-outline-offset, 1px);
+}
+
+[data-comins-sortable-rejection] {
+  outline: var(--comins-sortable-rejection-outline, 2px solid #dc2626);
+  outline-offset: var(--comins-sortable-rejection-outline-offset, 2px);
+}
+
+[data-comins-sortable-swap-target] {
+  outline: var(--comins-sortable-swap-outline, 2px solid #176343);
+  outline-offset: var(--comins-sortable-swap-outline-offset, 2px);
+}
+
+[data-comins-sortable-dragging][data-comins-sortable-rejection] {
+  cursor: not-allowed;
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-comins-sortable-placeholder-preset="skeleton"],
   [data-comins-sortable-dragging] {

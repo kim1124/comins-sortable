@@ -87,6 +87,38 @@ test('tree applies enhanced framework updates as one immutable change', () => {
   assert.deepEqual(tree.map((item) => item.id), ['a', 'b']);
 });
 
+test('tree preserves current descendants across sequential cross-area updates', () => {
+  const firstChild = node('a-1');
+  const secondChild = node('a-2');
+  const parent = node('a', [firstChild, secondChild]);
+  const sibling = node('b');
+  let tree = [parent, sibling];
+
+  tree = [...model.updateArea(tree, 'tree-root', [parent])];
+  tree = [...model.updateArea(
+    tree,
+    'tree-children-a',
+    [firstChild, sibling, secondChild],
+  )];
+
+  const parentSnapshot = tree[0] as Node;
+  const movedChild = parentSnapshot.children[0] as Node;
+  const afterSource = model.updateArea(
+    tree,
+    'tree-children-a',
+    parentSnapshot.children.slice(1),
+  );
+  const next = model.updateArea(
+    afterSource,
+    'tree-root',
+    [movedChild, parentSnapshot],
+  );
+
+  assert.deepEqual(next.map((item) => item.id), ['a-1', 'a']);
+  assert.deepEqual(next[1]?.children.map((item) => item.id), ['b', 'a-2']);
+  assert.deepEqual(afterSource[0]?.children.map((item) => item.id), ['b', 'a-2']);
+});
+
 test('tree supports typed copy updates and validates the resulting IDs', () => {
   const first = node('a');
   const copied = node('a-copy');

@@ -51,9 +51,26 @@ Render every result from `getTreeAreas(nodes)` as a framework Area. Pass its
 `areaId`, `items`, and optional `parent` without changing them, then replace the
 tree state with the value returned by `updateTreeArea`.
 
+`updateArea` replaces only the direct items of the selected area. Existing
+nodes retain their current descendant collections, including when framework
+source and destination setters apply one cross-area move sequentially.
+
 Use `applyChange` when one framework Root change should be folded into the
 whole tree transaction. Unknown areas, duplicate node or area IDs, and cycles
 fail without mutating the input.
+
+## What the Playground examples demonstrate
+
+- **Nested lists** keep separate root and child arrays. They demonstrate DOM
+  nesting, the `parent` relationship, and transfers between lists.
+- **Tree data sorting** keeps one recursive `children` value and derives each
+  area through `createSortableTree`. The initial three levels are Research →
+  Review → Document/Observe, alongside an empty Design folder. Move Review into
+  Design to carry both descendants with it. Parent relationships update after
+  the move, while cycles remain rejected.
+
+Both examples use the same Core sorting engine. Their distinction is the state
+model and subtree preservation, rather than a separate drag interaction.
 
 Playground:
 

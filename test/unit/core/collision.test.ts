@@ -3,8 +3,10 @@ import test from 'node:test';
 
 import {
   findAreaAtPoint,
+  gridInsertionIndex,
   insertionIndex,
   insertionIndexExcludingSource,
+  thresholdInsertionIndex,
 } from '../../../src/core/collision.js';
 import { dragContext, rectArea, rectItem } from '../helpers/core-fixtures.js';
 
@@ -57,6 +59,96 @@ test('collision inserts after an item at its midpoint and returns zero for empty
     direction: 'vertical',
     items: [],
   }), 0);
+});
+
+test('collision resolves an exact midpoint from the drag movement intent', () => {
+  const item = rectItem('target', 20, 20, 40, 40);
+
+  assert.equal(insertionIndex({
+    pointer: { x: 40, y: 40 },
+    direction: 'horizontal',
+    items: [item],
+    midpointTie: 'before',
+  }), 0);
+  assert.equal(insertionIndex({
+    pointer: { x: 40, y: 40 },
+    direction: 'horizontal',
+    items: [item],
+    midpointTie: 'after',
+  }), 1);
+});
+
+test('collision resolves browser-rounded midpoint coordinates within one CSS pixel', () => {
+  const item = rectItem('target', 20, 20, 40, 40);
+
+  assert.equal(insertionIndex({
+    pointer: { x: 40.75, y: 40 },
+    direction: 'horizontal',
+    items: [item],
+    midpointTie: 'before',
+  }), 0);
+  assert.equal(insertionIndex({
+    pointer: { x: 39.25, y: 40 },
+    direction: 'horizontal',
+    items: [item],
+    midpointTie: 'after',
+  }), 1);
+});
+
+test('grid collision follows visual rows and columns instead of one global axis', () => {
+  const items = [
+    rectItem('a', 0, 0, 40, 40),
+    rectItem('b', 50, 0, 40, 40),
+    rectItem('c', 0, 50, 40, 40),
+    rectItem('d', 50, 50, 40, 40),
+  ];
+
+  assert.equal(gridInsertionIndex({ pointer: { x: 4, y: 54 }, items }), 2);
+  assert.equal(gridInsertionIndex({ pointer: { x: 86, y: 86 }, items }), 4);
+});
+
+test('threshold collision keeps the previous insertion in a dead zone', () => {
+  const target = rectItem('target', 0, 20, 100, 40);
+
+  assert.equal(thresholdInsertionIndex({
+    pointer: { x: 50, y: 23 },
+    direction: 'vertical',
+    items: [target],
+    movement: 1,
+    swapThreshold: 0.5,
+    previousIndex: 0,
+  }), 0);
+  assert.equal(thresholdInsertionIndex({
+    pointer: { x: 50, y: 31 },
+    direction: 'vertical',
+    items: [target],
+    movement: 1,
+    swapThreshold: 0.5,
+    previousIndex: 0,
+  }), 1);
+});
+
+test('inverted threshold moves the active zone to the target edges', () => {
+  const target = rectItem('target', 0, 20, 100, 40);
+
+  assert.equal(thresholdInsertionIndex({
+    pointer: { x: 50, y: 31 },
+    direction: 'vertical',
+    items: [target],
+    movement: 1,
+    swapThreshold: 0.5,
+    invertSwap: true,
+    previousIndex: 0,
+  }), 0);
+  assert.equal(thresholdInsertionIndex({
+    pointer: { x: 50, y: 51 },
+    direction: 'vertical',
+    items: [target],
+    movement: 1,
+    swapThreshold: 0.5,
+    invertSwap: true,
+    previousIndex: 0,
+  }), 1);
 });
 
 test('empty-area fallback expands only the primary axis', () => {

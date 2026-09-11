@@ -113,25 +113,69 @@ test('adopts the approved public package boundary under Contract v1.8', () => {
   assert.equal(licenseResult.stdout, '');
   assert.equal(licenseResult.stderr, '');
   const manifest = JSON.parse(read('package.json'));
-  assert.equal(manifest.version, '0.1.1');
+  assert.equal(manifest.version, '0.1.2');
   assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
   assert.equal(existsSync(join(root, 'package-lock.json')), true);
   assert.equal(existsSync(join(root, '.github/workflows/publish.yml')), true);
 });
 
-test('runs browser gates after security and package verification', () => {
+test('selects browser and performance gates by changed surface', () => {
   const verify = read('.github/workflows/verify.yml');
-  const browserJob = verify.match(/\n  browser:\n[\s\S]*$/)?.[0];
+  const changesJob = verify.match(/\n  changes:\n[\s\S]*?\n  security:\n/)?.[0];
+  const browserJob = verify.match(/\n  browser:\n[\s\S]*?\n  performance:\n/)?.[0];
+  const performanceJob = verify.match(/\n  performance:\n[\s\S]*$/)?.[0];
 
+  assert.ok(changesJob);
   assert.ok(browserJob);
-  assert.match(browserJob, /needs:\n\s+- security\n\s+- verify/);
+  assert.ok(performanceJob);
+  assert.match(changesJob, /package: \$\{\{ steps\.scope\.outputs\.package \}\}/);
+  assert.match(changesJob, /browser: \$\{\{ steps\.scope\.outputs\.browser \}\}/);
+  assert.match(changesJob, /performance: \$\{\{ steps\.scope\.outputs\.performance \}\}/);
+  assert.match(changesJob, /src\/\*\|example\/\*\|test\/playwright\/\*/);
+  assert.match(changesJob, /test\/playground\/performance\.spec\.ts\|playwright\.performance\.config\.ts/);
+  assert.match(browserJob, /needs:\n\s+- changes\n\s+- security\n\s+- verify/);
+  assert.match(browserJob, /if: \$\{\{ needs\.changes\.outputs\.browser == 'true' \}\}/);
   assert.equal((browserJob.match(/playwright install/g) ?? []).length, 1);
   assert.match(
     browserJob,
     /npx --no-install playwright install --with-deps chromium firefox webkit[\s\S]*npm run verify:e2e[\s\S]*npm run verify:playground/,
   );
+  assert.doesNotMatch(browserJob, /verify:performance/);
   assert.doesNotMatch(browserJob, /- run: npm run verify$/m);
+  assert.match(performanceJob, /needs:\n\s+- changes\n\s+- browser/);
+  assert.match(performanceJob, /if: \$\{\{ needs\.changes\.outputs\.performance == 'true' \}\}/);
+  assert.match(performanceJob, /playwright install --with-deps chromium/);
+  assert.match(performanceJob, /npm run verify:performance/);
+});
+
+test('performance-config-only changes select every prerequisite gate', () => {
+  const changesJob = read('.github/workflows/verify.yml')
+    .match(/\n  changes:\n([\s\S]*?)\n  security:\n/)?.[1];
+  const script = changesJob?.match(/        run: \|\n([\s\S]*)/)?.[1]
+    .replace(/^          /gm, '');
+  assert.ok(script);
+
+  const cwd = repository();
+  const base = commit(cwd, 'baseline');
+  writeFileSync(join(cwd, 'playwright.performance.config.ts'), '// changed configuration\n');
+  git(cwd, 'add', 'playwright.performance.config.ts');
+  git(cwd, 'commit', '--quiet', '-m', 'change performance configuration');
+  const head = git(cwd, 'rev-parse', 'HEAD');
+  const output = join(cwd, 'scope-output');
+  const result = spawnSync('bash', ['-c', script], {
+    cwd,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      EVENT_NAME: 'pull_request',
+      PR_BASE_SHA: base,
+      PR_HEAD_SHA: head,
+      GITHUB_OUTPUT: output,
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(output, 'utf8'), 'package=true\nbrowser=true\nperformance=true\n');
 });
 
 test('pins shared Gitleaks, hooks, and the credential-free workflow', () => {

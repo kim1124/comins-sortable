@@ -65,6 +65,39 @@ test('DOM transaction restores original parent and sibling', () => {
   assert.deepEqual(fixture.ids('done'), ['c']);
 });
 
+test('DOM transaction applies multi-item orders and swaps from emitted orders', () => {
+  const fixture = domFixture({ todo: ['a', 'b', 'c', 'd'], done: ['x'] });
+  const transaction = createDomTransaction(fixture.registry);
+
+  transaction.apply({
+    operation: 'transfer',
+    itemId: 'b',
+    itemIds: ['b', 'd'],
+    source: { areaId: 'todo', index: 1 },
+    destination: { areaId: 'done', index: 1 },
+    orders: [
+      { areaId: 'todo', itemIds: ['a', 'c'] },
+      { areaId: 'done', itemIds: ['x', 'b', 'd'] },
+    ],
+  });
+  assert.deepEqual(fixture.ids('todo'), ['a', 'c']);
+  assert.deepEqual(fixture.ids('done'), ['x', 'b', 'd']);
+
+  transaction.rollback();
+  assert.deepEqual(fixture.ids('todo'), ['a', 'b', 'c', 'd']);
+  assert.deepEqual(fixture.ids('done'), ['x']);
+
+  transaction.apply({
+    operation: 'swap',
+    itemId: 'a',
+    swapItemId: 'd',
+    source: { areaId: 'todo', index: 0 },
+    destination: { areaId: 'todo', index: 3 },
+    orders: [{ areaId: 'todo', itemIds: ['d', 'b', 'c', 'a'] }],
+  });
+  assert.deepEqual(fixture.ids('todo'), ['d', 'b', 'c', 'a']);
+});
+
 test('DOM copy transaction inserts a distinct prepared element and preserves its source', () => {
   const fixture = domFixture({ todo: ['a', 'b'], done: ['c'] });
   const registry = new Map<string, Element | DomTransactionArea>(fixture.registry);
@@ -135,4 +168,31 @@ test('DOM copy preparation rejects attached, mismatched, missing, and duplicate 
     assert.deepEqual(fixture.ids('todo'), ['a', 'b']);
     assert.deepEqual(fixture.ids('done'), ['c']);
   }
+});
+
+test('DOM copy rolls back immediately when the copy does not match its destination selector', () => {
+  const fixture = domFixture({ todo: ['a', 'b'], done: ['c'] });
+  const sourceArea = fixture.areas.todo as Element;
+  const destinationArea = fixture.areas.done as Element;
+  destinationArea.children[0]?.classList.add('destination-item');
+  const copy = fakeElement('LI', {
+    ownerDocument: sourceArea.ownerDocument,
+    attributes: { 'data-sortable-id': 'b-copy' },
+  });
+  const registry = new Map<string, Element | DomTransactionArea>([
+    ['todo', { element: sourceArea, item: '[data-sortable-id]', copyElement: () => copy }],
+    ['done', { element: destinationArea, item: '.destination-item' }],
+  ]);
+  const transaction = createDomTransaction(registry);
+  assert.equal(transaction.prepareCopy('todo', copyContext), 'b-copy');
+  assert.throws(() => transaction.apply({
+    operation: 'copy', sourceItemId: 'b', itemId: 'b-copy',
+    source: copyContext.source, destination: copyContext.destination,
+    orders: [{ areaId: 'todo', itemIds: ['a', 'b'] }, { areaId: 'done', itemIds: ['c', 'b-copy'] }],
+  }), hasCode('INVALID_ELEMENT'));
+  assert.deepEqual(fixture.ids('todo'), ['a', 'b']);
+  assert.deepEqual(fixture.ids('done'), ['c']);
+  assert.equal(copy.parentElement, null);
+  transaction.rollback();
+  assert.deepEqual(fixture.ids('done'), ['c']);
 });

@@ -32,6 +32,13 @@ export interface ScopeFixtureOptions extends SortableScopeOptions {
   groupDone?: SortableAreaOptions['group'];
   prepareCopy?: (context: CopyItemContext) => SortableId;
   parentDone?: SortableAreaOptions['parent'];
+  todoItemIds?: readonly string[];
+  doneItemIds?: readonly string[];
+  multiDrag?: boolean;
+  selectedClass?: string;
+  swap?: boolean;
+  swapThreshold?: number;
+  invertSwap?: boolean;
 }
 
 export interface ScopeFixture {
@@ -49,7 +56,13 @@ export interface ScopeFixture {
       shiftKey?: boolean;
     }>,
   ): void;
+  select(
+    areaId: 'todo' | 'done',
+    index: number,
+    modifiers?: Readonly<{ ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }>,
+  ): void;
   move(areaId: 'todo' | 'done', index: number): void;
+  queueMove(areaId: 'todo' | 'done', index: number): void;
   repeatMove(): void;
   moveOutside(): void;
   release(): void;
@@ -73,8 +86,8 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
   const platform = fakePlatform();
   const results: AfterDragResult[] = [];
   const areas = {
-    todo: fixtureArea(platform, 'todo', 0, ['a', 'b']),
-    done: fixtureArea(platform, 'done', 200, ['c', 'd'], {
+    todo: fixtureArea(platform, 'todo', 0, options.todoItemIds ?? ['a', 'b']),
+    done: fixtureArea(platform, 'done', 200, options.doneItemIds ?? ['c', 'd'], {
       scrollable: options.scrollableDone === true,
     }),
   };
@@ -100,14 +113,19 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
       destination.insertBefore(copy, before);
       return;
     }
-    const source = findItem(areas, sortableChange.itemId);
-    const destination = areas[sortableChange.destination.areaId as 'todo' | 'done'];
-    if (source === undefined || destination === undefined) {
-      return;
+    const elements = new Map(
+      Object.values(areas).flatMap((area) => sortableChildren(area)).map(
+        (element) => [element.getAttribute('data-sortable-id'), element] as const,
+      ),
+    );
+    for (const order of sortableChange.orders) {
+      const destination = areas[order.areaId as 'todo' | 'done'];
+      if (destination === undefined) continue;
+      for (const itemId of order.itemIds) {
+        const element = elements.get(String(itemId));
+        if (element !== undefined) destination.appendChild(element);
+      }
     }
-    const remaining = sortableChildren(destination).filter((item) => item !== source);
-    const before = remaining[sortableChange.destination.index] ?? null;
-    destination.insertBefore(source, before);
   };
 
   const scopeOptions: SortableScopeOptions = {
@@ -144,6 +162,11 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
     autoScroll: options.autoScroll ?? false,
     prepareCopy: areaId === 'todo' ? options.prepareCopy : undefined,
     parent: areaId === 'done' ? options.parentDone : undefined,
+    multiDrag: options.multiDrag,
+    selectedClass: options.selectedClass,
+    swap: areaId === 'todo' ? options.swap : undefined,
+    swapThreshold: options.swapThreshold,
+    invertSwap: options.invertSwap,
   });
   const unregister = {
     todo: scope.registerArea(areas.todo, itemOptions('todo')),
@@ -183,7 +206,11 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
     platform.flushFrame();
   };
 
-  const move = (areaId: 'todo' | 'done', index: number): void => {
+  const moveTo = (
+    areaId: 'todo' | 'done',
+    index: number,
+    flushFrame: boolean,
+  ): void => {
     const area = areas[areaId];
     const items = sortableChildren(area);
     const reference = items[index];
@@ -200,7 +227,12 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
     lastPointer = next;
     platform.setHits([target, area]);
     platform.dispatchDocument('pointermove', next);
-    platform.flushFrame();
+    if (flushFrame) {
+      platform.flushFrame();
+    }
+  };
+  const move = (areaId: 'todo' | 'done', index: number): void => {
+    moveTo(areaId, index, true);
   };
 
   const moveOutside = (): void => {
@@ -221,7 +253,24 @@ export function scopeFixture(options: ScopeFixtureOptions = {}): ScopeFixture {
     results,
     unregister,
     begin,
+    select(areaId, index, modifiers = {}) {
+      const area = areas[areaId];
+      const item = sortableChildren(area)[index] as FakeElement;
+      const itemRect = item.getBoundingClientRect();
+      const event = pointer({
+        clientX: itemRect.left + 10,
+        clientY: itemRect.top + 10,
+        target: item,
+        ...modifiers,
+      });
+      platform.setHits([item, area]);
+      area.dispatch('pointerdown', event);
+      platform.dispatchDocument('pointerup', event);
+    },
     move,
+    queueMove(areaId, index) {
+      moveTo(areaId, index, false);
+    },
     repeatMove() {
       platform.dispatchDocument('pointermove', lastPointer);
       platform.flushFrame();

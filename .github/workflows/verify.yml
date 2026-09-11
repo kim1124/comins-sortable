@@ -10,6 +10,63 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Change scope
+    runs-on: ubuntu-latest
+    outputs:
+      package: ${{ steps.scope.outputs.package }}
+      browser: ${{ steps.scope.outputs.browser }}
+      performance: ${{ steps.scope.outputs.performance }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Classify changed surfaces
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == 'pull_request' ]]; then
+            base_sha="$PR_BASE_SHA"
+            head_sha="$PR_HEAD_SHA"
+          else
+            base_sha="$PUSH_BASE_SHA"
+            head_sha="$PUSH_HEAD_SHA"
+          fi
+
+          package=false
+          browser=false
+          performance=false
+          while IFS= read -r path; do
+            case "$path" in
+              AGENTS.md|*/AGENTS.md|.codex/*|.github/*|CHANGELOG.md|README.md|SECURITY.md|docs/*|reports/*)
+                ;;
+              *)
+                package=true
+                ;;
+            esac
+            case "$path" in
+              src/*|example/*|test/playwright/*|test/playground/*|playwright.config.ts|playwright.playground.config.ts|playwright.performance.config.ts|vite.example.config.ts)
+                browser=true
+                ;;
+            esac
+            case "$path" in
+              src/core/*|example/src/playground/*|test/playground/performance.spec.ts|playwright.performance.config.ts)
+                performance=true
+                ;;
+            esac
+          done < <(git diff --name-only "$base_sha" "$head_sha")
+
+          printf 'package=%s\nbrowser=%s\nperformance=%s\n' \
+            "$package" "$browser" "$performance" >> "$GITHUB_OUTPUT"
+
   security:
     name: Sensitive data
     runs-on: ubuntu-latest
@@ -87,6 +144,8 @@ jobs:
 
   verify:
     name: Package
+    needs: changes
+    if: ${{ needs.changes.outputs.package == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -103,8 +162,10 @@ jobs:
   browser:
     name: Browser
     needs:
+      - changes
       - security
       - verify
+    if: ${{ needs.changes.outputs.browser == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -119,3 +180,23 @@ jobs:
       - run: npx --no-install playwright install --with-deps chromium firefox webkit
       - run: npm run verify:e2e
       - run: npm run verify:playground
+
+  performance:
+    name: Performance
+    needs:
+      - changes
+      - browser
+    if: ${{ needs.changes.outputs.performance == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npm run verify:performance

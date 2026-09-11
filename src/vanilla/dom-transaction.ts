@@ -12,9 +12,11 @@ export type DomTransactionRegistry = ReadonlyMap<string, Element | DomTransactio
 
 interface MoveDomSnapshot {
   operation: 'move';
-  source: Element;
-  parent: Element;
-  nextSibling: Node | null;
+  areas: readonly {
+    parent: Element;
+    items: readonly Element[];
+    boundary: Element | null;
+  }[];
 }
 
 interface CopyDomSnapshot {
@@ -52,7 +54,6 @@ export function createDomTransaction(registry: DomTransactionRegistry): DomTrans
       !isElement(copy)
       || copy.ownerDocument !== area.element.ownerDocument
       || copy.parentElement !== null
-      || (area.item !== undefined && !copy.matches(area.item))
     ) {
       throw new SortableError('INVALID_ELEMENT');
     }
@@ -84,34 +85,48 @@ export function createDomTransaction(registry: DomTransactionRegistry): DomTrans
       const destinationArea = registry.get(change.destination.areaId);
       const destination = areaElement(destinationArea);
       const remaining = directItems(destinationArea);
-      const before = remaining[change.destination.index] ?? null;
-      destination.insertBefore(prepared.element, before);
+      const before = remaining[change.destination.index] ?? trailingBoundary(destination, remaining);
       snapshot = { operation: 'copy', copy: prepared.element };
+      try {
+        destination.insertBefore(prepared.element, before);
+        // Relative selectors only have meaning in the registered destination.
+        if (
+          !directItems(destinationArea).includes(prepared.element)
+          || itemIdFor(destinationArea as Element | DomTransactionArea, prepared.element) !== prepared.itemId
+        ) {
+          throw new SortableError('INVALID_ELEMENT');
+        }
+      } catch (error) {
+        rollback();
+        throw error;
+      }
       return;
     }
 
-    const sourceArea = registry.get(change.source.areaId);
-    if (sourceArea === undefined) {
-      throw new SortableError('INVALID_ELEMENT');
+    const elements = new Map<SortableId, Element>();
+    const affected = change.orders.map((order) => {
+      const registered = registry.get(order.areaId);
+      const parent = areaElement(registered);
+      const items = directItems(registered);
+      for (const element of items) {
+        const itemId = itemIdFor(registered as Element | DomTransactionArea, element);
+        if (elements.has(itemId)) throw new SortableError('DUPLICATE_ITEM_ID');
+        elements.set(itemId, element);
+      }
+      return { parent, items, boundary: trailingBoundary(parent, items) };
+    });
+    snapshot = { operation: 'move', areas: affected };
+    for (const order of change.orders) {
+      const registered = registry.get(order.areaId);
+      const parent = areaElement(registered);
+      const currentItems = directItems(registered);
+      const boundary = trailingBoundary(parent, currentItems);
+      for (const itemId of order.itemIds) {
+        const element = elements.get(itemId);
+        if (element === undefined) throw new SortableError('INVALID_ELEMENT');
+        parent.insertBefore(element, boundary);
+      }
     }
-    const source = findSourceInArea(sourceArea, change.itemId);
-    const parent = source.parentElement;
-    if (parent === null) {
-      throw new SortableError('INVALID_ELEMENT');
-    }
-    snapshot = {
-      operation: 'move',
-      source,
-      parent,
-      nextSibling: source.nextSibling,
-    };
-
-    const destination = areaElement(registry.get(change.destination.areaId));
-    const remaining = directItems(
-      registry.get(change.destination.areaId),
-    ).filter((element) => element !== source);
-    const before = remaining[change.destination.index] ?? null;
-    destination.insertBefore(source, before);
   };
 
   const rollback = (): void => {
@@ -125,9 +140,10 @@ export function createDomTransaction(registry: DomTransactionRegistry): DomTrans
       preparedCopy = null;
       return;
     }
-    const { source, parent, nextSibling } = snapshot;
-    const before = nextSibling?.parentNode === parent ? nextSibling : null;
-    parent.insertBefore(source, before);
+    for (const area of snapshot.areas) {
+      const before = area.boundary?.parentNode === area.parent ? area.boundary : null;
+      for (const item of area.items) area.parent.insertBefore(item, before);
+    }
     snapshot = null;
     preparedCopy = null;
   };
@@ -198,4 +214,11 @@ function isTransactionArea(
   area: Element | DomTransactionArea,
 ): area is DomTransactionArea {
   return 'element' in area;
+}
+
+function trailingBoundary(parent: Element, items: readonly Element[]): Element | null {
+  const last = items[items.length - 1];
+  if (last === undefined) return null;
+  const children = Array.from(parent.children);
+  return children[children.indexOf(last) + 1] ?? null;
 }

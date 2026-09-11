@@ -13,20 +13,24 @@ The animation is captured from the real Comins Sortable Playground.
 
 ## Status
 
-The current public release is `comins-sortable@0.1.1`. Its
+The current public release is `comins-sortable@0.1.1`. The repository release
+candidate is `comins-sortable@0.1.2`. Its
 Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
 reorder, transfer, and copy interactions with commit verification and rollback.
-The Playground currently provides 23 routes. Seventeen implement the planned
-Vue.Draggable parity contracts, including animation, custom hosts, non-item
+The Playground currently provides 25 routes. 18 implement the planned
+Sortable/Vue.Draggable parity contracts, including multi-drag, thresholds,
+two-dimensional grid collision, swap, animation, custom hosts, non-item
 siblings, and nested sortable areas. Empty Destination, Accept/Reject, and Auto
 Scroll are additional Comins examples. Tree, Custom Placeholder, and Skeleton
 Placeholder demonstrate the official headless Tree model and customizable drag
 feedback. Runtime dependencies are not allowed.
 React, React DOM, Vue, and Svelte are optional peers.
+Their package IDs are `react`, `react-dom`, `vue`, and `svelte`.
 
 Version `0.1.0` was withdrawn on 2026-08-28 after a public identity metadata
-incident and cannot be reused. Version `0.1.1` is available from npm. Future
-versions, tags, and GitHub Releases remain separately maintainer-gated.
+incident and cannot be reused. Version `0.1.1` remains the current npm release
+until `0.1.2` is separately approved and published. Future versions, tags, and
+GitHub Releases remain separately maintainer-gated.
 
 ## Installation
 
@@ -37,7 +41,7 @@ npm install comins-sortable
 ## Run the Playground locally
 
 The published npm package does not include the Playground source. Clone this
-repository to run all 23 examples with Vanilla JavaScript, React, Vue, and
+repository to run all 25 examples with Vanilla JavaScript, React, Vue, and
 Svelte adapters:
 
 ```sh
@@ -89,6 +93,8 @@ export function TaskList() {
 - [Documentation index](https://github.com/kim1124/comins-sortable/blob/main/docs/README.md)
 - [English Quick Start](https://github.com/kim1124/comins-sortable/blob/main/docs/user/01-quick-start.md)
 - [Korean Quick Start](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/01-quick-start.md)
+- [English Public API Reference](https://github.com/kim1124/comins-sortable/blob/main/docs/user/15-public-api.md)
+- [한글 Public API 레퍼런스](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/15-public-api.md)
 - [All English feature guides](https://github.com/kim1124/comins-sortable/tree/main/docs/user)
 - [모든 한글 기능 가이드](https://github.com/kim1124/comins-sortable/tree/main/docs/ko)
 
@@ -160,10 +166,18 @@ gate:
 ```sh
 npm ci --ignore-scripts
 npm run verify
+npm run verify:performance
 ```
 
 `npm run verify` checks the package-aware license scope, security policy tests,
 TypeScript, unit tests, the ES2020 ESM build, and public type fixtures.
+`npm run verify:performance` builds the Playground, exercises all 25 React
+feature routes twice in Chromium, forces garbage collection between resource
+samples, and checks that JS Heap, DOM Nodes, and Event Listeners stabilize after
+the first warm-up pass. See the
+[0.1.2 performance verification record](./docs/verification/0.1.2-performance.md)
+for the manual Chrome DevTools procedure, measured values, and acceptance
+limits.
 
 `LICENSE_SCOPE.json` records the reviewed runtime, peer, copied/generated, and
 asset surfaces. The license checker verifies the manifest and lockfile root,

@@ -30,7 +30,19 @@ const guideNames = [
   '12-nested-tree.md',
   '13-placeholder.md',
   '14-lifecycle-errors.md',
+  '15-public-api.md',
+  '16-advanced-sorting.md',
 ];
+
+const completeExampleGuideNames = [...guideNames.slice(6, 14), '16-advanced-sorting.md'];
+
+const publicEntrySources = new Map([
+  ['comins-sortable', 'src/index.ts'],
+  ['comins-sortable/core', 'src/core.ts'],
+  ['comins-sortable/react', 'src/react.ts'],
+  ['comins-sortable/vue', 'src/vue.ts'],
+  ['comins-sortable/svelte', 'src/svelte.ts'],
+]);
 
 function read(relativePath) {
   return readFileSync(join(root, relativePath), 'utf8');
@@ -49,6 +61,40 @@ function relativeLinks(relativePath) {
   return [...read(relativePath).matchAll(/\]\(([^)]+)\)/g)]
     .map((match) => match[1].split('#', 1)[0])
     .filter((href) => href.startsWith('.'));
+}
+
+function exportedSymbols(relativePath) {
+  const source = read(relativePath);
+  const values = [];
+  const types = [];
+
+  for (const match of source.matchAll(/export\s+(type\s+)?\{([\s\S]*?)\}\s+from/g)) {
+    const destination = match[1] === undefined ? values : types;
+    for (const entry of match[2].split(',')) {
+      const name = entry.trim().split(/\s+as\s+/).at(-1);
+      if (name) destination.push(name);
+    }
+  }
+
+  return { types, values };
+}
+
+function playgroundIds() {
+  const navigation = read('example/src/app/navigation.ts');
+  const block = navigation.match(
+    /export const exampleIds = \[([\s\S]*?)\] as const/,
+  )?.[1];
+  assert.ok(block);
+  return [...block.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+}
+
+function parityPlaygroundIds() {
+  const navigation = read('example/src/app/navigation.ts');
+  const block = navigation.match(
+    /export const parityExampleIds = \[([\s\S]*?)\] as const/,
+  )?.[1];
+  assert.ok(block);
+  return [...block.matchAll(/'([^']+)'/g)].map((match) => match[1]);
 }
 
 test('documents the local Playground immediately after installation', () => {
@@ -88,13 +134,11 @@ test('keeps complete English and Korean guide pairs', () => {
 });
 
 test('provides complete examples in every English and Korean feature guide', () => {
-  const featureGuideNames = guideNames.slice(6);
-
   for (const [locale, heading] of [
     ['user', '## Complete example'],
     ['ko', '## 전체 예제'],
   ]) {
-    for (const name of featureGuideNames) {
+    for (const name of completeExampleGuideNames) {
       const relativePath = `docs/${locale}/${name}`;
       const source = read(relativePath);
 
@@ -126,26 +170,61 @@ test('provides complete examples in every English and Korean feature guide', () 
 });
 
 test('typechecks every complete English and Korean feature example', () => {
-  assert.deepEqual(checkUserGuideExamples(), { examples: 16 });
+  assert.deepEqual(checkUserGuideExamples(), { examples: 18 });
 });
 
 test('maps every shipped Playground example to the user guide index', () => {
-  const navigation = read('example/src/app/navigation.ts');
-  const block = navigation.match(
-    /export const exampleIds = \[([\s\S]*?)\] as const/,
-  )?.[1];
-  assert.ok(block);
-  const exampleIds = [...block.matchAll(/'([^']+)'/g)]
-    .map((match) => match[1]);
+  const exampleIds = playgroundIds();
   const index = read('docs/README.md');
 
-  assert.equal(exampleIds.length, 23);
+  assert.equal(exampleIds.length, 25);
   for (const exampleId of exampleIds) {
     assert.equal(
       index.includes(`\`${exampleId}\``),
       true,
       `${exampleId} must be mapped in docs/README.md`,
     );
+  }
+});
+
+test('keeps README release and package claims synchronized with source manifests', () => {
+  const manifest = JSON.parse(read('package.json'));
+  const readme = read('README.md');
+  const changelog = read('CHANGELOG.md');
+  const exampleIds = playgroundIds();
+  const parityIds = parityPlaygroundIds();
+
+  assert.match(readme, new RegExp(`comins-sortable@${manifest.version.replaceAll('.', '\\.')}`));
+  assert.match(changelog, new RegExp(`^## ${manifest.version.replaceAll('.', '\\.')}\\b`, 'm'));
+  assert.match(readme, new RegExp(`Playground currently provides ${exampleIds.length} routes\\b`));
+  assert.match(readme, new RegExp(`${parityIds.length} implement the planned`));
+  assert.equal(Object.keys(manifest.dependencies ?? {}).length, 0);
+  assert.match(readme, /Zero runtime dependencies/);
+
+  for (const peer of Object.keys(manifest.peerDependencies ?? {})) {
+    assert.equal(readme.includes(peer), true, `README must identify peer ${peer}`);
+  }
+});
+
+test('documents every public value and type export in both languages', () => {
+  const english = read('docs/user/15-public-api.md');
+  const korean = read('docs/ko/15-public-api.md');
+
+  for (const [entry, source] of publicEntrySources) {
+    for (const guide of [english, korean]) {
+      assert.equal(guide.includes(`\`${entry}\``), true, `${entry} entry must be documented`);
+    }
+
+    const symbols = exportedSymbols(source);
+    for (const symbol of [...symbols.values, ...symbols.types]) {
+      for (const [locale, guide] of [['English', english], ['Korean', korean]]) {
+        assert.equal(
+          guide.includes(`\`${symbol}\``),
+          true,
+          `${locale} public API guide must document ${entry} ${symbol}`,
+        );
+      }
+    }
   }
 });
 

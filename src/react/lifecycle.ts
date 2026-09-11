@@ -27,6 +27,11 @@ export interface ReactAreaLifecycleProps<T> {
   ignore?: string;
   activationDistance?: number;
   emptyInsertThreshold?: number;
+  swapThreshold?: number;
+  invertSwap?: boolean;
+  swap?: boolean;
+  multiDrag?: boolean;
+  selectedClass?: string;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
@@ -195,6 +200,11 @@ function areaOptions<T>(
     ignore: props.ignore,
     activationDistance: props.activationDistance,
     emptyInsertThreshold: props.emptyInsertThreshold,
+    swapThreshold: props.swapThreshold,
+    invertSwap: props.invertSwap,
+    swap: props.swap,
+    multiDrag: props.multiDrag,
+    selectedClass: props.selectedClass,
     autoScroll: props.autoScroll,
     animation: props.animation,
     placeholder: props.placeholder,
@@ -212,6 +222,11 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && left.ignore === right.ignore
     && left.activationDistance === right.activationDistance
     && left.emptyInsertThreshold === right.emptyInsertThreshold
+    && left.swapThreshold === right.swapThreshold
+    && left.invertSwap === right.invertSwap
+    && left.swap === right.swap
+    && left.multiDrag === right.multiDrag
+    && left.selectedClass === right.selectedClass
     && left.autoScroll === right.autoScroll
     && sameAnimation(left.animation, right.animation)
     && left.placeholder?.preset === right.placeholder?.preset

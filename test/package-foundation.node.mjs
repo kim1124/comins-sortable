@@ -25,7 +25,7 @@ test('declares the approved public package boundary', () => {
   const manifest = readJson('package.json');
 
   assert.equal(manifest.name, 'comins-sortable');
-  assert.equal(manifest.version, '0.1.1');
+  assert.equal(manifest.version, '0.1.2');
   assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(manifest.type, 'module');
   assert.equal(manifest.license, 'MIT');
@@ -116,6 +116,14 @@ test('defines package build, test, and typecheck entry points', () => {
   assert.equal(manifest.scripts.test, 'node scripts/run-unit-tests.mjs');
   assert.equal(manifest.scripts['test:types'], 'tsc -p test/types/tsconfig.json --noEmit');
   assert.equal(manifest.scripts['test:consumer'], 'node scripts/consumer-smoke.mjs');
+  assert.equal(
+    manifest.scripts['test:performance'],
+    'playwright test --config=playwright.performance.config.ts',
+  );
+  assert.equal(
+    manifest.scripts['verify:performance'],
+    'npm run playground:build && npm run test:performance',
+  );
   assert.equal(manifest.scripts['verify:package-artifact'], 'node scripts/verify-package-artifact.mjs');
   assert.match(manifest.scripts.verify, /npm run check:licenses/);
   assert.match(manifest.scripts.verify, /npm run test:types/);
@@ -125,6 +133,7 @@ test('defines package build, test, and typecheck entry points', () => {
     'tsconfig.build.json',
     'scripts/build-package.mjs',
     'scripts/run-unit-tests.mjs',
+    'playwright.performance.config.ts',
   ]) {
     assert.equal(existsSync(join(root, relativePath)), true, `${relativePath} must exist`);
   }

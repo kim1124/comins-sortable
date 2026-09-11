@@ -18,11 +18,13 @@ plans and design records.
 | [07 Reorder and Transfer](./user/07-reorder-transfer.md) | [07 정렬과 이동](./ko/07-reorder-transfer.md) | `simple`, `two-lists`, `empty`, `accept` |
 | [08 Copy and Clone](./user/08-copy-clone.md) | [08 복제](./ko/08-copy-clone.md) | `clone`, `custom-clone`, `modifier-copy` |
 | [09 Handle and Acceptance](./user/09-handle-acceptance.md) | [09 핸들과 수락 정책](./ko/09-handle-acceptance.md) | `handle`, `accept` |
-| [10 Animation and Auto-scroll](./user/10-animation-auto-scroll.md) | [10 애니메이션과 자동 스크롤](./ko/10-animation-auto-scroll.md) | `transition`, `transitions`, `auto-scroll` |
-| [11 Custom Hosts and Slots](./user/11-hosts-slots.md) | [11 사용자 host와 slot](./ko/11-hosts-slots.md) | `table`, `table-column`, `third-party`, `footer-slot`, `header-slot`, `two-list-slots` |
+| [10 Animation and Auto-scroll](./user/10-animation-auto-scroll.md) | [10 애니메이션과 자동 스크롤](./ko/10-animation-auto-scroll.md) | `transition`, `auto-scroll` |
+| [11 Custom Hosts and Slots](./user/11-hosts-slots.md) | [11 사용자 host와 slot](./ko/11-hosts-slots.md) | `third-party`, `footer-slot`, `header-slot`, `two-list-slots` |
 | [12 Nested Lists and Tree](./user/12-nested-tree.md) | [12 중첩 목록과 Tree](./ko/12-nested-tree.md) | `nested`, `nested-controlled`, `functional-third-party`, `tree` |
 | [13 Placeholder Styling](./user/13-placeholder.md) | [13 Placeholder 스타일](./ko/13-placeholder.md) | `custom-placeholder`, `skeleton-placeholder` |
 | [14 Lifecycle and Errors](./user/14-lifecycle-errors.md) | [14 Lifecycle과 오류](./ko/14-lifecycle-errors.md) | all examples |
+| [15 Public API Reference](./user/15-public-api.md) | [15 Public API 레퍼런스](./ko/15-public-api.md) | package entry points |
+| [16 Advanced Sorting](./user/16-advanced-sorting.md) | [16 고급 정렬](./ko/16-advanced-sorting.md) | `transitions`, `thresholds`, `swap`, `grid`, `swap-grid` |
 
 Every Playground route uses:
 
@@ -32,6 +34,11 @@ http://127.0.0.1:4003/examples/<example>/<adapter>
 
 `<adapter>` is `vanilla`, `react`, `vue`, or `svelte`. Use **View code** in the
 Playground to compare the same feature across adapters.
+
+## Verification records
+
+- [0.1.2 performance and memory verification](./verification/0.1.2-performance.md)
+- [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 
 ## Historical records
 

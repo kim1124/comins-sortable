@@ -32,7 +32,7 @@ export interface PointerSensorOptions {
   handle?: string;
   ignore?: string;
   onActivate(snapshot: PointerSnapshot): boolean | void;
-  onMove(snapshot: PointerSnapshot): void;
+  onMove(snapshot: PointerSnapshot, releasing: boolean): void;
   onCancel(reason: AfterDragReason): void;
   onRelease(snapshot: PointerSnapshot): void;
   onEnd?(): void;
@@ -43,6 +43,7 @@ export interface PointerSensor {
   pointerMove(input: PointerInput): void;
   pointerUp(input: PointerInput): void;
   pointerCancel(input: PointerInput): void;
+  refresh(): void;
   cancel(reason: AfterDragReason): void;
   unmount(): void;
   destroy(): void;
@@ -65,6 +66,7 @@ interface PendingPointer {
   pointerType: PointerSnapshot['type'];
   origin: Coordinates;
   latest: Coordinates & Modifiers;
+  lastMove: (Coordinates & Modifiers) | null;
   frameId: number | null;
   active: boolean;
   captureTarget: Element;
@@ -147,7 +149,22 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     }
   };
 
-  const processFrame = (): void => {
+  const processActiveMove = (pointer: PendingPointer, releasing = false): void => {
+    try {
+      pointer.lastMove = pointer.latest;
+      options.onMove(snapshot(pointer), releasing);
+    } catch (error) {
+      cleanup();
+      try {
+        options.onCancel('error');
+      } catch (cancelError) {
+        options.platform.report(cancelError);
+      }
+      options.platform.report(error);
+    }
+  };
+
+  const processFrame = (releasing = false): void => {
     const pointer = current;
     if (pointer === null) {
       return;
@@ -174,17 +191,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       return;
     }
 
-    try {
-      options.onMove(nextSnapshot);
-    } catch (error) {
-      cleanup();
-      try {
-        options.onCancel('error');
-      } catch (cancelError) {
-        options.platform.report(cancelError);
-      }
-      options.platform.report(error);
-    }
+    processActiveMove(pointer, releasing);
   };
 
   const pointerMove = (input: PointerInput): void => {
@@ -197,7 +204,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       input.preventDefault?.();
     }
     if (pointer.frameId === null) {
-      pointer.frameId = options.platform.requestFrame(processFrame);
+      pointer.frameId = options.platform.requestFrame(() => processFrame());
     }
   };
 
@@ -207,6 +214,27 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       return;
     }
     pointer.latest = latestInput(input);
+    if (pointer.frameId !== null) {
+      options.platform.cancelFrame(pointer.frameId);
+      pointer.frameId = null;
+      processFrame(true);
+      if (current !== pointer) {
+        return;
+      }
+    }
+    // The last frame may only have activated the drag. Resolve the release
+    // input without repeating an already applied move and its callbacks.
+    const lastMove = pointer.lastMove;
+    const latest = pointer.latest;
+    if (pointer.active && (lastMove === null
+      || lastMove.clientX !== latest.clientX || lastMove.clientY !== latest.clientY
+      || lastMove.altKey !== latest.altKey || lastMove.ctrlKey !== latest.ctrlKey
+      || lastMove.metaKey !== latest.metaKey || lastMove.shiftKey !== latest.shiftKey)) {
+      processActiveMove(pointer, true);
+      if (current !== pointer) {
+        return;
+      }
+    }
     const active = pointer.active;
     const finalSnapshot = snapshot(pointer);
     cleanup();
@@ -239,14 +267,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     if (target === null || source === null || !source.contains(target)) {
       return false;
     }
-    const handle = options.handle === undefined
-      ? null
-      : closestWithin(target, source, options.handle);
-    if (options.handle !== undefined && handle === null) {
-      return false;
-    }
-    const ignoreSelector = options.ignore ?? DEFAULT_IGNORE_SELECTOR;
-    if (handle === null && closestWithin(target, source, ignoreSelector) !== null) {
+    if (!allowsPointerTarget(target, source, options)) {
       return false;
     }
 
@@ -260,6 +281,7 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       pointerType,
       origin: { clientX: input.clientX, clientY: input.clientY },
       latest: latestInput(input),
+      lastMove: null,
       frameId: null,
       active: false,
       captureTarget: source,
@@ -267,6 +289,15 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     };
 
     const listenerOptions = { signal: abortController.signal };
+    if (pointerType === 'mouse') {
+      // A native selection drag can start before activation and steal this
+      // mouse gesture. Its target may be a Text node, not the sortable item.
+      options.platform.document.addEventListener(
+        'dragstart',
+        (event) => event.preventDefault(),
+        listenerOptions,
+      );
+    }
     options.platform.document.addEventListener(
       'pointermove',
       ((event: PointerEvent) => pointerMove(event)) as EventListener,
@@ -313,6 +344,11 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
     pointerMove,
     pointerUp,
     pointerCancel,
+    refresh() {
+      if (current?.active && current.frameId === null) {
+        current.frameId = options.platform.requestFrame(() => processFrame());
+      }
+    },
     cancel,
     unmount: () => cancel('unmounted'),
     destroy: () => {
@@ -323,6 +359,19 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
       cancel('destroyed');
     },
   };
+}
+
+export function allowsPointerTarget(
+  target: Element,
+  source: Element,
+  options: { handle?: string; ignore?: string },
+): boolean {
+  const handle = options.handle === undefined
+    ? null
+    : closestWithin(target, source, options.handle);
+  if (options.handle !== undefined && handle === null) return false;
+  return handle !== null
+    || closestWithin(target, source, options.ignore ?? DEFAULT_IGNORE_SELECTOR) === null;
 }
 
 function canStartPointer(input: PointerInput): boolean {

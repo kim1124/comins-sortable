@@ -3,7 +3,9 @@ import { createLayoutAnimator, normalizeAnimation } from './animation.js';
 import type { SortableLayoutAnimator } from './animation.js';
 import {
   findAreaAtPoint,
+  gridInsertionIndex,
   insertionIndex,
+  thresholdInsertionIndex,
 } from './collision.js';
 import { SortableError } from './errors.js';
 import { createFeedback } from './feedback.js';
@@ -20,7 +22,10 @@ import type {
 } from './geometry.js';
 import {
   buildCopyChange,
+  buildMultiReorderChange,
+  buildMultiTransferChange,
   buildReorderChange,
+  buildSwapChange,
   buildTransferChange,
 } from './operations.js';
 import {
@@ -28,6 +33,7 @@ import {
 } from './platform.js';
 import type { SortablePlatform } from './platform.js';
 import {
+  allowsPointerTarget,
   createPointerSensor,
   DEFAULT_IGNORE_SELECTOR,
 } from './pointer.js';
@@ -78,6 +84,11 @@ interface NormalizedAreaOptions {
   ignore: string;
   activationDistance: number;
   emptyInsertThreshold: number;
+  swapThreshold?: number;
+  invertSwap: boolean;
+  swap: boolean;
+  multiDrag: boolean;
+  selectedClass: string;
   autoScroll: boolean;
   animation: SortableAnimation;
   placeholder: SortablePlaceholderOptions;
@@ -95,20 +106,27 @@ interface ScopeArea {
   registered: RegisteredArea;
   disposeRegistry(): void;
   pointerDown: EventListener;
+  contextMenu: EventListener;
   hadAreaAttribute: boolean;
   areaAttribute: string | null;
   animator: SortableLayoutAnimator;
   disposed: boolean;
 }
 
+type RejectionReason = 'disabled' | 'not-accepted' | 'nested-cycle';
+
 interface ActiveDrag {
   sourceArea: ScopeArea;
   sourceElement: Element;
+  sourceElements: readonly Element[];
   itemId: SortableId;
+  itemIds: readonly SortableId[];
   sourceIndex: number;
   context: DragContext;
   feedback: SortableFeedback | null;
-  lastRejection: 'disabled' | 'not-accepted' | 'nested-cycle' | null;
+  lastRejection: RejectionReason | null;
+  rejectionTarget: Element | null;
+  swapTarget: Element | null;
   overArea: ScopeArea | null;
   transferMode: false | SortableTransferMode;
 }
@@ -207,10 +225,14 @@ export function createSortableScopeInternal(
   const session = new SessionMachine();
   const autoScroller = createAutoScroller(platform);
   const areas = new Map<string, ScopeArea>();
+  const selections = new Map<string, Set<SortableId>>();
+  const selectionAnchors = new Map<string, SortableId>();
   let attempt: Attempt | null = null;
   let active: ActiveDrag | null = null;
   let verificationFrame: number | null = null;
   let autoScrollFrame: number | null = null;
+  const scrollPositions = new Map<Element | Window, Point>();
+  let observingScroll = false;
   const geometryKeys = new WeakMap<Element, string>();
   let geometrySequence = 0;
   let destroyed = false;
@@ -260,6 +282,61 @@ export function createSortableScopeInternal(
     }
   };
 
+  const scrollPosition = (target: Element | Window): Point => {
+    if (target === platform.window) {
+      return { x: platform.window.scrollX, y: platform.window.scrollY };
+    }
+    const element = target as Element;
+    return { x: element.scrollLeft ?? 0, y: element.scrollTop ?? 0 };
+  };
+
+  const trackScrollParents = (element: Element): void => {
+    let current: Element | null = element;
+    while (current !== null) {
+      if (!scrollPositions.has(current)) scrollPositions.set(current, scrollPosition(current));
+      current = current.parentElement;
+    }
+  };
+
+  const rememberScrollPositions = (): void => {
+    for (const target of scrollPositions.keys()) scrollPositions.set(target, scrollPosition(target));
+  };
+
+  const refreshScrolledGeometry = (): boolean => {
+    let changed = false;
+    for (const [target, previous] of scrollPositions) {
+      const current = scrollPosition(target);
+      if (current.x !== previous.x || current.y !== previous.y) {
+        changed = true;
+        scrollPositions.set(target, current);
+      }
+    }
+    if (changed) {
+      // A scrolled ancestor can also move sticky hosts outside its item subtree.
+      invalidateTargets(allTargets(), 'scroll');
+      for (const area of areas.values()) area.animator.cancel(true);
+    }
+    return changed;
+  };
+
+  const onScroll = (): void => {
+    if (active === null || session.state.status !== 'dragging') return;
+    if (refreshScrolledGeometry()) attempt?.sensor.refresh();
+  };
+
+  const observeScroll = (): void => {
+    scrollPositions.set(platform.window, scrollPosition(platform.window));
+    for (const area of areas.values()) trackScrollParents(area.element);
+    platform.window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    observingScroll = true;
+  };
+
+  const stopObservingScroll = (): void => {
+    if (observingScroll) platform.window.removeEventListener('scroll', onScroll, true);
+    observingScroll = false;
+    scrollPositions.clear();
+  };
+
   const report = (error: unknown): void => {
     if (options.onError === undefined) {
       platform.report(error);
@@ -302,6 +379,7 @@ export function createSortableScopeInternal(
       return;
     }
     stopAutoScroll();
+    stopObservingScroll();
     active = null;
     geometry.clear();
     if (verificationFrame !== null) {
@@ -311,6 +389,11 @@ export function createSortableScopeInternal(
     if (finishing.overArea !== null) {
       finishing.overArea.element.removeAttribute('data-comins-sortable-over');
     }
+    if (finishing.rejectionTarget !== null) {
+      finishing.rejectionTarget.removeAttribute('data-comins-sortable-rejection');
+    }
+    finishing.swapTarget?.removeAttribute('data-comins-sortable-swap-target');
+    finishing.feedback?.setRejection(null);
     const animatedAreas = new Set<ScopeArea>([
       finishing.sourceArea,
       ...(finishing.overArea === null ? [] : [finishing.overArea]),
@@ -361,6 +444,7 @@ export function createSortableScopeInternal(
             registry.itemIds(order.areaId),
             order.itemIds,
           ));
+          if (committed) syncAllSelections();
           finish(committed ? 'drop' : 'state-not-committed', change);
         } catch (error) {
           finish('error', undefined, error);
@@ -370,8 +454,17 @@ export function createSortableScopeInternal(
     verifyAfter(verificationFrames);
   };
 
-  const release = (): void => {
+  const release = (pointer: PointerSnapshot): void => {
     stopAutoScroll();
+    // Native scroll notifications can arrive after pointerup. Compare offsets
+    // before committing, using the release coordinates and no extra auto-scroll.
+    try {
+      if (refreshScrolledGeometry()) move(pointer, false);
+    } catch (error) {
+      finish('error', undefined, error);
+      return;
+    }
+    stopObservingScroll();
     const dragging = active;
     if (dragging === null) {
       return;
@@ -385,7 +478,37 @@ export function createSortableScopeInternal(
     try {
       const sourceIds = registry.itemIds(dragging.sourceArea.options.areaId);
       let change: SortableChange | null;
-      if (destination.areaId === dragging.sourceArea.options.areaId) {
+      if (
+        dragging.sourceArea.options.swap
+        && destination.areaId === dragging.sourceArea.options.areaId
+      ) {
+        change = buildSwapChange(
+          sourceIds,
+          { areaId: dragging.sourceArea.options.areaId, index: dragging.sourceIndex },
+          destination,
+        );
+      } else if (
+        dragging.itemIds.length > 1
+        && destination.areaId === dragging.sourceArea.options.areaId
+      ) {
+        change = buildMultiReorderChange(
+          sourceIds,
+          dragging.itemIds,
+          { areaId: dragging.sourceArea.options.areaId, index: dragging.sourceIndex },
+          destination,
+        );
+      } else if (
+        dragging.itemIds.length > 1
+        && dragging.transferMode !== 'copy'
+      ) {
+        change = buildMultiTransferChange(
+          sourceIds,
+          registry.itemIds(destination.areaId),
+          dragging.itemIds,
+          { areaId: dragging.sourceArea.options.areaId, index: dragging.sourceIndex },
+          destination,
+        );
+      } else if (destination.areaId === dragging.sourceArea.options.areaId) {
         change = buildReorderChange(
           sourceIds,
           { areaId: dragging.sourceArea.options.areaId, index: dragging.sourceIndex },
@@ -433,6 +556,7 @@ export function createSortableScopeInternal(
         finish('drop');
         return;
       }
+      updateSelectionAfterChange(change);
       session.commit(change);
       options.onChange?.(change);
       verifyCommit(change);
@@ -441,18 +565,19 @@ export function createSortableScopeInternal(
     }
   };
 
-  const move = (pointer: PointerSnapshot): void => {
+  const move = (pointer: PointerSnapshot, allowAutoScroll = true): void => {
     stopAutoScroll();
     const dragging = active;
     if (dragging === null || session.state.status !== 'dragging') {
       return;
     }
+    refreshScrolledGeometry();
     dragging.feedback?.move(pointer);
-    const hits = platform.elementsFromPoint(pointer.clientX, pointer.clientY);
+    let hits = platform.elementsFromPoint(pointer.clientX, pointer.clientY);
     const targets = allTargets();
     geometry.refreshDirty(targets);
     const scrolled = autoScroller.step({
-      enabled: dragging.sourceArea.options.autoScroll,
+      enabled: allowAutoScroll && dragging.sourceArea.options.autoScroll,
       point: { x: pointer.clientX, y: pointer.clientY },
       hitChain: hits,
     });
@@ -470,6 +595,9 @@ export function createSortableScopeInternal(
         }
       }
       geometry.refreshDirty(affected);
+      // Consume our own scroll before its asynchronous native notification.
+      rememberScrollPositions();
+      hits = platform.elementsFromPoint(pointer.clientX, pointer.clientY);
       autoScrollFrame = platform.requestFrame(() => {
         autoScrollFrame = null;
         const current = active;
@@ -505,6 +633,17 @@ export function createSortableScopeInternal(
       registry,
       rectFor,
     );
+    if (dragging.rejectionTarget !== null) {
+      dragging.rejectionTarget.removeAttribute('data-comins-sortable-rejection');
+    }
+    dragging.rejectionTarget = located.rejectionTarget ?? null;
+    if (dragging.rejectionTarget !== null && located.rejection !== null) {
+      dragging.rejectionTarget.setAttribute(
+        'data-comins-sortable-rejection',
+        located.rejection,
+      );
+    }
+    dragging.feedback?.setRejection(located.rejection);
     dragging.lastRejection = located.rejection;
     dragging.context = {
       ...dragging.context,
@@ -520,10 +659,24 @@ export function createSortableScopeInternal(
       dragging.overArea = located.destination?.area ?? null;
       if (located.destination !== undefined) {
         located.destination.area.element.setAttribute('data-comins-sortable-over', '');
-        dragging.feedback?.place(
-          located.destination.area.element,
-          located.destination.before,
-        );
+        if (
+          dragging.transferMode === 'copy'
+          && located.destination.area === dragging.sourceArea
+        ) {
+          dragging.feedback?.clear();
+        } else if (
+          dragging.sourceArea.options.swap
+          && located.destination.area === dragging.sourceArea
+        ) {
+          dragging.swapTarget?.removeAttribute('data-comins-sortable-swap-target');
+          dragging.swapTarget = located.destination.before;
+          dragging.swapTarget?.setAttribute('data-comins-sortable-swap-target', '');
+        } else {
+          dragging.feedback?.place(
+            located.destination.area.element,
+            located.destination.before,
+          );
+        }
         const affectedAreas = new Set<ScopeArea>([
           dragging.sourceArea,
           located.destination.area,
@@ -536,6 +689,8 @@ export function createSortableScopeInternal(
           previousDestination,
           destination: located.destination.location,
         });
+      } else if (dragging.transferMode === 'copy') {
+        dragging.feedback?.clear();
       }
     }
   };
@@ -557,10 +712,22 @@ export function createSortableScopeInternal(
       if (itemId === undefined || itemId === null) {
         throw new SortableError('MISSING_ITEM_ID');
       }
+      const selectedIds = area.options.multiDrag
+        ? orderedSelectedIds(area, itemId)
+        : [itemId];
+      const selectedIdSet = new Set(selectedIds);
+      const sourceElements = elements.filter((element) => (
+        selectedIdSet.has(area.options.getItemId(element))
+      ));
+      const destinationIndex = selectedIds.length > 1
+        ? elements.slice(0, sourceIndex).filter((element) => (
+            !selectedIdSet.has(area.options.getItemId(element))
+          )).length
+        : sourceIndex;
       const context: DragContext = {
         itemId,
         source: { areaId: area.options.areaId, index: sourceIndex },
-        destination: { areaId: area.options.areaId, index: sourceIndex },
+        destination: { areaId: area.options.areaId, index: destinationIndex },
         pointer,
       };
       const pendingState = session.state;
@@ -582,11 +749,15 @@ export function createSortableScopeInternal(
         active = {
           sourceArea: area,
           sourceElement,
+          sourceElements: [sourceElement],
           itemId,
+          itemIds: [itemId],
           sourceIndex,
           context,
           feedback: null,
           lastRejection: 'disabled',
+          rejectionTarget: null,
+          swapTarget: null,
           overArea: null,
           transferMode: false,
         };
@@ -623,21 +794,34 @@ export function createSortableScopeInternal(
       geometry.clear();
       for (const candidate of areas.values()) candidate.animator.cancel(true);
       geometry.refreshAtActivation(allTargets());
-      const feedback = createFeedback(sourceElement, platform, area.options.placeholder);
-      feedback.place(parent, sourceElement);
+      const feedbackMode = transferMode === 'copy' ? 'copy' : 'move';
+      const feedback = createFeedback(
+        sourceElement,
+        platform,
+        area.options.placeholder,
+        feedbackMode,
+      );
+      if (feedbackMode === 'move') {
+        feedback.place(parent, sourceElement);
+      }
       active = {
         sourceArea: area,
         sourceElement,
+        sourceElements,
         itemId,
+        itemIds: selectedIds,
         sourceIndex,
         context,
         feedback,
         lastRejection: null,
+        rejectionTarget: null,
+        swapTarget: null,
         overArea: area,
         transferMode,
       };
       area.element.setAttribute('data-comins-sortable-over', '');
       session.activate(activeSession);
+      observeScroll();
       try {
         options.onDragStart?.(context);
       } catch (error) {
@@ -656,7 +840,8 @@ export function createSortableScopeInternal(
   };
 
   const startAttempt = (area: ScopeArea, event: PointerEvent): void => {
-    if (destroyed || session.state.status !== 'idle') {
+    if (destroyed || session.state.status !== 'idle'
+      || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) {
       return;
     }
     const target = asElement(event.target);
@@ -667,8 +852,10 @@ export function createSortableScopeInternal(
       item === target || item.contains(target)
     )) ?? null;
     if (sourceElement === null) {
+      if (area.options.multiDrag) clearSelections();
       return;
     }
+    if (!allowsPointerTarget(target, sourceElement, area.options)) return;
     const elements = directItems(area);
     const sourceIndex = elements.indexOf(sourceElement);
     if (sourceIndex === -1) {
@@ -684,6 +871,9 @@ export function createSortableScopeInternal(
     if (itemId === undefined || itemId === null) {
       report(new SortableError('MISSING_ITEM_ID'));
       return;
+    }
+    if (area.options.multiDrag) {
+      updateSelection(area, sourceElement, event);
     }
     const origin: PointerSnapshot = pointerSnapshot(event, event.clientX, event.clientY);
     const pending: PendingSession = {
@@ -710,7 +900,7 @@ export function createSortableScopeInternal(
           afterSensorCallback = callback;
         },
       ),
-      onMove: move,
+      onMove: (pointer, releasing) => move(pointer, !releasing),
       onCancel: (reason) => finish(reason),
       onRelease: release,
       onEnd: () => {
@@ -756,6 +946,7 @@ export function createSortableScopeInternal(
       registered,
       disposeRegistry,
       pointerDown: (() => {}) as EventListener,
+      contextMenu: (() => {}) as EventListener,
       hadAreaAttribute,
       areaAttribute,
       animator: createLayoutAnimator(
@@ -767,8 +958,25 @@ export function createSortableScopeInternal(
       disposed: false,
     };
     area.pointerDown = ((event: PointerEvent) => startAttempt(area, event)) as EventListener;
+    area.contextMenu = ((event: MouseEvent) => {
+      if (!area.options.multiDrag || area.options.disabled || !event.ctrlKey) return;
+      const target = asElement(event.target);
+      if (target === null) return;
+      // Child areas own their input; explicit handles still take precedence over ignore.
+      let current: Element | null = target;
+      while (current !== null && current !== area.element) {
+        if (registry.getByElement(current) !== undefined) return;
+        current = current.parentElement;
+      }
+      const source = directItems(area).find((item) => item === target || item.contains(target));
+      if (source !== undefined && allowsPointerTarget(target, source, area.options)) {
+        event.preventDefault();
+      }
+    }) as EventListener;
     element.addEventListener('pointerdown', area.pointerDown);
+    element.addEventListener('contextmenu', area.contextMenu);
     areas.set(normalized.areaId, area);
+    if (observingScroll) trackScrollParents(element);
 
     return () => {
       if (area.disposed) {
@@ -788,6 +996,7 @@ export function createSortableScopeInternal(
         }
       }
       element.removeEventListener('pointerdown', area.pointerDown);
+      element.removeEventListener('contextmenu', area.contextMenu);
       area.animator.destroy();
       area.disposeRegistry();
       if (areas.get(normalized.areaId) === area) {
@@ -827,7 +1036,13 @@ export function createSortableScopeInternal(
       area.rawOptions = nextRaw;
       area.registered = nextRegistered;
       area.animator.update(next.item, next.animation);
+      if (area.options.selectedClass !== next.selectedClass) {
+        for (const element of directItems(area)) {
+          element.classList.remove(area.options.selectedClass);
+        }
+      }
       invalidateTargets(areaTargets(area), 'framework');
+      syncSelection(area);
       const disablesDrag = (
         next.disabled
         && (
@@ -881,7 +1096,10 @@ export function createSortableScopeInternal(
     }
     area.disposed = true;
     area.element.removeEventListener('pointerdown', area.pointerDown);
+    area.element.removeEventListener('contextmenu', area.contextMenu);
     area.animator.destroy();
+    selections.delete(area.options.areaId);
+    selectionAnchors.delete(area.options.areaId);
     area.disposeRegistry();
     if (area.hadAreaAttribute) {
       area.element.setAttribute(
@@ -891,6 +1109,90 @@ export function createSortableScopeInternal(
     } else {
       area.element.removeAttribute('data-comins-sortable-area');
     }
+  }
+
+  function clearSelections(exceptAreaId?: string): void {
+    for (const [areaId, selected] of selections) {
+      if (areaId === exceptAreaId) continue;
+      selected.clear();
+      selectionAnchors.delete(areaId);
+      const area = areas.get(areaId);
+      if (area !== undefined) syncSelection(area);
+    }
+  }
+
+  function updateSelection(area: ScopeArea, element: Element, event: PointerEvent): void {
+    const itemId = area.options.getItemId(element);
+    const ids = directItems(area).map((item) => area.options.getItemId(item));
+    let selected = selections.get(area.options.areaId);
+    if (selected === undefined) {
+      selected = new Set();
+      selections.set(area.options.areaId, selected);
+    }
+    const additive = event.ctrlKey || event.metaKey;
+    if (event.shiftKey) {
+      clearSelections(area.options.areaId);
+      const anchorId = selectionAnchors.get(area.options.areaId) ?? itemId;
+      const anchorIndex = ids.indexOf(anchorId);
+      const itemIndex = ids.indexOf(itemId);
+      selected.clear();
+      for (const id of ids.slice(
+        Math.min(anchorIndex, itemIndex),
+        Math.max(anchorIndex, itemIndex) + 1,
+      )) selected.add(id);
+    } else if (additive) {
+      clearSelections(area.options.areaId);
+      if (selected.has(itemId)) selected.delete(itemId);
+      else selected.add(itemId);
+      selectionAnchors.set(area.options.areaId, itemId);
+    } else if (!selected.has(itemId)) {
+      clearSelections(area.options.areaId);
+      selected.clear();
+      selected.add(itemId);
+      selectionAnchors.set(area.options.areaId, itemId);
+    }
+    syncSelection(area);
+  }
+
+  function orderedSelectedIds(area: ScopeArea, itemId: SortableId): SortableId[] {
+    const selected = selections.get(area.options.areaId);
+    if (selected === undefined || !selected.has(itemId)) return [itemId];
+    return directItems(area)
+      .map((element) => area.options.getItemId(element))
+      .filter((candidate) => selected.has(candidate));
+  }
+
+  function updateSelectionAfterChange(change: SortableChange): void {
+    const moved = change.itemIds ?? [change.itemId];
+    const sourceSelection = selections.get(change.source.areaId);
+    if (sourceSelection === undefined) return;
+    for (const itemId of moved) sourceSelection.delete(itemId);
+    if (change.operation !== 'swap') {
+      let destinationSelection = selections.get(change.destination.areaId);
+      if (destinationSelection === undefined) {
+        destinationSelection = new Set();
+        selections.set(change.destination.areaId, destinationSelection);
+      }
+      for (const itemId of moved) destinationSelection.add(itemId);
+    }
+  }
+
+  function syncSelection(area: ScopeArea): void {
+    const selected = selections.get(area.options.areaId) ?? new Set<SortableId>();
+    for (const element of directItems(area)) {
+      const isSelected = selected.has(area.options.getItemId(element));
+      if (isSelected) {
+        element.classList.add(area.options.selectedClass);
+        element.setAttribute('data-comins-sortable-selected', '');
+      } else {
+        element.classList.remove(area.options.selectedClass);
+        element.removeAttribute('data-comins-sortable-selected');
+      }
+    }
+  }
+
+  function syncAllSelections(): void {
+    for (const area of areas.values()) syncSelection(area);
   }
 }
 
@@ -905,11 +1207,14 @@ function normalizeAreaOptions(
     throw new SortableError('INVALID_OPTION');
   }
   const direction = options.direction ?? 'auto';
-  if (direction !== 'vertical' && direction !== 'horizontal' && direction !== 'auto') {
+  if (direction !== 'vertical' && direction !== 'horizontal' && direction !== 'grid' && direction !== 'auto') {
     throw new SortableError('INVALID_OPTION');
   }
   const activationDistance = finiteNonNegative(options.activationDistance ?? 4);
   const emptyInsertThreshold = finiteNonNegative(options.emptyInsertThreshold ?? 8);
+  const swapThreshold = options.swapThreshold === undefined
+    ? undefined
+    : finiteUnitInterval(options.swapThreshold);
   const animation = normalizeAnimation(options.animation) ?? false;
   const placeholder = normalizePlaceholder(options.placeholder);
   const getItemId = options.getItemId ?? ((element: Element) => (
@@ -928,6 +1233,11 @@ function normalizeAreaOptions(
     ignore: options.ignore ?? DEFAULT_IGNORE_SELECTOR,
     activationDistance,
     emptyInsertThreshold,
+    ...(swapThreshold === undefined ? {} : { swapThreshold }),
+    invertSwap: options.invertSwap ?? false,
+    swap: options.swap ?? false,
+    multiDrag: options.multiDrag ?? false,
+    selectedClass: normalizeClassName(options.selectedClass ?? 'comins-sortable__selected'),
     autoScroll: options.autoScroll ?? true,
     animation,
     placeholder,
@@ -1042,6 +1352,21 @@ function finiteNonNegative(value: number): number {
   return value;
 }
 
+function finiteUnitInterval(value: number): number {
+  if (!Number.isFinite(value) || value < 0 || value > 1) {
+    throw new SortableError('INVALID_OPTION');
+  }
+  return value;
+}
+
+function normalizeClassName(value: string): string {
+  const normalized = value.trim();
+  if (normalized.length === 0 || /\s/.test(normalized)) {
+    throw new SortableError('INVALID_OPTION');
+  }
+  return normalized;
+}
+
 function validateSelectors(
   element: Element,
   options: NormalizedAreaOptions,
@@ -1092,18 +1417,45 @@ function locateDestination(
   rectFor: (element: Element) => RectSnapshot,
 ): {
   destination?: LocatedDestination;
-  rejection: 'disabled' | 'not-accepted' | 'nested-cycle' | null;
+  rejection: RejectionReason | null;
+  rejectionTarget?: Element;
 } {
   const context = { ...dragging.context, pointer };
   const directAreas = uniqueAreasFromHits(hits, registry, areas);
   const acceptance = new Map<ScopeArea, boolean>();
   const destinations = new Map<ScopeArea, LocatedDestination>();
+  const itemsByArea = new Map<ScopeArea, Element[]>();
+  const itemsFor = (area: ScopeArea): Element[] => {
+    let items = itemsByArea.get(area);
+    if (items === undefined) {
+      items = directItems(area);
+      itemsByArea.set(area, items);
+    }
+    return items;
+  };
   const destinationFor = (area: ScopeArea): LocatedDestination => {
     const cached = destinations.get(area);
     if (cached !== undefined) {
       return cached;
     }
-    const elements = itemElements(area, dragging.sourceElement);
+    const allElements = itemsFor(area);
+    if (dragging.sourceArea.options.swap && area === dragging.sourceArea) {
+      const target = directItemFromHits(area, hits, dragging.sourceElement, allElements);
+      if (target !== null) {
+        const targetIndex = allElements.indexOf(target);
+        const destination: LocatedDestination = {
+          area,
+          location: { areaId: area.options.areaId, index: targetIndex },
+          before: target,
+        };
+        destinations.set(area, destination);
+        return destination;
+      }
+    }
+    const excluded = area === dragging.sourceArea
+      ? new Set(dragging.sourceElements)
+      : new Set<Element>();
+    const elements = allElements.filter((element) => !excluded.has(element));
     const itemGeometry = elements.map((element) => ({
       element,
       geometry: {
@@ -1111,19 +1463,65 @@ function locateDestination(
         rect: rectFor(element),
       } satisfies ItemGeometry,
     }));
+    const previous = dragging.context.destination;
+    const currentPlaceholder = dragging.feedback?.placeholder;
+    const placeholderRect = currentPlaceholder?.getBoundingClientRect();
+    const overCurrentPlaceholder = (
+      currentPlaceholder?.parentElement === area.element
+      && placeholderRect !== undefined
+      && pointer.clientX >= placeholderRect.left
+      && pointer.clientX <= placeholderRect.right
+      && pointer.clientY >= placeholderRect.top
+      && pointer.clientY <= placeholderRect.bottom
+    );
+    if (
+      overCurrentPlaceholder
+      && previous?.areaId === area.options.areaId
+      && previous.index >= 0
+      && previous.index <= itemGeometry.length
+    ) {
+      const destination: LocatedDestination = {
+        area,
+        location: previous,
+        before: itemGeometry[previous.index]?.element
+          ?? trailingNonSortableSibling(area, allElements),
+      };
+      destinations.set(area, destination);
+      return destination;
+    }
     const direction = resolveDirection(
       area.options.direction,
       itemGeometry.map((entry) => entry.geometry),
     );
-    const index = insertionIndex({
-      pointer: { x: pointer.clientX, y: pointer.clientY },
-      direction,
-      items: itemGeometry.map((entry) => entry.geometry),
-    });
+    const geometries = itemGeometry.map((entry) => entry.geometry);
+    const point = { x: pointer.clientX, y: pointer.clientY };
+    const movement = direction === 'vertical' ? pointer.deltaY : pointer.deltaX;
+    const index = direction === 'grid'
+      ? gridInsertionIndex({ pointer: point, items: geometries })
+      : area.options.swapThreshold !== undefined
+        ? thresholdInsertionIndex({
+            pointer: point,
+            direction,
+            items: geometries,
+            movement,
+            swapThreshold: area.options.swapThreshold,
+            invertSwap: area.options.invertSwap,
+            previousIndex: dragging.context.destination?.areaId === area.options.areaId
+              ? dragging.context.destination.index
+              : 0,
+          })
+        : insertionIndex({
+            pointer: point,
+            direction,
+            items: geometries,
+            midpointTie: area === dragging.sourceArea && movement < 0
+              ? 'before'
+              : 'after',
+          });
     const destination: LocatedDestination = {
       area,
       location: { areaId: area.options.areaId, index },
-      before: itemGeometry[index]?.element ?? null,
+      before: itemGeometry[index]?.element ?? trailingNonSortableSibling(area, allElements),
     };
     destinations.set(area, destination);
     return destination;
@@ -1149,18 +1547,19 @@ function locateDestination(
     acceptance.set(area, accepted);
     return accepted;
   };
-  let rejection: 'disabled' | 'not-accepted' | 'nested-cycle' | null = null;
   for (const area of directAreas) {
+    const nonItem = directNonItemHit(area, hits, itemsFor(area));
+    if (nonItem !== null) {
+      return { rejection: 'not-accepted', rejectionTarget: nonItem };
+    }
     if (createsNestedCycle(dragging, area, areas)) {
-      return { rejection: 'nested-cycle' };
+      return { rejection: 'nested-cycle', rejectionTarget: area.element };
     }
     if (area.options.disabled) {
-      rejection = 'disabled';
-      break;
+      return { rejection: 'disabled', rejectionTarget: area.element };
     }
     if (!acceptsArea(area)) {
-      rejection = 'not-accepted';
-      break;
+      return { rejection: 'not-accepted', rejectionTarget: area.element };
     }
   }
 
@@ -1171,7 +1570,11 @@ function locateDestination(
   ));
   const groupAreas = [...areas.values()].filter((area) => !area.disposed);
   const emptyGeometries = groupAreas
-    .filter((area) => itemElements(area, dragging.sourceElement).length === 0)
+    .filter((area) => (
+      directItems(area).filter((element) => (
+        area !== dragging.sourceArea || !dragging.sourceElements.includes(element)
+      )).length === 0
+    ))
     .map((area) => areaGeometry(area, rectFor, () => acceptsArea(area)));
   const area = findAreaAtPoint({
     point: { x: pointer.clientX, y: pointer.clientY },
@@ -1183,16 +1586,70 @@ function locateDestination(
     acceptsGroup: () => true,
   });
   if (area === undefined) {
-    return { rejection };
+    return { rejection: null };
   }
   const scopeArea = areas.get(area.areaId);
   if (scopeArea === undefined) {
-    return { rejection };
+    return { rejection: null };
   }
   return {
     rejection: null,
     destination: destinationFor(scopeArea),
   };
+}
+
+function directNonItemHit(
+  area: ScopeArea,
+  hits: readonly Element[],
+  items: readonly Element[],
+): Element | null {
+  for (const hit of hits) {
+    if (hit === area.element) {
+      continue;
+    }
+    if (!area.element.contains(hit)) {
+      continue;
+    }
+    let directChild = hit;
+    while (
+      directChild.parentElement !== null
+      && directChild.parentElement !== area.element
+    ) {
+      directChild = directChild.parentElement;
+    }
+    if (directChild.parentElement !== area.element) {
+      continue;
+    }
+    if (
+      items.includes(directChild)
+      || directChild.hasAttribute('data-comins-sortable-placeholder')
+    ) {
+      return null;
+    }
+    return directChild;
+  }
+  return null;
+}
+
+function directItemFromHits(
+  area: ScopeArea,
+  hits: readonly Element[],
+  source: Element,
+  items: readonly Element[],
+): Element | null {
+  for (const hit of hits) {
+    let current: Element | null = hit;
+    while (current !== null && current.parentElement !== area.element) {
+      current = current.parentElement;
+    }
+    if (
+      current !== null
+      && current !== source
+      && current.parentElement === area.element
+      && items.includes(current)
+    ) return current;
+  }
+  return null;
 }
 
 function createsNestedCycle(
@@ -1205,7 +1662,7 @@ function createsNestedCycle(
   while (parent !== undefined) {
     if (
       parent.areaId === dragging.sourceArea.options.areaId
-      && parent.itemId === dragging.itemId
+      && dragging.itemIds.includes(parent.itemId)
     ) {
       return true;
     }
@@ -1268,8 +1725,27 @@ function elementDepth(element: Element): number {
   return depth;
 }
 
-function itemElements(area: ScopeArea, source: Element): Element[] {
-  return directItems(area).filter((element) => element !== source);
+function trailingNonSortableSibling(
+  area: ScopeArea,
+  items: readonly Element[],
+): Element | null {
+  const lastItem = items[items.length - 1];
+  if (lastItem === undefined) {
+    return null;
+  }
+  const children = Array.from(area.element.children);
+  const lastItemIndex = children.indexOf(lastItem);
+  for (let index = lastItemIndex + 1; index < children.length; index += 1) {
+    const child = children[index] as Element;
+    if (
+      items.includes(child)
+      || child.hasAttribute('data-comins-sortable-placeholder')
+    ) {
+      continue;
+    }
+    return child;
+  }
+  return null;
 }
 
 function pointerSnapshot(

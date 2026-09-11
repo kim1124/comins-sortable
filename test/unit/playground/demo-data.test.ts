@@ -38,8 +38,8 @@ test('Tree API maps root and child areas and folds immutable child updates', () 
   assert.equal(root.parent, undefined);
   assert.deepEqual(root.items.map((item) => item.id), ['research', 'design', 'build']);
   assert.deepEqual(child.parent, { areaId: 'todo', itemId: 'research' });
-  assert.deepEqual(next.child.map((item) => item.id), ['release', 'review']);
-  assert.deepEqual(state.child.map((item) => item.id), ['review', 'release']);
+  assert.deepEqual(demoTreeArea(next, 'child').items.map((item) => item.id), ['release', 'review']);
+  assert.deepEqual(demoTreeArea(state, 'child').items.map((item) => item.id), ['review', 'release']);
 });
 
 test('placeholder scenarios expose consumer classes and only the opt-in skeleton preset', () => {
@@ -118,4 +118,24 @@ test('nested transfers update root and child collections immutably', () => {
   assert.deepEqual(next.child.map((item) => item.id), ['review', 'design', 'release']);
   assert.deepEqual(state.todo.map((item) => item.id), ['research', 'design', 'build']);
   assert.deepEqual(state.child.map((item) => item.id), ['review', 'release']);
+});
+
+
+test('tree transfer carries the complete subtree into another parent without changing the original', () => {
+  const state = createDemoState('tree');
+  const before = JSON.stringify(state.tree);
+  const next = applyDemoChange(state, {
+    operation: 'transfer', itemId: 'review',
+    source: { areaId: 'child', index: 0 }, destination: { areaId: 'tree-children-design', index: 0 },
+    orders: [
+      { areaId: 'child', itemIds: ['release'] },
+      { areaId: 'tree-children-design', itemIds: ['review'] },
+    ],
+  });
+  assert.deepEqual(demoModel(next), {
+    todo: ['research', 'design', 'build'], child: ['release'],
+    'tree-children-design': ['review'], 'tree-children-review': ['document', 'observe'],
+  });
+  assert.deepEqual(demoTreeArea(next, 'tree-children-review').parent, { areaId: 'tree-children-design', itemId: 'review' });
+  assert.equal(JSON.stringify(state.tree), before);
 });

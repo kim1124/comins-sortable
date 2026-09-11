@@ -26,6 +26,11 @@ export interface VueAreaLifecycleProps<T> {
   ignore?: string;
   activationDistance?: number;
   emptyInsertThreshold?: number;
+  swapThreshold?: number;
+  invertSwap?: boolean;
+  swap?: boolean;
+  multiDrag?: boolean;
+  selectedClass?: string;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
@@ -171,6 +176,8 @@ function areaOptions<T>(
     areaId: props.areaId, group: props.group, item: '[data-comins-sortable-item]', getItemId,
     direction: props.direction, disabled: props.disabled, handle: props.handle, ignore: props.ignore,
     activationDistance: props.activationDistance, emptyInsertThreshold: props.emptyInsertThreshold,
+    swapThreshold: props.swapThreshold, invertSwap: props.invertSwap, swap: props.swap,
+    multiDrag: props.multiDrag, selectedClass: props.selectedClass,
     autoScroll: props.autoScroll, animation: props.animation, placeholder: props.placeholder,
     parent: props.parent, accept: props.accept,
   };
@@ -181,6 +188,9 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && left.disabled === right.disabled && left.handle === right.handle && left.ignore === right.ignore
     && left.activationDistance === right.activationDistance
     && left.emptyInsertThreshold === right.emptyInsertThreshold && left.autoScroll === right.autoScroll
+    && left.swapThreshold === right.swapThreshold && left.invertSwap === right.invertSwap
+    && left.swap === right.swap && left.multiDrag === right.multiDrag
+    && left.selectedClass === right.selectedClass
     && sameAnimation(left.animation, right.animation)
     && left.placeholder?.preset === right.placeholder?.preset
     && left.placeholder?.className === right.placeholder?.className

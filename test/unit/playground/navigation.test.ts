@@ -32,17 +32,24 @@ test('invalid routes fail closed to the simple React example', () => {
       exampleId,
     });
   }
+  for (const removedExampleId of ['table', 'table-column']) {
+    assert.deepEqual(resolvePlaygroundRoute(`/examples/${removedExampleId}/react`), {
+      adapterId: 'react',
+      exampleId: 'simple',
+    });
+  }
 });
 
 test('all planned parity routes ship while Comins-only routes remain separate', () => {
   const implementedParityExamples = new Set<string>(parityExampleIds);
 
-  assert.equal(exampleIds.length, 23);
-  assert.equal(parityExampleIds.length, 17);
-  assert.equal(plannedParityExampleCount, 17);
+  assert.equal(exampleIds.length, 25);
+  assert.equal(parityExampleIds.length, 18);
+  assert.equal(plannedParityExampleCount, 18);
+  assert.deepEqual(exampleIds.slice(exampleIds.indexOf('swap'), exampleIds.indexOf('swap') + 3), ['swap', 'grid', 'swap-grid']);
   assert.deepEqual(
     exampleIds.filter((exampleId) => !implementedParityExamples.has(exampleId)),
-    ['empty', 'accept', 'auto-scroll', 'tree', 'custom-placeholder', 'skeleton-placeholder'],
+    ['swap-grid', 'empty', 'accept', 'auto-scroll', 'tree', 'custom-placeholder', 'skeleton-placeholder'],
   );
 });
 

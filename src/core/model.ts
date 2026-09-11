@@ -1,6 +1,6 @@
 export type SortableId = string | number;
 export type ItemKey<T> = keyof T | ((item: T) => SortableId);
-export type SortableDirection = 'vertical' | 'horizontal' | 'auto';
+export type SortableDirection = 'vertical' | 'horizontal' | 'grid' | 'auto';
 export type SortableTransferMode = 'move' | 'copy';
 
 export interface SortableLocation {
@@ -36,6 +36,8 @@ export interface SortableOrder {
 
 interface SortableChangeBase {
   itemId: SortableId;
+  /** All items moved by a multi-drag, in their original visual order. */
+  itemIds?: readonly SortableId[];
   source: SortableLocation;
   destination: SortableLocation;
   orders: readonly SortableOrder[];
@@ -56,7 +58,12 @@ export interface SortableCopyChange extends SortableChangeBase {
   sourceItemId: SortableId;
 }
 
-export type SortableChange = SortableMoveChange | SortableCopyChange;
+export interface SortableSwapChange extends SortableChangeBase {
+  operation: 'swap';
+  swapItemId: SortableId;
+}
+
+export type SortableChange = SortableMoveChange | SortableCopyChange | SortableSwapChange;
 
 export interface SortableAreaUpdate<T> {
   areaId: string;
@@ -138,6 +145,16 @@ export interface SortableAreaOptions {
   ignore?: string;
   activationDistance?: number;
   emptyInsertThreshold?: number;
+  /** Fraction of a hovered item that activates insertion, from 0 through 1. */
+  swapThreshold?: number;
+  /** Move threshold activation from the item center toward its edges. */
+  invertSwap?: boolean;
+  /** Exchange the dragged and hovered items instead of insertion sorting. */
+  swap?: boolean;
+  /** Enable modifier selection and moving selected items as one ordered group. */
+  multiDrag?: boolean;
+  /** Class applied to selected items. */
+  selectedClass?: string;
   autoScroll?: boolean;
   animation?: SortableAnimation;
   placeholder?: SortablePlaceholderOptions;

@@ -1,7 +1,6 @@
 import {
   cloneElement,
   createElement,
-  useCallback,
   useContext,
   useMemo,
   useLayoutEffect,
@@ -24,6 +23,7 @@ import type {
   SortablePlaceholderOptions,
 } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
+import { deferredElementRef } from '../framework/element-ref.js';
 import {
   createReactSortableController,
   ReactSortableContext,
@@ -44,6 +44,11 @@ export interface SortableAreaProps<T> {
   ignore?: string;
   activationDistance?: number;
   emptyInsertThreshold?: number;
+  swapThreshold?: number;
+  invertSwap?: boolean;
+  swap?: boolean;
+  multiDrag?: boolean;
+  selectedClass?: string;
   autoScroll?: boolean;
   accept?: (context: DragContext) => boolean;
   copyItem?: CopyItem<T>;
@@ -66,8 +71,8 @@ export function SortableArea<T>(props: SortableAreaProps<T>): ReactElement {
   useLayoutEffect(() => {
     lifecycle.update(props);
   }, [lifecycle, props]);
-  const setAreaElement = useCallback(
-    (element: HTMLElement | null) => lifecycle.setElement(element),
+  const setAreaElement = useMemo(
+    () => deferredElementRef((element) => lifecycle.setElement(element)),
     [lifecycle],
   );
 

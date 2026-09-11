@@ -57,7 +57,11 @@ export interface PlaygroundDemoModule {
 export interface PlaygroundControl {
   id: string;
   label: Record<PlaygroundLocale, string>;
-  kind: 'button' | 'toggle';
+  kind: 'button' | 'toggle' | 'range';
+  min?: number;
+  max?: number;
+  step?: number;
+  defaultValue?: number;
 }
 
 export interface PlaygroundScenario {
