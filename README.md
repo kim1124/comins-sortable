@@ -15,9 +15,8 @@ Drag a card's left handle to move it; select its body text to copy it.
 
 ## Status
 
-The current public release is `comins-sortable@0.1.1`. The repository release
-candidate on `main` is `comins-sortable@0.1.2`. These docs describe that
-candidate; installing from npm still gives `0.1.1` until publication. Its
+The current public release is `comins-sortable@0.1.2`. These docs describe the
+published package and its repository Playground. Its
 Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
 reorder, transfer, and copy interactions with commit verification and rollback.
 The Playground currently provides 25 routes per adapter (100 example/adapter
@@ -32,8 +31,8 @@ React, React DOM, Vue, and Svelte are optional peers.
 Their package IDs are `react`, `react-dom`, `vue`, and `svelte`.
 
 Version `0.1.0` was withdrawn on 2026-08-28 after a public identity metadata
-incident and cannot be reused. Version `0.1.1` remains the current npm release
-until `0.1.2` is separately approved and published. Future versions, tags, and
+incident and cannot be reused. Version `0.1.2` was published on 2026-09-11
+through GitHub Actions staged publishing and maintainer approval. Future versions, tags, and
 GitHub Releases remain separately maintainer-gated.
 
 ## What changes in 0.1.2
@@ -46,12 +45,12 @@ GitHub Releases remain separately maintainer-gated.
 | Grid and Swap Grid | Grid inserts and shifts items. Swap Grid exchanges only the dragged and highlighted cells. |
 | Nested lists and Tree | Nested lists own separate arrays. Tree owns one recursive value and preserves a moved node's descendants. |
 
-This candidate also fixes native text-drag conflicts, quick-release destination
+This release also fixes native text-drag conflicts, quick-release destination
 updates, external-scroll collision refresh, and destination validation for
 Vanilla copies. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
 and [0.1.2 verification record](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.2-release-candidate.md).
 Table-row and table-column Playground demos have been removed; they are not
-supported examples for this candidate.
+supported examples for this release.
 
 ## Installation
 
@@ -61,7 +60,7 @@ npm install comins-sortable
 
 Install the peers used by your chosen adapter: React `>=18.2 <20` with React DOM
 `>=18.2 <20`, Vue `>=3.5 <4`, or Svelte `>=5 <6`. Vanilla needs no framework peer.
-Use the repository Playground below to try the unreleased 0.1.2 features.
+Use the repository Playground below to try the 0.1.2 features.
 
 ## Run the Playground locally
 

@@ -1,7 +1,7 @@
 # Quick Start
 
-These guides target the 0.1.2 candidate on `main`. npm currently provides 0.1.1;
-use the repository Playground below for the new 0.1.2 interactions.
+These guides target the published `comins-sortable@0.1.2`.
+Use the repository Playground below to try its sortable interactions.
 
 Install the package and the peer dependency required by your adapter.
 

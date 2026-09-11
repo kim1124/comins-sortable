@@ -1,7 +1,7 @@
 # Advanced Sorting
 
-These features are added in 0.1.2 and are not part of npm 0.1.1. Before
-publication, try them in the repository Playground.
+These features are available in `comins-sortable@0.1.2` and later.
+Try them in the repository Playground.
 
 Multi-drag, thresholds, grid collision, and swap are Area options shared by
 Vanilla, React, Vue, and Svelte.

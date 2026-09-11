@@ -2,7 +2,7 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
-## 0.1.2 - Unreleased
+## 0.1.2 - 2026-09-11
 
 ### Added
 

@@ -5,12 +5,11 @@ plans and design records.
 
 이 디렉터리는 현재 사용자 가이드와 과거 구현 계획·설계 기록을 분리합니다.
 
-The user guides describe the `0.1.2` candidate on `main`. npm currently serves
-`0.1.1`; use the repository Playground to try multi-drag, thresholds, grid, and
-swap before 0.1.2 is published.
+The user guides describe the published `comins-sortable@0.1.2`. Use the
+repository Playground to try multi-drag, thresholds, grid, and swap.
 
-사용자 가이드는 `main`의 `0.1.2` 후보를 기준으로 합니다. 현재 npm 배포본은
-`0.1.1`이므로 새 고급 정렬 기능은 저장소 Playground에서 확인합니다.
+사용자 가이드는 공개된 `comins-sortable@0.1.2`를 기준으로 합니다.
+저장소 Playground에서 다중 드래그, threshold, grid, swap을 확인할 수 있습니다.
 
 ## User guides
 
@@ -52,16 +51,16 @@ handles. Table-row and table-column demos are no longer included.
 
 ## Verification records
 
-- [0.1.2 merged runtime, browser evidence, and publication boundary](./verification/0.1.2-release-candidate.md)
+- [0.1.2 runtime, browser evidence, and publication checks](./verification/0.1.2-release-candidate.md)
 - [0.1.2 performance and memory verification](./verification/0.1.2-performance.md)
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
 The performance investigation and test gap audit are historical records. The
-candidate record above identifies the latest merged runtime and its evidence.
+release record above identifies the merged runtime and its publication evidence.
 
 성능 조사와 테스트 누락 분석은 과거 기록입니다. 최신 병합 런타임과 검증 범위는
-위의 0.1.2 후보 기록에서 확인합니다.
+위의 0.1.2 배포 기록에서 확인합니다.
 
 ## Historical records
 

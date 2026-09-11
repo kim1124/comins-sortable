@@ -1,7 +1,7 @@
 # 고급 정렬
 
-0.1.2에 추가된 기능입니다. npm 0.1.1에는 포함되지 않으므로 배포 전에는 저장소
-Playground에서 확인합니다.
+`comins-sortable@0.1.2`부터 제공되는 기능입니다.
+저장소 Playground에서 확인할 수 있습니다.
 
 다중 드래그, threshold, grid 충돌, swap은 Vanilla, React, Vue, Svelte가
 공유하는 Area option입니다.
