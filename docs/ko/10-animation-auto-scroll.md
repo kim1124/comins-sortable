@@ -46,8 +46,14 @@ export function AnimatedScrollExample() {
 unmount 또는 destroy에서 중지합니다. 컨테이너에 실제 overflow와 제한된 크기가
 있어야 하며 option이 scroll CSS를 생성하지는 않습니다.
 
+외부 page/ancestor 스크롤도 활성 drag의 충돌 좌표를 갱신합니다. 포인터가
+정지한 상태나 스크롤 직후 즉시 drop한 경우에도 목적지를 다시 평가합니다.
+이 좌표 보정은 Core의 `autoScroll` 옵션 활성화 여부와 별개입니다.
+
 가로 목록은 `direction="horizontal"`을 사용합니다. `auto`는 측정된 item center로
 방향을 결정합니다.
 
 Playground: <http://127.0.0.1:4003/examples/transition/react> 아래의
-`transition`, `transitions`, `auto-scroll` 경로를 확인합니다.
+`transition`, `auto-scroll` 경로를 확인합니다.
+
+`transitions` 경로는 다중 선택 이동을 설명하며 [고급 정렬](./16-advanced-sorting.md)에서 다룹니다.

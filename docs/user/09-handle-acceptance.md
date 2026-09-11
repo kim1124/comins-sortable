@@ -37,12 +37,25 @@ export function HandleExample() {
             >
               ⠿
             </button>
-            <span>{item.label}</span>
+            <span className="card-label">{item.label}</span>
           </div>
         )}
       </SortableArea>
     </SortableRoot>
   );
+}
+```
+
+```css
+.drag-handle {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.card-label {
+  -webkit-user-select: text;
+  user-select: text;
 }
 ```
 
@@ -58,6 +71,18 @@ selection only during an active drag. Selection becomes available again after
 completion or cancellation. With `multiDrag`, use modifier keys with handle
 clicks to select items. Input outside the handle or on ignored content does not
 change item selection.
+
+A handle confines pointer activation; a labelled button does not add keyboard
+sorting. Active-drag text-selection suppression is the Playground's styling and
+lifecycle choice, not a global `user-select` rule installed by the package. If
+an application needs it, scope it to that widget and release it in `onAfterDrag`
+and on unmount.
+
+Core prevents native browser `dragstart` only while processing an accepted mouse
+sorting attempt, so an existing text selection cannot steal the gesture. It
+does not clear the selection range. After moving a card, users can select just
+the value they need and copy it. Body or link input that was not accepted as a
+sorting attempt is outside this guard.
 
 `accept(context)` controls a candidate destination. Group `put` controls which
 source groups may enter. `disabled` blocks a source or destination area at

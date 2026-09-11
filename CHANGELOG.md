@@ -72,6 +72,12 @@ All notable behavior and public API changes to this project are recorded here.
 
 ### Documentation
 
+- Refresh the Playground GIF with current handle-based transfer, multi-drag,
+  Swap Grid, and subtree movement captured from the running React example.
+- Align English and Korean guides with the candidate version, selectable card
+  text, current host/slot examples, and the distinct grid/swap behaviors.
+- Record merged-runtime CI and the actual Safari mouse/keyboard verification
+  scope, while keeping historical investigations and npm publication separate.
 - Clarify the consumer component Host, nested parent/child, empty destination,
   and non-sortable slot differences directly in the Playground descriptions.
 - Synchronize README release-candidate, route-count, optional-peer, local demo,

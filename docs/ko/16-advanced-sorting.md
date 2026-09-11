@@ -1,5 +1,8 @@
 # 고급 정렬
 
+0.1.2에 추가된 기능입니다. npm 0.1.1에는 포함되지 않으므로 배포 전에는 저장소
+Playground에서 확인합니다.
+
 다중 드래그, threshold, grid 충돌, swap은 Vanilla, React, Vue, Svelte가
 공유하는 Area option입니다.
 
@@ -36,6 +39,7 @@ export function AdvancedSortingExample() {
           areaId="items"
           items={items}
           itemKey="id"
+          handle=".drag-handle"
           direction={mode === 'grid' || mode === 'swap-grid' ? 'grid' : 'vertical'}
           areaProps={{ style: {
             display: 'grid',
@@ -49,13 +53,27 @@ export function AdvancedSortingExample() {
           swap={mode === 'swap' || mode === 'swap-grid'}
           onItemsChange={(next) => setItems([...next])}
         >
-          {(item) => <div>{item.label}</div>}
+          {(item) => (
+            <div>
+              <button
+                type="button"
+                className="drag-handle"
+                aria-label={`Drag ${item.label}`}
+                style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
+              >
+                ⠿
+              </button>
+              <span>{item.label}</span>
+            </div>
+          )}
         </SortableArea>
       </SortableRoot>
     </>
   );
 }
 ```
+
+## 다중 선택과 텍스트 복사
 
 `multiDrag`에서는 macOS의 Command (⌘), Windows/Linux의 Ctrl로 개별 항목을
 토글하고 Shift로 최근 기준점부터 연속 범위를 선택합니다. 선택된 항목을
@@ -68,6 +86,8 @@ export function AdvancedSortingExample() {
 Playground에서는 핸들을 보조키와 함께 클릭하여 선택하고, 본문은 텍스트 선택과
 복사에 사용합니다. 본문을 선택해도 기존 다중 선택 상태는 유지됩니다.
 
+## 정렬 전환 기준
+
 `swapThreshold`(0–1)는 포인터가 대상 카드의 어디까지 들어와야 정렬 순서가
 바뀌는지 결정합니다. 드래그 시작에 필요한 이동 거리인 `activationDistance`와는
 별개입니다. Playground에서 Design을 위쪽 Research로 이동하면 색칠된 상단
@@ -75,6 +95,8 @@ Playground에서는 핸들을 보조키와 함께 클릭하여 선택하고, 본
 60%, 0.8은 90%이며, `invertSwap`을 켜면 각각 40%, 10%가 됩니다. 아래로
 이동할 때는 반대 방향을 적용합니다. 컨트롤을 바꾸면 설명과 영역 표시가 함께
 갱신됩니다.
+
+## 삽입과 스왑의 차이
 
 `direction="grid"`는 두 축을 사용하며 포인터가 현재 Placeholder 위에 있는 동안
 목적지를 유지합니다. 일반 그리드 정렬은 항목을 삽입하면서 사이의 셀을 밀어냅니다.
@@ -84,3 +106,6 @@ Playground에서는 핸들을 보조키와 함께 클릭하여 선택하고, 본
 
 Playground는 <http://127.0.0.1:4003/examples/transitions/react> 아래의
 `transitions`, `thresholds`, `swap`, `grid`, `swap-grid` 경로에서 확인합니다.
+
+예를 들어 `[A, B, C, D]`에서 A를 C 위치로 이동하면 일반 Grid는
+`[B, C, A, D]`, Swap Grid는 `[C, B, A, D]`가 됩니다.

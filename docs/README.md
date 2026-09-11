@@ -5,6 +5,13 @@ plans and design records.
 
 이 디렉터리는 현재 사용자 가이드와 과거 구현 계획·설계 기록을 분리합니다.
 
+The user guides describe the `0.1.2` candidate on `main`. npm currently serves
+`0.1.1`; use the repository Playground to try multi-drag, thresholds, grid, and
+swap before 0.1.2 is published.
+
+사용자 가이드는 `main`의 `0.1.2` 후보를 기준으로 합니다. 현재 npm 배포본은
+`0.1.1`이므로 새 고급 정렬 기능은 저장소 Playground에서 확인합니다.
+
 ## User guides
 
 | English | 한국어 | Playground examples |
@@ -35,10 +42,26 @@ http://127.0.0.1:4003/examples/<example>/<adapter>
 `<adapter>` is `vanilla`, `react`, `vue`, or `svelte`. Use **View code** in the
 Playground to compare the same feature across adapters.
 
+There are 25 examples for each of the four adapters. Drag the left handle to
+sort, and select the body text to copy it. For multi-drag, modifier-click the
+handles. Table-row and table-column demos are no longer included.
+
+네 어댑터 각각에 25개 예제가 있습니다. 정렬은 왼쪽 핸들, 텍스트 선택·복사는
+본문에서 수행합니다. 다중 선택은 보조키와 핸들 클릭을 사용합니다.
+테이블 행·열 데모는 현재 제공하지 않습니다.
+
 ## Verification records
 
+- [0.1.2 merged runtime, browser evidence, and publication boundary](./verification/0.1.2-release-candidate.md)
 - [0.1.2 performance and memory verification](./verification/0.1.2-performance.md)
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
+- [Playground GIF source and capture details](./playground-preview.md)
+
+The performance investigation and test gap audit are historical records. The
+candidate record above identifies the latest merged runtime and its evidence.
+
+성능 조사와 테스트 누락 분석은 과거 기록입니다. 최신 병합 런타임과 검증 범위는
+위의 0.1.2 후보 기록에서 확인합니다.
 
 ## Historical records
 

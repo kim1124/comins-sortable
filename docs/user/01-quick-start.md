@@ -1,5 +1,8 @@
 # Quick Start
 
+These guides target the 0.1.2 candidate on `main`. npm currently provides 0.1.1;
+use the repository Playground below for the new 0.1.2 interactions.
+
 Install the package and the peer dependency required by your adapter.
 
 ```sh
@@ -43,6 +46,10 @@ npm run dev
 
 Open <http://127.0.0.1:4003/examples/simple/react>, then use **View code** to
 inspect the selected adapter.
+
+All Playground cards use a left drag handle. Drag that handle to reorder;
+select text in the card body to copy it. This is a demo choice: library
+consumers opt into handles with the `handle` option.
 
 Continue with [Core Concepts](./02-core-concepts.md) or select an adapter from
 the [documentation index](../README.md).
