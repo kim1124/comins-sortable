@@ -88,15 +88,6 @@ function playgroundIds() {
   return [...block.matchAll(/'([^']+)'/g)].map((match) => match[1]);
 }
 
-function parityPlaygroundIds() {
-  const navigation = read('example/src/app/navigation.ts');
-  const block = navigation.match(
-    /export const parityExampleIds = \[([\s\S]*?)\] as const/,
-  )?.[1];
-  assert.ok(block);
-  return [...block.matchAll(/'([^']+)'/g)].map((match) => match[1]);
-}
-
 test('documents the local Playground immediately after installation', () => {
   const readme = read('README.md');
   const installation = readme.indexOf('## Installation');
@@ -192,14 +183,12 @@ test('keeps README release and package claims synchronized with source manifests
   const readme = read('README.md');
   const changelog = read('CHANGELOG.md');
   const exampleIds = playgroundIds();
-  const parityIds = parityPlaygroundIds();
 
   assert.match(readme, new RegExp(`comins-sortable@${manifest.version.replaceAll('.', '\\.')}`));
   assert.match(changelog, new RegExp(`^## ${manifest.version.replaceAll('.', '\\.')}\\b`, 'm'));
   assert.match(readme, new RegExp(`Playground currently provides ${exampleIds.length} routes\\b`));
-  assert.match(readme, new RegExp(`${parityIds.length} implement the planned`));
   assert.equal(Object.keys(manifest.dependencies ?? {}).length, 0);
-  assert.match(readme, /Zero runtime dependencies/);
+  assert.match(readme, /zero runtime dependencies/i);
 
   for (const peer of Object.keys(manifest.peerDependencies ?? {})) {
     assert.equal(readme.includes(peer), true, `README must identify peer ${peer}`);

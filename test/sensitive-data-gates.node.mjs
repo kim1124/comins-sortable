@@ -53,12 +53,10 @@ function constantFailure(result) {
 
 test('adopts the approved public package boundary under Contract v1.8', () => {
   const agents = read('AGENTS.md');
-  const readme = read('README.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
   assert.match(agents, /managed-start contract=v1\.8/);
-  assert.match(readme, /Contract v1\.8/);
   assert.match(agents, /comins-governance\/blob\/main\/COMINS_CONTRACT\.md/);
   assert.match(agents, /Governance is the only\s+common-policy owner/i);
   assert.match(agents, /module owns their CI implementation/i);
@@ -67,19 +65,6 @@ test('adopts the approved public package boundary under Contract v1.8', () => {
   assert.match(agents, /Vanilla JavaScript,\n  React, Vue, and Svelte/);
   assert.match(security, /credential\/PII incident/i);
   assert.match(security, /npm pack --json --ignore-scripts/);
-  assert.match(readme, /current public release is `comins-sortable@0\.1\.2`/);
-  assert.match(readme, /Vanilla JavaScript, React, Vue, and Svelte/);
-  assert.match(readme, /docs\/assets\/sortable-playground\.gif/);
-  for (const tag of [
-    'TypeScript',
-    'Vanilla JS',
-    'React',
-    'Vue',
-    'Svelte',
-    'Vite',
-    'Playwright',
-    'Zero runtime dependencies',
-  ]) assert.equal(readme.includes(`\`${tag}\``), true);
   assert.match(verify, /npm ci --ignore-scripts/);
   assert.match(verify, /npm run verify/);
   assert.deepEqual(JSON.parse(read('LICENSE_SCOPE.json')), {
