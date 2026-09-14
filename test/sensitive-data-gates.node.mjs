@@ -98,7 +98,7 @@ test('adopts the approved public package boundary under Contract v1.8', () => {
   assert.equal(licenseResult.stdout, '');
   assert.equal(licenseResult.stderr, '');
   const manifest = JSON.parse(read('package.json'));
-  assert.equal(manifest.version, '0.1.2');
+  assert.equal(manifest.version, '0.1.3');
   assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
   assert.equal(existsSync(join(root, 'package-lock.json')), true);

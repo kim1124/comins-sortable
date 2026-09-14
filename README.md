@@ -4,7 +4,7 @@ Drag-and-drop sorting for Vanilla JavaScript, React, Vue, and Svelte, built on
 one TypeScript core with zero runtime dependencies. Build sortable lists,
 grids, kanban boards, and nested trees with controlled application state.
 
-**Current release: `comins-sortable@0.1.2`** · [npm package](https://www.npmjs.com/package/comins-sortable)
+[npm package](https://www.npmjs.com/package/comins-sortable)
 · [English docs](https://github.com/kim1124/comins-sortable/blob/main/docs/README.md)
 · [한국어 가이드](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/01-quick-start.md)
 
@@ -37,7 +37,7 @@ npm install comins-sortable
 
 Install the peers used by your chosen adapter: React `>=18.2 <20` with React DOM
 `>=18.2 <20`, Vue `>=3.5 <4`, or Svelte `>=5 <6`. Vanilla needs no framework peer.
-Use the repository Playground below to try the 0.1.2 features.
+Use the repository Playground below to try the examples.
 
 ## Run the Playground locally
 

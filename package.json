@@ -1,6 +1,6 @@
 {
   "name": "comins-sortable",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Zero-dependency drag-and-drop sorting for Vanilla JavaScript, React, Vue, and Svelte. Sortable lists, grids, nested trees, multi-drag, and swap with a TypeScript core.",
   "keywords": [
     "sortable",

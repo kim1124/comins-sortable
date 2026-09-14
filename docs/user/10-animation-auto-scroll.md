@@ -46,6 +46,11 @@ window. It continues while the pointer remains near an edge and stops on drop,
 cancel, blur, unmount, or destroy. The container must have real overflow and a
 bounded size; the option does not create scrollable CSS.
 
+From 0.1.3, auto-scroll scales movement by elapsed time, using the
+existing 60Hz speed as its baseline and limiting catch-up after delayed frames.
+It also supports horizontal scrolling in containers and pages with CSS
+`direction: rtl`, including their negative `scrollLeft` / `scrollX` values.
+
 External page or ancestor scrolling also refreshes collision geometry during
 a drag, including a stationary pointer or a drop immediately after scrolling.
 This correction does not require enabling Core's `autoScroll` option.

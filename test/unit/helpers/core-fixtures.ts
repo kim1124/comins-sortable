@@ -549,7 +549,8 @@ class FakeEventTarget {
 export interface FakePlatform extends SortablePlatform {
   readonly reports: unknown[];
   readonly windowScrolls: Array<{ left: number; top: number }>;
-  flushFrame(): void;
+  advanceTime(milliseconds: number): void;
+  flushFrame(milliseconds?: number): void;
   frameCount(): number;
   listenerCount(): number;
   dispatchDocument(type: string, event: object): void;
@@ -565,6 +566,7 @@ export function fakePlatform(): FakePlatform {
   const reports: unknown[] = [];
   const windowScrolls: Array<{ left: number; top: number }> = [];
   let frameId = 0;
+  let time = 0;
   let visibilityState: DocumentVisibilityState = 'visible';
   let hits: readonly Element[] = [];
   const documentRecord: Record<string, unknown> = {
@@ -584,6 +586,7 @@ export function fakePlatform(): FakePlatform {
     innerHeight: 768,
     scrollX: 0,
     scrollY: 0,
+    performance: { now: () => time },
     getComputedStyle: (element: FakeElement) => element.computedStyle,
     scrollBy: (input: ScrollToOptions) => {
       const left = input.left ?? 0;
@@ -632,11 +635,15 @@ export function fakePlatform(): FakePlatform {
     report(error) {
       reports.push(error);
     },
-    flushFrame() {
+    advanceTime(milliseconds) {
+      time += milliseconds;
+    },
+    flushFrame(milliseconds = 1000 / 60) {
+      time += milliseconds;
       const pending = [...frames.entries()];
       frames.clear();
       for (const [, callback] of pending) {
-        callback(0);
+        callback(time);
       }
     },
     frameCount: () => frames.size,

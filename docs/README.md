@@ -5,10 +5,10 @@ plans and design records.
 
 이 디렉터리는 현재 사용자 가이드와 과거 구현 계획·설계 기록을 분리합니다.
 
-The user guides describe the published `comins-sortable@0.1.2`. Use the
+The user guides describe Comins Sortable's public APIs. Use the
 repository Playground to try multi-drag, thresholds, grid, and swap.
 
-사용자 가이드는 공개된 `comins-sortable@0.1.2`를 기준으로 합니다.
+사용자 가이드는 Comins Sortable의 공개 API 사용법을 설명합니다.
 저장소 Playground에서 다중 드래그, threshold, grid, swap을 확인할 수 있습니다.
 
 ## User guides
@@ -51,16 +51,18 @@ handles. Table-row and table-column demos are no longer included.
 
 ## Verification records
 
+- [0.1.3 local candidate and Safari verification scope](../reports/2026-09-14-0.1.3-preparation.md)
 - [0.1.2 runtime, browser evidence, and publication checks](./verification/0.1.2-release-candidate.md)
 - [0.1.2 performance and memory verification](./verification/0.1.2-performance.md)
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
 The performance investigation and test gap audit are historical records. The
-release record above identifies the merged runtime and its publication evidence.
+0.1.2 release record identifies its merged runtime and publication evidence;
+the 0.1.3 preparation record describes the current local candidate.
 
-성능 조사와 테스트 누락 분석은 과거 기록입니다. 최신 병합 런타임과 검증 범위는
-위의 0.1.2 배포 기록에서 확인합니다.
+성능 조사와 테스트 누락 분석은 과거 기록입니다. 0.1.2 배포 기록과
+0.1.3 로컬 후보 준비 기록에서 각 버전의 검증 범위를 확인합니다.
 
 ## Historical records
 

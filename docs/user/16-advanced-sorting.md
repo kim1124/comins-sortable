@@ -87,6 +87,12 @@ and Ctrl context-menu suppression. In the Playground, modifier-click handles
 to select items and use the body for text selection and copying. Selecting body
 text preserves the existing multi-selection.
 
+From 0.1.3, updating `selectedClass` replaces the previous selection class.
+Unregistering an area or destroying its scope clears
+the library's selection markers and range anchor; re-registering starts with
+an empty selection. This cleanup preserves unrelated CSS classes and browser
+text selection.
+
 ## Sorting thresholds
 
 `swapThreshold` (0–1) controls where the pointer must enter a target card before

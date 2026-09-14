@@ -178,13 +178,12 @@ test('maps every shipped Playground example to the user guide index', () => {
   }
 });
 
-test('keeps README release and package claims synchronized with source manifests', () => {
+test('keeps documented package capabilities synchronized with source manifests', () => {
   const manifest = JSON.parse(read('package.json'));
   const readme = read('README.md');
   const changelog = read('CHANGELOG.md');
   const exampleIds = playgroundIds();
 
-  assert.match(readme, new RegExp(`comins-sortable@${manifest.version.replaceAll('.', '\\.')}`));
   assert.match(changelog, new RegExp(`^## ${manifest.version.replaceAll('.', '\\.')}\\b`, 'm'));
   assert.match(readme, new RegExp(`Playground currently provides ${exampleIds.length} routes\\b`));
   assert.equal(Object.keys(manifest.dependencies ?? {}).length, 0);

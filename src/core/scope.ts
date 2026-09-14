@@ -379,6 +379,7 @@ export function createSortableScopeInternal(
       return;
     }
     stopAutoScroll();
+    autoScroller.reset();
     stopObservingScroll();
     active = null;
     geometry.clear();
@@ -998,6 +999,7 @@ export function createSortableScopeInternal(
       element.removeEventListener('pointerdown', area.pointerDown);
       element.removeEventListener('contextmenu', area.contextMenu);
       area.animator.destroy();
+      disposeSelection(area);
       area.disposeRegistry();
       if (areas.get(normalized.areaId) === area) {
         areas.delete(normalized.areaId);
@@ -1032,15 +1034,13 @@ export function createSortableScopeInternal(
         area.disposeRegistry = registry.register(area.registered);
         throw error;
       }
+      if (area.options.selectedClass !== next.selectedClass || area.options.item !== next.item) {
+        clearSelectionMarkers(area);
+      }
       area.options = next;
       area.rawOptions = nextRaw;
       area.registered = nextRegistered;
       area.animator.update(next.item, next.animation);
-      if (area.options.selectedClass !== next.selectedClass) {
-        for (const element of directItems(area)) {
-          element.classList.remove(area.options.selectedClass);
-        }
-      }
       invalidateTargets(areaTargets(area), 'framework');
       syncSelection(area);
       const disablesDrag = (
@@ -1098,8 +1098,7 @@ export function createSortableScopeInternal(
     area.element.removeEventListener('pointerdown', area.pointerDown);
     area.element.removeEventListener('contextmenu', area.contextMenu);
     area.animator.destroy();
-    selections.delete(area.options.areaId);
-    selectionAnchors.delete(area.options.areaId);
+    disposeSelection(area);
     area.disposeRegistry();
     if (area.hadAreaAttribute) {
       area.element.setAttribute(
@@ -1109,6 +1108,19 @@ export function createSortableScopeInternal(
     } else {
       area.element.removeAttribute('data-comins-sortable-area');
     }
+  }
+
+  function clearSelectionMarkers(area: ScopeArea): void {
+    for (const element of directItems(area)) {
+      element.classList.remove(area.options.selectedClass);
+      element.removeAttribute('data-comins-sortable-selected');
+    }
+  }
+
+  function disposeSelection(area: ScopeArea): void {
+    clearSelectionMarkers(area);
+    selections.delete(area.options.areaId);
+    selectionAnchors.delete(area.options.areaId);
   }
 
   function clearSelections(exceptAreaId?: string): void {

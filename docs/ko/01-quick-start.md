@@ -1,6 +1,6 @@
 # 빠른 시작
 
-이 가이드는 공개된 `comins-sortable@0.1.2`를 기준으로 합니다.
+이 가이드는 Comins Sortable의 공개 API 사용법을 설명합니다.
 아래 저장소 Playground에서 정렬 기능을 확인할 수 있습니다.
 
 패키지와 선택한 어댑터의 peer dependency를 설치합니다.

@@ -2,6 +2,23 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
+## 0.1.3 - 2026-09-14
+
+### Fixed
+
+- Replace the previous multi-selection class when `selectedClass` changes and
+  remove selection markers, selected IDs, and range anchors when an area is
+  unregistered or its scope is destroyed.
+- Scale auto-scroll by elapsed time to retain consistent speed across display
+  refresh rates, avoid extra movement from duplicate callbacks, and limit
+  catch-up after a delayed frame.
+- Support negative horizontal scroll offsets in RTL containers and pages.
+
+### Documentation
+
+- Focus the README on usage and examples, remove fixed current-version prose,
+  and add npm search keywords and a description covering all four adapters.
+
 ## 0.1.2 - 2026-09-11
 
 ### Added

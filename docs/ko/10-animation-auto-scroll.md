@@ -46,6 +46,11 @@ export function AnimatedScrollExample() {
 unmount 또는 destroy에서 중지합니다. 컨테이너에 실제 overflow와 제한된 크기가
 있어야 하며 option이 scroll CSS를 생성하지는 않습니다.
 
+0.1.3부터 기존 60Hz 속도를 기준으로 경과 시간에 비례하여
+스크롤하고, 프레임 지연 뒤 한 번에 지나치게 이동하지 않도록 제한합니다.
+CSS `direction: rtl`인 컨테이너와 페이지의 음수 `scrollLeft` / `scrollX`도
+처리합니다.
+
 외부 page/ancestor 스크롤도 활성 drag의 충돌 좌표를 갱신합니다. 포인터가
 정지한 상태나 스크롤 직후 즉시 drop한 경우에도 목적지를 다시 평가합니다.
 이 좌표 보정은 Core의 `autoScroll` 옵션 활성화 여부와 별개입니다.

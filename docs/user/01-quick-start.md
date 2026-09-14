@@ -1,6 +1,6 @@
 # Quick Start
 
-These guides target the published `comins-sortable@0.1.2`.
+These guides explain the public APIs of Comins Sortable.
 Use the repository Playground below to try its sortable interactions.
 
 Install the package and the peer dependency required by your adapter.
