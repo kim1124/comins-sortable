@@ -23,6 +23,8 @@ import type {
 } from '../playground/types.js';
 import {
   createDemoState,
+  dragHandle,
+  type DemoDragMode,
   copyDemoItem,
   demoModel,
   demoTreeArea,
@@ -42,6 +44,7 @@ import source from './react.tsx?raw';
 import { waitForAdapterReady } from './adapter-ready.js';
 
 interface DemoCommands {
+  setLocale(locale: 'ko' | 'en'): void;
   dispatch(controlId: string, value?: string | number | boolean): void;
   reset(): void;
 }
@@ -86,8 +89,12 @@ function Demo({
 }): ReactElement {
   const [state, setState] = useState<DemoState>(() => createDemoState(input.exampleId));
   const [allowed, setAllowed] = useState(true);
+  const [dragMode, setDragMode] = useState<DemoDragMode>('handle');
+  const [customFeedback, setCustomFeedback] = useState(true);
   const [swapThreshold, setSwapThreshold] = useState(0.5);
   const [invertSwap, setInvertSwap] = useState(false);
+  const [resetRevision, setResetRevision] = useState(0);
+  const [locale, setLocale] = useState(input.locale);
   const copySequence = useRef(0);
   const secondArea = hasSecondArea(input.exampleId);
   const todoGroup = useMemo(() => (
@@ -117,7 +124,10 @@ function Demo({
 
   useEffect(() => {
     expose({
+      setLocale,
       dispatch(controlId, value) {
+        if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) setDragMode(value);
+        if (controlId === 'custom-feedback' && typeof value === 'boolean') setCustomFeedback(value);
         if (controlId === 'accept-destination' && typeof value === 'boolean') setAllowed(value);
         if (controlId === 'reverse-items') setState((current) => ({ ...current, todo: [...current.todo].reverse() }));
         if (controlId === 'reverse-child') setState((current) => (reverseDemoChildren(current)));
@@ -127,9 +137,12 @@ function Demo({
       reset() {
         copySequence.current = 0;
         setAllowed(true);
+        setDragMode('handle');
+        setCustomFeedback(true);
         setSwapThreshold(0.5);
         setInvertSwap(false);
         setState(createDemoState(input.exampleId));
+        setResetRevision((revision) => revision + 1);
         bridge.publishOperation(null);
       },
     });
@@ -146,7 +159,7 @@ function Demo({
     const treeArea = input.exampleId === 'tree' ? demoTreeArea(state, 'child') : null;
     return (
       <div className="cs-demo-nested-shell">
-        <strong>Research children</strong>
+        <strong>Research {locale === 'ko' ? '하위 항목' : 'children'}</strong>
         <SortableArea
           as={input.exampleId === 'functional-third-party' ? ComponentHost : 'div'}
           areaProps={{ className: 'cs-demo-list cs-demo-list--nested', role: 'list', 'data-demo-area': 'child' } as HTMLAttributes<HTMLElement>}
@@ -154,7 +167,7 @@ function Demo({
           group="playground"
           parent={treeArea?.parent ?? { areaId: 'todo', itemId: 'research' }}
           items={treeArea?.items ?? state.child}
-          itemKey="id" handle=".cs-demo-handle"
+          itemKey="id" handle={dragHandle(dragMode)}
           animation={160}
           onItemsChange={(items) => setItems('child', items)}
         >
@@ -169,12 +182,12 @@ function Demo({
     return (
       <SortableArea<DemoTreeNode>
         areaId={areaId} group="playground" parent={current.parent}
-        items={current.items} itemKey="id" handle=".cs-demo-handle" onItemsChange={(items) => setItems(areaId, items)}
+        items={current.items} itemKey="id" handle={dragHandle(dragMode)} onItemsChange={(items) => setItems(areaId, items)}
         areaProps={{ className: 'cs-demo-list cs-demo-tree-list', role: 'list', 'data-demo-area': areaId } as HTMLAttributes<HTMLElement>}
       >
         {(item) => <ItemCard item={item}>
           {item.acceptsChildren && <div className="cs-demo-nested-shell">
-            <strong>{item.title} {input.locale === 'ko' ? '하위 항목' : 'children'}</strong>
+            <strong>{item.title} {locale === 'ko' ? '하위 항목' : 'children'}</strong>
             {treeArea(treeChildAreaId(item))}
           </div>}
         </ItemCard>}
@@ -184,7 +197,7 @@ function Demo({
 
   const area = (areaId: 'todo' | 'done', items: readonly DemoItem[]): ReactElement => (
     <section className="cs-demo-column" data-demo-column={areaId}>
-      <header><div><strong>{areaId === 'todo' ? 'To do' : 'Done'}</strong><small>{items.length} items</small></div></header>
+      <header><div><strong>{areaId === 'todo' ? (locale === 'ko' ? '진행할 작업' : 'To do') : (locale === 'ko' ? '완료' : 'Done')}</strong><small>{items.length} items</small></div></header>
       <div role="list" className="cs-demo-list-shell">
         <SortableArea
           as={input.exampleId === 'third-party' || input.exampleId === 'functional-third-party' ? ComponentHost : 'div'}
@@ -192,10 +205,10 @@ function Demo({
           areaId={areaId}
           group={areaId === 'todo' ? todoGroup : 'playground'}
           items={items}
-          itemKey="id" handle=".cs-demo-handle"
+          itemKey="id" handle={dragHandle(dragMode)}
           autoScroll={input.exampleId === 'auto-scroll'}
           animation={animation}
-          placeholder={areaId === 'todo' ? placeholderForExample(input.exampleId) : undefined}
+          placeholder={placeholderForExample(input.exampleId)}
           header={input.exampleId === 'header-slot' || input.exampleId === 'two-list-slots'
             ? <div className="cs-demo-slot" data-demo-slot="header">Pinned header</div>
             : undefined}
@@ -209,7 +222,7 @@ function Demo({
           swap={(input.exampleId === 'swap' || input.exampleId === 'swap-grid')}
           multiDrag={input.exampleId === 'transitions'}
           selectedClass={input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined}
-          accept={areaId === 'done' && input.exampleId === 'accept' ? () => allowed : undefined}
+          accept={areaId === 'done' && (input.exampleId === 'accept' || input.exampleId === 'custom-placeholder') ? () => allowed : undefined}
           copyItem={areaId === 'todo' && isCopyExample(input.exampleId)
             ? (item) => copyDemoItem(item, input.exampleId, ++copySequence.current)
             : undefined}
@@ -228,13 +241,14 @@ function Demo({
 
   return (
     <SortableRoot<DemoItem>
+      key={resetRevision}
       onBeforeDragStart={() => event('beforeDragStart')}
       onDragStart={({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) })}
       onInsertDragArea={({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId })}
       onChange={onChange}
       onAfterDrag={(result) => event('afterDrag', result)}
     >
-      <div className={`cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`}>
+      <div data-drag-mode={dragMode} data-feedback-style={input.exampleId === 'custom-placeholder' && customFeedback ? 'custom' : 'default'} className={`cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`}>
         {input.exampleId === 'tree'
           ? <section className="cs-demo-column cs-demo-tree" data-demo-column="todo">{treeArea('todo')}</section>
           : area('todo', state.todo)}
@@ -255,6 +269,7 @@ export const reactDemoModule: PlaygroundDemoModule = {
     await waitForAdapterReady();
     return {
       dispatch(controlId, value) { commands?.dispatch(controlId, value); },
+      setLocale(locale) { commands?.setLocale(locale); },
       reset() { commands?.reset(); },
       destroy() { root.unmount(); },
     };

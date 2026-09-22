@@ -1,7 +1,7 @@
 # Advanced Sorting
 
-These features are added in 0.1.2 and are not part of npm 0.1.1. Before
-publication, try them in the repository Playground.
+These features are available in `comins-sortable@0.1.2` and later.
+Try them in the repository Playground.
 
 Multi-drag, thresholds, grid collision, and swap are Area options shared by
 Vanilla, React, Vue, and Svelte.
@@ -86,6 +86,22 @@ When `handle` is configured, the same input boundary applies to item selection
 and Ctrl context-menu suppression. In the Playground, modifier-click handles
 to select items and use the body for text selection and copying. Selecting body
 text preserves the existing multi-selection.
+
+From 0.1.3, updating `selectedClass` replaces the previous selection class.
+Unregistering an area or destroying its scope clears
+the library's selection markers and range anchor; re-registering starts with
+an empty selection. This cleanup preserves unrelated CSS classes and browser
+text selection.
+
+The Playground's **Reset** button restores the example and clears selected IDs,
+selection styling, and the Shift-range anchor in all four adapters. After a
+reset, Shift-clicking Review selects only Review. Ordinary controlled item
+updates do not reset the selection; replacing an array alone is not a full
+selection reset. The Playground resets the relevant sortable registrations
+explicitly. There is no public `reset()` API.
+
+Try the `transitions` Playground: select Build, reset, Shift-select Review,
+then move Review to the front. This reset sequence is not in the current GIF.
 
 ## Sorting thresholds
 

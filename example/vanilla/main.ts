@@ -53,6 +53,8 @@ function mount(): void {
   sortable = createSortable(todo, {
     areaId: 'todo', group: copyItems ? { name: 'fixture', pull: 'copy' } : 'fixture', item: itemSelector, autoScroll: true,
     swap: parameters.has('swap'),
+    multiDrag: parameters.has('selection-lifecycle'),
+    selectedClass: 'selection-before',
     copyElement: copyItems ? (source) => {
       const copy = source.cloneNode(true) as Element;
       copy.setAttribute('data-sortable-id', `${source.getAttribute('data-sortable-id')}-copy`);
@@ -67,6 +69,15 @@ function mount(): void {
     onChange: (change) => { record(change); log('change'); if (throwOnChange) throw new Error('fixture change error'); }, onAfterDrag: result,
   });
   unregisterDone = sortable.registerArea(done, { areaId: 'done', parent: nestedParent, group: 'fixture', item: itemSelector, autoScroll: true, accept: () => !rejectDone });
+  if (parameters.has('selection-lifecycle')) {
+    const updateSelection = document.createElement('button');
+    updateSelection.textContent = 'Update selected class';
+    updateSelection.setAttribute('data-test-selection-class', '');
+    updateSelection.addEventListener('click', () => sortable?.updateArea('todo', {
+      selectedClass: 'selection-after',
+    }));
+    app.append(updateSelection);
+  }
 }
 mount();
 

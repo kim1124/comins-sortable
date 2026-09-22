@@ -1,7 +1,7 @@
 # Quick Start
 
-These guides target the 0.1.2 candidate on `main`. npm currently provides 0.1.1;
-use the repository Playground below for the new 0.1.2 interactions.
+These guides explain the public APIs of Comins Sortable.
+Use the repository Playground below to try its sortable interactions.
 
 Install the package and the peer dependency required by your adapter.
 
@@ -47,9 +47,11 @@ npm run dev
 Open <http://127.0.0.1:4003/examples/simple/react>, then use **View code** to
 inspect the selected adapter.
 
-All Playground cards use a left drag handle. Drag that handle to reorder;
-select text in the card body to copy it. This is a demo choice: library
-consumers opt into handles with the `handle` option.
+Playground cards use a left drag handle by default. Drag the handle to reorder
+and select body text to copy it. **Drag start areas** also compares title-only
+and whole-card activation. This is a demo choice: library consumers opt into
+handles with `handle`. See [Handle and Acceptance](./09-handle-acceptance.md)
+for the modes and the current Safari title-drag limitation.
 
 Continue with [Core Concepts](./02-core-concepts.md) or select an adapter from
 the [documentation index](../README.md).

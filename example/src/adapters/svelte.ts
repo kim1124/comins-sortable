@@ -5,6 +5,7 @@ import SvelteDemo from './SvelteDemo.svelte';
 import source from './SvelteDemo.svelte?raw';
 
 interface DemoCommands {
+  setLocale(locale: 'ko' | 'en'): void;
   dispatch(controlId: string, value?: string | number | boolean): void;
   reset(): void;
   destroyScope(): void;
@@ -22,6 +23,7 @@ export const svelteDemoModule: PlaygroundDemoModule = {
     let destroyed = false;
     return {
       dispatch(controlId, value) { commands.current?.dispatch(controlId, value); },
+      setLocale(locale) { commands.current?.setLocale(locale); },
       reset() { commands.current?.reset(); },
       destroy() {
         if (destroyed) return;

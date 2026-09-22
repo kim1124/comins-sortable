@@ -19,6 +19,8 @@ import type {
 } from '../playground/types.js';
 import {
   createDemoState,
+  dragHandle,
+  type DemoDragMode,
   copyDemoItem,
   demoModel,
   demoTreeArea,
@@ -38,6 +40,7 @@ import source from './vue.ts?raw';
 import { waitForAdapterReady } from './adapter-ready.js';
 
 interface DemoCommands {
+  setLocale(locale: 'ko' | 'en'): void;
   dispatch(controlId: string, value?: string | number | boolean): void;
   reset(): void;
 }
@@ -73,8 +76,12 @@ export const vueDemoModule: PlaygroundDemoModule = {
       setup() {
         const state = ref<DemoState>(createDemoState(input.exampleId));
         const allowed = ref(true);
+        const dragMode = ref<DemoDragMode>('handle');
+        const customFeedback = ref(true);
         const swapThreshold = ref(0.5);
         const invertSwap = ref(false);
+        const resetRevision = ref(0);
+        const locale = ref(input.locale);
         let copySequence = 0;
         const secondArea = hasSecondArea(input.exampleId);
         const todoGroup = input.exampleId === 'clone' || input.exampleId === 'custom-clone'
@@ -97,7 +104,10 @@ export const vueDemoModule: PlaygroundDemoModule = {
         };
 
         commands = {
+          setLocale(value) { locale.value = value; },
           dispatch(controlId, value) {
+            if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) dragMode.value = value;
+            if (controlId === 'custom-feedback' && typeof value === 'boolean') customFeedback.value = value;
             if (controlId === 'accept-destination' && typeof value === 'boolean') allowed.value = value;
             if (controlId === 'reverse-items') state.value = { ...state.value, todo: [...state.value.todo].reverse() };
             if (controlId === 'reverse-child') state.value = reverseDemoChildren(state.value);
@@ -107,9 +117,12 @@ export const vueDemoModule: PlaygroundDemoModule = {
           reset() {
             copySequence = 0;
             allowed.value = true;
+            dragMode.value = 'handle';
+            customFeedback.value = true;
             swapThreshold.value = 0.5;
             invertSwap.value = false;
             state.value = createDemoState(input.exampleId);
+            resetRevision.value += 1;
             bridge.publishOperation(null);
           },
         };
@@ -120,7 +133,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
         const childArea = (): VNode => {
           const treeArea = input.exampleId === 'tree' ? demoTreeArea(state.value, 'child') : null;
           return h('div', { class: 'cs-demo-nested-shell' }, [
-          h('strong', 'Research children'),
+          h('strong', `Research ${locale.value === 'ko' ? '하위 항목' : 'children'}`),
           h(SortableArea<DemoItem>, {
             tag: input.exampleId === 'functional-third-party' ? ComponentHost : 'div',
             componentProps: {
@@ -132,7 +145,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
             group: 'playground',
             parent: treeArea?.parent ?? { areaId: 'todo', itemId: 'research' },
             modelValue: treeArea?.items ?? state.value.child,
-            itemKey: 'id', handle: '.cs-demo-handle',
+            itemKey: 'id', handle: dragHandle(dragMode.value),
             animation: 160,
             'onUpdate:modelValue': (items: readonly DemoItem[]) => setItems('child', items),
           }, {
@@ -144,13 +157,13 @@ export const vueDemoModule: PlaygroundDemoModule = {
           const current = demoTreeArea(state.value, areaId);
           return h(SortableArea<DemoTreeNode>, {
             areaId, group: 'playground', parent: current.parent,
-            modelValue: current.items, itemKey: 'id', handle: '.cs-demo-handle',
+            modelValue: current.items, itemKey: 'id', handle: dragHandle(dragMode.value),
             componentProps: { class: 'cs-demo-list cs-demo-tree-list', role: 'list', 'data-demo-area': areaId },
             'onUpdate:modelValue': (items: readonly DemoTreeNode[]) => setItems(areaId, items),
           }, {
             item: ({ item }: { item: DemoTreeNode }) => itemCard(item,
               item.acceptsChildren ? h('div', { class: 'cs-demo-nested-shell' }, [
-                h('strong', `${item.title} ${input.locale === 'ko' ? '하위 항목' : 'children'}`),
+                h('strong', `${item.title} ${locale.value === 'ko' ? '하위 항목' : 'children'}`),
                 treeArea(treeChildAreaId(item)),
               ]) : undefined),
           });
@@ -159,7 +172,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
           'section',
           { class: 'cs-demo-column', 'data-demo-column': areaId },
           [
-            h('header', [h('div', [h('strong', areaId === 'todo' ? 'To do' : 'Done'), h('small', `${items.length} items`)])]),
+            h('header', [h('div', [h('strong', areaId === 'todo' ? (locale.value === 'ko' ? '진행할 작업' : 'To do') : (locale.value === 'ko' ? '완료' : 'Done')), h('small', `${items.length} items`)])]),
             h('div', { class: 'cs-demo-list-shell', role: 'list' }, [
               h(SortableArea<DemoItem>, {
                 tag: input.exampleId === 'third-party' || input.exampleId === 'functional-third-party'
@@ -173,10 +186,10 @@ export const vueDemoModule: PlaygroundDemoModule = {
                 areaId,
                 group: areaId === 'todo' ? todoGroup : 'playground',
                 modelValue: items,
-                itemKey: 'id', handle: '.cs-demo-handle',
+                itemKey: 'id', handle: dragHandle(dragMode.value),
                 autoScroll: input.exampleId === 'auto-scroll',
                 animation,
-                placeholder: areaId === 'todo' ? placeholderForExample(input.exampleId) : undefined,
+                placeholder: placeholderForExample(input.exampleId),
                 emptyInsertThreshold: areaId === 'done' && input.exampleId === 'empty' ? 42 : undefined,
                 direction: (input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? 'grid' : undefined,
                 swapThreshold: input.exampleId === 'thresholds' ? swapThreshold.value : undefined,
@@ -184,7 +197,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
                 swap: (input.exampleId === 'swap' || input.exampleId === 'swap-grid'),
                 multiDrag: input.exampleId === 'transitions',
                 selectedClass: input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined,
-                accept: areaId === 'done' && input.exampleId === 'accept' ? () => allowed.value : undefined,
+                accept: areaId === 'done' && (input.exampleId === 'accept' || input.exampleId === 'custom-placeholder') ? () => allowed.value : undefined,
                 copyItem: areaId === 'todo' && isCopyExample(input.exampleId)
                   ? (item: DemoItem) => copyDemoItem(item, input.exampleId, ++copySequence)
                   : undefined,
@@ -208,6 +221,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
         );
 
         return () => h(SortableRoot<DemoItem>, {
+          key: resetRevision.value,
           onBeforeDragStart: () => event('beforeDragStart'),
           onDragStart: ({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) }),
           onInsertDragArea: ({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId }),
@@ -218,6 +232,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
           onAfterDrag: (result: AfterDragResult) => event('afterDrag', result),
         }, {
           default: () => h('div', {
+            'data-drag-mode': dragMode.value, 'data-feedback-style': input.exampleId === 'custom-placeholder' && customFeedback.value ? 'custom' : 'default',
             class: `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`,
           }, [
             input.exampleId === 'tree'
@@ -234,6 +249,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
     await waitForAdapterReady();
     return {
       dispatch(controlId, value) { commands?.dispatch(controlId, value); },
+      setLocale(locale) { commands?.setLocale(locale); },
       reset() { commands?.reset(); },
       destroy() { commands = null; app.unmount(); },
     };

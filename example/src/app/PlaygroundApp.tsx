@@ -18,8 +18,11 @@ import {
   type PlaygroundLocale,
 } from './locale.js';
 import { message } from './messages.js';
+import { NestedExampleGuide } from './NestedExampleGuide.js';
+import { ExampleGuides } from './ExampleGuides.js';
 import { loadPlaygroundDemo } from '../adapters/registry.js';
 import { PlaygroundRuntimeHost } from '../playground/runtime-host.js';
+import { exampleEntry, loadSourceFiles, primarySourcePath, type PlaygroundSourceFile } from '../playground/source-files.js';
 import {
   playgroundScenarios,
   scenarioById,
@@ -41,6 +44,7 @@ const adapterNames = {
 const defaultToggles: Readonly<Record<string, boolean>> = {
   'accept-destination': true,
   'invert-swap': false,
+  'custom-feedback': true,
 };
 
 const defaultValues: Readonly<Record<string, number>> = {
@@ -60,15 +64,19 @@ export function PlaygroundApp(): ReactElement {
   const [events, setEvents] = useState<readonly PlaygroundEvent[]>([]);
   const [dragStart, setDragStart] = useState<(PlaygroundEvent & { sequence: number }) | null>(null);
   const [operation, setOperation] = useState<PlaygroundOperation | null>(null);
-  const [source, setSource] = useState('');
+  const [sources, setSources] = useState<PlaygroundSourceFile[]>([]);
+  const [sourcePath, setSourcePath] = useState('');
   const [showCode, setShowCode] = useState(false);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [toggles, setToggles] = useState<Record<string, boolean>>(() => ({ ...defaultToggles }));
   const [values, setValues] = useState<Record<string, number>>(() => ({ ...defaultValues }));
+  const [dragMode, setDragMode] = useState('handle');
   const runtimeTarget = useRef<HTMLDivElement | null>(null);
   const runtimeHost = useRef<PlaygroundRuntimeHost | null>(null);
   const sourcePanel = useRef<HTMLElement | null>(null);
-  const scenario = scenarioById(route.exampleId);
+  const scenario = scenarioById(route.exampleId, route.adapterId);
+  const sourceFiles = [exampleEntry({ ...route, locale }), ...sources];
+  const source = sourceFiles.find((file) => file.path === sourcePath);
   // Show the upward path used by the comparison instructions on every adapter.
   const threshold = values['swap-threshold'] ?? 0.5;
   const upwardBoundary = (toggles['invert-swap'] ? (1 - threshold) / 2 : (1 + threshold) / 2) * 100;
@@ -87,6 +95,7 @@ export function PlaygroundApp(): ReactElement {
   useEffect(() => {
     document.documentElement.lang = locale;
     writePlaygroundLocale(localStorage, locale);
+    runtimeHost.current?.setLocale(locale);
   }, [locale]);
 
   useEffect(() => {
@@ -111,15 +120,20 @@ export function PlaygroundApp(): ReactElement {
 
     let cancelled = false;
     setStatus('loading');
+    setSources([]);
     setEvents([]);
     setDragStart(null);
     setOperation(null);
     setToggles({ ...defaultToggles });
     setValues({ ...defaultValues });
+    setDragMode('handle');
     void loadDemoModule(route)
       .then(async (demoModule) => {
         if (cancelled) return;
-        setSource(demoModule.source);
+        const files = await loadSourceFiles(route.adapterId, demoModule.source);
+        if (cancelled) return;
+        setSources(files);
+        setSourcePath(primarySourcePath[route.adapterId]);
         await runtimeHost.current?.mount(demoModule, { ...route, locale });
         if (!cancelled) setStatus('ready');
       })
@@ -146,14 +160,20 @@ export function PlaygroundApp(): ReactElement {
     setRoute(next);
   };
 
-  const dispatch = (controlId: string, kind: 'button' | 'toggle' | 'range', value?: number): void => {
+  const dispatch = (controlId: string, kind: 'button' | 'toggle' | 'range' | 'select', value?: number | string): void => {
     if (controlId === 'reset') {
       setToggles({ ...defaultToggles });
       setValues({ ...defaultValues });
+      setDragMode('handle');
       runtimeHost.current?.reset();
       return;
     }
-    if (kind === 'range' && value !== undefined) {
+    if (kind === 'select' && typeof value === 'string') {
+      setDragMode(value);
+      runtimeHost.current?.dispatch(controlId, value);
+      return;
+    }
+    if (kind === 'range' && typeof value === 'number') {
       setValues((current) => ({ ...current, [controlId]: value }));
       runtimeHost.current?.dispatch(controlId, value);
       return;
@@ -173,7 +193,7 @@ export function PlaygroundApp(): ReactElement {
     <div className="cs-playground">
       <header className="cs-playground__header">
         <a className="cs-playground__brand" href="/examples/simple/react">
-          <span className="cs-playground__brand-mark" aria-hidden="true">co</span>
+          <img src="/comins-symbol.svg" width="40" height="40" alt="" style={{ flexShrink: 0 }} />
           <span>
             <strong>{message('brand', locale)}</strong>
             <small>{message('eyebrow', locale)}</small>
@@ -205,7 +225,7 @@ export function PlaygroundApp(): ReactElement {
                 className="cs-playground__example-tab"
                 onClick={() => navigate({ ...route, exampleId: item.id })}
               >
-                <span>{item.title[locale]}</span>
+                <span>{scenarioById(item.id, route.adapterId).title[locale]}</span>
               </button>
             ))}
           </div>
@@ -217,7 +237,11 @@ export function PlaygroundApp(): ReactElement {
               <span className="cs-playground__route">examples / {route.exampleId}</span>
               <h1>{scenario.title[locale]}</h1>
               <p>{scenario.description[locale]}</p>
-              <p>{locale === 'ko'
+              <p>{route.exampleId === 'handle' && dragMode !== 'handle'
+                ? locale === 'ko'
+                  ? dragMode === 'title' ? '카드 제목을 잡아 이동합니다. 아래 설명 글자는 계속 선택할 수 있습니다.' : '카드 어느 곳에서든 이동합니다. 이 모드에서는 본문 드래그도 정렬로 처리합니다.'
+                  : dragMode === 'title' ? 'Drag the card title. The detail text remains selectable.' : 'Drag anywhere on a card. Dragging body text starts sorting in this mode.'
+                : locale === 'ko'
                 ? '왼쪽 핸들을 잡아 이동하고, 본문 글자는 드래그로 선택하여 복사할 수 있습니다.'
                 : 'Drag the left handle to move an item. Select text in the card body to copy it.'}</p>
               <div className="cs-playground__api-list" aria-label="API">
@@ -255,7 +279,14 @@ export function PlaygroundApp(): ReactElement {
               <p>{locale === 'ko' ? '실행 중 옵션을 변경할 수 있습니다.' : 'Change options while the demo is running.'}</p>
             </div>
             <div className="cs-playground__control-actions">
-              {scenario.controls.map((control) => control.kind === 'range' ? (
+              {scenario.controls.map((control) => control.kind === 'select' ? (
+                <label key={control.id} className="cs-playground__choice">
+                  <span>{control.label[locale]}</span>
+                  <select aria-label={control.label[locale]} value={dragMode} onChange={(event) => dispatch(control.id, control.kind, event.target.value)}>
+                    {control.options?.map((option) => <option key={option.value} value={option.value}>{option.label[locale]}</option>)}
+                  </select>
+                </label>
+              ) : control.kind === 'range' ? (
                 <label key={control.id} className="cs-playground__range">
                   <span>{control.label[locale]} <output>{values[control.id] ?? control.defaultValue}</output></span>
                   <input
@@ -291,6 +322,10 @@ export function PlaygroundApp(): ReactElement {
             </div>
             {status === 'loading' && <p className="cs-playground__notice">{message('loading', locale)}</p>}
             {status === 'error' && <p className="cs-playground__notice" role="alert">{message('error', locale)}</p>}
+            <ExampleGuides exampleId={route.exampleId} adapter={route.adapterId} locale={locale} />
+            {(route.exampleId === 'nested-controlled' || route.exampleId === 'tree') && (
+              <NestedExampleGuide exampleId={route.exampleId} adapter={route.adapterId} locale={locale} />
+            )}
             {route.exampleId === 'thresholds' && (
               <div className="cs-playground__threshold-guide" data-threshold-guide>
                 <p>{locale === 'ko'
@@ -323,8 +358,16 @@ export function PlaygroundApp(): ReactElement {
               className="cs-playground__panel cs-playground__source"
               aria-label={message('code', locale)}
             >
-              <div className="cs-playground__panel-heading"><span>{route.adapterId}.ts</span><span>read only</span></div>
-              <pre><code>{source}</code></pre>
+              <div className="cs-playground__panel-heading"><span>{source?.path}</span><span>read only</span></div>
+              <p>{locale === 'ko'
+                ? '현재 예제의 main.ts와 공통 어댑터 구현·보조 파일입니다. 라이브러리 경로는 공개 패키지 import로 바꿨습니다. 파일 구조를 유지하고 comins-sortable 및 선택한 프레임워크를 설치한 Vite 환경에서 사용하세요. React는 TSX, Svelte는 .svelte 컴파일 설정이 필요합니다. 단일 파일만으로 실행되는 예제가 아닙니다.'
+                : 'main.ts selects this example; the adapter implementation and helper files are shared. Library imports use the public package. Preserve the file layout in a Vite project with comins-sortable and the selected framework installed. React needs TSX support and Svelte needs .svelte compilation. This is a multi-file example.'}</p>
+              <label>{locale === 'ko' ? '예제 파일' : 'Example file'}{' '}
+                <select data-source-file value={sourcePath} onChange={(event) => setSourcePath(event.target.value)}>
+                  {sourceFiles.map((file) => <option key={file.path} value={file.path}>{file.path}</option>)}
+                </select>
+              </label>
+              <pre><code>{source?.code}</code></pre>
             </section>
           )}
         </main>

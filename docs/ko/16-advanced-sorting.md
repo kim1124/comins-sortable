@@ -1,7 +1,7 @@
 # 고급 정렬
 
-0.1.2에 추가된 기능입니다. npm 0.1.1에는 포함되지 않으므로 배포 전에는 저장소
-Playground에서 확인합니다.
+`comins-sortable@0.1.2`부터 제공되는 기능입니다.
+저장소 Playground에서 확인할 수 있습니다.
 
 다중 드래그, threshold, grid 충돌, swap은 Vanilla, React, Vue, Svelte가
 공유하는 Area option입니다.
@@ -85,6 +85,20 @@ export function AdvancedSortingExample() {
 `handle`을 설정하면 항목 선택과 Ctrl 메뉴 억제에도 같은 입력 범위를 적용합니다.
 Playground에서는 핸들을 보조키와 함께 클릭하여 선택하고, 본문은 텍스트 선택과
 복사에 사용합니다. 본문을 선택해도 기존 다중 선택 상태는 유지됩니다.
+
+0.1.3부터 `selectedClass`를 변경할 때 이전 선택 클래스를
+제거합니다. 영역 등록 해제나 scope 파괴 시 라이브러리의 선택 표시와 범위
+기준점을 정리하며, 같은 영역을 다시 등록하면 빈 선택 상태로 시작합니다.
+관련 없는 CSS 클래스와 브라우저 텍스트 선택은 유지합니다.
+
+Playground의 **초기화** 버튼은 네 어댑터 모두에서 예제를 복원하고 선택 ID·표시와
+Shift 범위 기준점을 지웁니다. 초기화 후 Shift+Review를 클릭하면 Review만
+선택됩니다. 일반적인 제어 상태 갱신은 선택을 초기화하지 않으므로 배열 교체만으로는
+선택 상태까지 초기화되지 않습니다. Playground는 관련 sortable 등록을 명시적으로
+다시 생성합니다. 공개 `reset()` API를 추가한 것은 아닙니다.
+
+`transitions` Playground에서 Build 선택 → 초기화 → Shift+Review 선택 →
+Review만 맨 앞으로 이동하는 흐름을 확인합니다. 현재 GIF에는 이 초기화 장면이 없습니다.
 
 ## 정렬 전환 기준
 

@@ -9,6 +9,7 @@ import {
 } from './collision.js';
 import { SortableError } from './errors.js';
 import { createFeedback } from './feedback.js';
+import { itemBoundary } from './item-boundary.js';
 import {
   GeometryCache,
   resolveDirection,
@@ -101,6 +102,7 @@ interface NormalizedAreaOptions {
 
 interface ScopeArea {
   element: Element;
+  itemBoundary: Element | null;
   options: NormalizedAreaOptions;
   rawOptions: SortableAreaOptions;
   registered: RegisteredArea;
@@ -379,6 +381,7 @@ export function createSortableScopeInternal(
       return;
     }
     stopAutoScroll();
+    autoScroller.reset();
     stopObservingScroll();
     active = null;
     geometry.clear();
@@ -650,6 +653,7 @@ export function createSortableScopeInternal(
       pointer,
       destination: located.destination?.location ?? null,
     };
+    dragging.feedback?.setVisible(located.destination !== undefined);
 
     options.onDrag?.(dragging.context);
     if (!locationsEqual(previousDestination, dragging.context.destination)) {
@@ -941,6 +945,7 @@ export function createSortableScopeInternal(
     element.setAttribute('data-comins-sortable-area', normalized.areaId);
     const area: ScopeArea = {
       element,
+      itemBoundary: null,
       options: normalized,
       rawOptions: areaOptions,
       registered,
@@ -957,6 +962,7 @@ export function createSortableScopeInternal(
       ),
       disposed: false,
     };
+    directItems(area);
     area.pointerDown = ((event: PointerEvent) => startAttempt(area, event)) as EventListener;
     area.contextMenu = ((event: MouseEvent) => {
       if (!area.options.multiDrag || area.options.disabled || !event.ctrlKey) return;
@@ -998,6 +1004,7 @@ export function createSortableScopeInternal(
       element.removeEventListener('pointerdown', area.pointerDown);
       element.removeEventListener('contextmenu', area.contextMenu);
       area.animator.destroy();
+      disposeSelection(area);
       area.disposeRegistry();
       if (areas.get(normalized.areaId) === area) {
         areas.delete(normalized.areaId);
@@ -1032,15 +1039,13 @@ export function createSortableScopeInternal(
         area.disposeRegistry = registry.register(area.registered);
         throw error;
       }
+      if (area.options.selectedClass !== next.selectedClass || area.options.item !== next.item) {
+        clearSelectionMarkers(area);
+      }
       area.options = next;
       area.rawOptions = nextRaw;
       area.registered = nextRegistered;
       area.animator.update(next.item, next.animation);
-      if (area.options.selectedClass !== next.selectedClass) {
-        for (const element of directItems(area)) {
-          element.classList.remove(area.options.selectedClass);
-        }
-      }
       invalidateTargets(areaTargets(area), 'framework');
       syncSelection(area);
       const disablesDrag = (
@@ -1063,6 +1068,7 @@ export function createSortableScopeInternal(
       if (area === undefined || area.disposed) {
         throw new SortableError('INVALID_ELEMENT');
       }
+      directItems(area);
       area.animator.play();
       invalidateTargets(areaTargets(area), 'framework');
     },
@@ -1098,8 +1104,7 @@ export function createSortableScopeInternal(
     area.element.removeEventListener('pointerdown', area.pointerDown);
     area.element.removeEventListener('contextmenu', area.contextMenu);
     area.animator.destroy();
-    selections.delete(area.options.areaId);
-    selectionAnchors.delete(area.options.areaId);
+    disposeSelection(area);
     area.disposeRegistry();
     if (area.hadAreaAttribute) {
       area.element.setAttribute(
@@ -1109,6 +1114,19 @@ export function createSortableScopeInternal(
     } else {
       area.element.removeAttribute('data-comins-sortable-area');
     }
+  }
+
+  function clearSelectionMarkers(area: ScopeArea): void {
+    for (const element of directItems(area)) {
+      element.classList.remove(area.options.selectedClass);
+      element.removeAttribute('data-comins-sortable-selected');
+    }
+  }
+
+  function disposeSelection(area: ScopeArea): void {
+    clearSelectionMarkers(area);
+    selections.delete(area.options.areaId);
+    selectionAnchors.delete(area.options.areaId);
   }
 
   function clearSelections(exceptAreaId?: string): void {
@@ -1400,12 +1418,14 @@ function registeredArea(
 }
 
 function directItems(area: ScopeArea): Element[] {
-  return Array.from(area.element.querySelectorAll(area.options.item)).filter(
+  const items = Array.from(area.element.querySelectorAll(area.options.item)).filter(
     (element) => (
       element.parentElement === area.element
       && !element.hasAttribute('data-comins-sortable-placeholder')
     ),
   );
+  area.itemBoundary = itemBoundary(area.element, items, area.itemBoundary);
+  return items;
 }
 
 function locateDestination(
@@ -1729,23 +1749,8 @@ function trailingNonSortableSibling(
   area: ScopeArea,
   items: readonly Element[],
 ): Element | null {
-  const lastItem = items[items.length - 1];
-  if (lastItem === undefined) {
-    return null;
-  }
-  const children = Array.from(area.element.children);
-  const lastItemIndex = children.indexOf(lastItem);
-  for (let index = lastItemIndex + 1; index < children.length; index += 1) {
-    const child = children[index] as Element;
-    if (
-      items.includes(child)
-      || child.hasAttribute('data-comins-sortable-placeholder')
-    ) {
-      continue;
-    }
-    return child;
-  }
-  return null;
+  area.itemBoundary = itemBoundary(area.element, items, area.itemBoundary);
+  return area.itemBoundary;
 }
 
 function pointerSnapshot(

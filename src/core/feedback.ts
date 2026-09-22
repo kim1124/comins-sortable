@@ -24,6 +24,7 @@ export interface SortableFeedback {
   move(pointer: PointerSnapshot): void;
   place(parent: Element, before: Element | null): void;
   clear(): void;
+  setVisible(visible: boolean): void;
   setRejection(reason: 'disabled' | 'not-accepted' | 'nested-cycle' | null): void;
   rollback(): void;
   destroy(): void;
@@ -139,6 +140,10 @@ export function createFeedback(
     },
     clear() {
       placeholder.remove();
+    },
+    setVisible(visible) {
+      // Keep the spacer in flow so leaving a scroll edge cannot shrink its range.
+      styledPlaceholder.style.visibility = visible ? '' : 'hidden';
     },
     setRejection(reason) {
       if (reason !== null) {

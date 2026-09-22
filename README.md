@@ -1,57 +1,44 @@
 # Comins Sortable
 
-Comins Sortable is an independent npm frontend module that provides sortable
-interaction for Vanilla JavaScript, React, Vue, and Svelte over one Vanilla
-TypeScript Core.
+<img src="https://raw.githubusercontent.com/kim1124/comins-sortable/main/example/public/comins-symbol.svg" width="64" height="64" alt="Comins" />
 
-`TypeScript` · `Vanilla JS` · `React` · `Vue` · `Svelte` · `Vite` ·
-`Playwright` · `Zero runtime dependencies`
+Drag-and-drop sorting for Vanilla JavaScript, React, Vue, and Svelte, built on
+one TypeScript core with zero runtime dependencies. Build sortable lists,
+grids, kanban boards, and nested trees with controlled application state.
 
-![Comins Sortable Playground demonstrating handle-based transfer, multi-drag, swap grid, and tree movement](https://raw.githubusercontent.com/kim1124/comins-sortable/main/docs/assets/sortable-playground.gif)
+[npm package](https://www.npmjs.com/package/comins-sortable)
+· [English docs](https://github.com/kim1124/comins-sortable/blob/main/docs/README.md)
+· [한국어 가이드](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/01-quick-start.md)
 
-The animation shows real React Playground interactions: transfer between lists,
-multi-selection, a grid swap, and a tree move that carries its descendants.
-Drag a card's left handle to move it; select its body text to copy it.
+![Comins Sortable Playground demonstrating empty-slot return, drag start areas, drop feedback styles, per-list state updates, and subtree movement](https://raw.githubusercontent.com/kim1124/comins-sortable/main/docs/assets/sortable-playground.gif?v=0.1.3-20260922)
 
-## Status
+The animation shows real React Playground interactions: emptying and refilling
+a list between fixed slots, changing drag start areas, comparing accepted and
+rejected drop styles, updating a child list, and moving a complete subtree.
+By default, drag a card's left handle to move it and select its body text to copy it.
+The Drag start areas example also demonstrates title-only and whole-card dragging.
 
-The current public release is `comins-sortable@0.1.1`. The repository release
-candidate on `main` is `comins-sortable@0.1.2`. These docs describe that
-candidate; installing from npm still gives `0.1.1` until publication. Its
-Vanilla TypeScript Core and Vanilla, React, Vue, and Svelte adapters implement
-reorder, transfer, and copy interactions with commit verification and rollback.
-The Playground currently provides 25 routes per adapter (100 example/adapter
-combinations). 18 implement the planned
-Sortable/Vue.Draggable parity contracts, including multi-drag, thresholds,
-two-dimensional grid collision, swap, animation, custom hosts, non-item
-siblings, and nested sortable areas. Empty Destination, Accept/Reject, Auto
-Scroll, and Swap Grid are additional Comins examples. Tree, Custom Placeholder, and Skeleton
-Placeholder demonstrate the official headless Tree model and customizable drag
-feedback. Runtime dependencies are not allowed.
-React, React DOM, Vue, and Svelte are optional peers.
-Their package IDs are `react`, `react-dom`, `vue`, and `svelte`.
-
-Version `0.1.0` was withdrawn on 2026-08-28 after a public identity metadata
-incident and cannot be reused. Version `0.1.1` remains the current npm release
-until `0.1.2` is separately approved and published. Future versions, tags, and
-GitHub Releases remain separately maintainer-gated.
-
-## What changes in 0.1.2
+## Features
 
 | Capability | What to try in the Playground |
 | --- | --- |
-| Select text and move cards | Drag the handle, then select and copy a value from the card body. |
+| Sortable lists and kanban boards | Reorder items, transfer them between lists, or copy them to another list. |
+| Drag start areas and text selection | Compare handle, title-only, and whole-card dragging; use handle mode to select and copy body text. |
 | Multi-drag | Command/Ctrl-click handles, or use Shift for a range, then move the selected items together. |
 | Sorting thresholds | Change the shaded target region to see when a drag changes order; this differs from the distance needed to start dragging. |
 | Grid and Swap Grid | Grid inserts and shifts items. Swap Grid exchanges only the dragged and highlighted cells. |
-| Nested lists and Tree | Nested lists own separate arrays. Tree owns one recursive value and preserves a moved node's descendants. |
+| Nested lists and Tree | **Per-list state control** updates separate arrays in React, Vue, and Svelte; Vanilla demonstrates direct DOM updates. **Subtree movement** preserves descendants when a node changes parent. Both include structure diagrams and step-by-step instructions. |
+| Drag feedback | Compare accepted/rejected drop styles and their CSS; customize animation, placeholders, skeleton feedback, and auto-scroll. |
 
-This candidate also fixes native text-drag conflicts, quick-release destination
-updates, external-scroll collision refresh, and destination validation for
-Vanilla copies. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
-and [0.1.2 verification record](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.2-release-candidate.md).
-Table-row and table-column Playground demos have been removed; they are not
-supported examples for this candidate.
+Vanilla uses no framework peer. React, React DOM, Vue, and Svelte integrations
+use optional peers (`react`, `react-dom`, `vue`, and `svelte`).
+
+The 0.1.3 changes improve selection cleanup, elapsed-time and RTL auto-scroll,
+feedback outside valid drop areas, and footer boundaries after a list becomes
+empty. Playground Reset also clears the Shift-range anchor. The examples now
+compare drag start areas and accepted/rejected CSS feedback. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
+for the full change list and the [capture details](https://github.com/kim1124/comins-sortable/blob/main/docs/playground-preview.md)
+for the GIF scenarios.
 
 ## Installation
 
@@ -61,13 +48,12 @@ npm install comins-sortable
 
 Install the peers used by your chosen adapter: React `>=18.2 <20` with React DOM
 `>=18.2 <20`, Vue `>=3.5 <4`, or Svelte `>=5 <6`. Vanilla needs no framework peer.
-Use the repository Playground below to try the unreleased 0.1.2 features.
+Use the repository Playground below to try the examples.
 
 ## Run the Playground locally
 
-The published npm package does not include the Playground source. Clone this
-repository to run all 25 examples with Vanilla JavaScript, React, Vue, and
-Svelte adapters:
+The Playground currently provides 25 routes per adapter, covering Vanilla
+JavaScript, React, Vue, and Svelte. Clone the repository to run the examples:
 
 ```sh
 git clone https://github.com/kim1124/comins-sortable.git
@@ -77,8 +63,10 @@ npm run dev
 ```
 
 Open [the React simple-sorting example](http://127.0.0.1:4003/examples/simple/react).
-The development server uses the fixed `127.0.0.1:4003` address and fails
-instead of selecting another port when that port is occupied.
+The development server uses port 4003.
+
+Use **Reset** to restore the example and clear multi-selection, including its
+Shift-range anchor, in all four adapters.
 
 ## Quick Start with React
 
@@ -192,58 +180,34 @@ Consumers can style either their class or these public CSS variables:
 - `--comins-sortable-placeholder-skeleton-highlight`
 - `--comins-sortable-placeholder-skeleton-duration`
 
+For rejected targets and the dragged preview, use
+`--comins-sortable-rejection-outline` and
+`--comins-sortable-rejection-outline-offset` on a shared container. The
+**Drop feedback styles** example compares these with accepted-position styling.
+
 Import `comins-sortable/styles.css` to enable the preset. Reduced-motion mode
 disables the skeleton animation.
 
-## Governance
+Insertion feedback hides outside a valid drop destination and returns on
+reentry. During a move, the hidden placeholder keeps its layout space to
+preserve the list's scroll range.
 
-- Shared operating policy: [Comins Contract v1.8](https://github.com/kim1124/comins-governance/blob/main/COMINS_CONTRACT.md)
-- Open-source policy: [Comins OSS License Policy](https://github.com/kim1124/comins-governance/blob/main/OSS_LICENSE_POLICY.md)
-- License: [MIT](./LICENSE)
-- Security reports: [SECURITY.md](https://github.com/kim1124/comins-sortable/blob/main/SECURITY.md)
+## Browser support
 
-## Verification
+Automated tests cover Chromium, Firefox, and WebKit. Sorting uses pointer
+input; keyboard reordering is not implemented. See the
+[browser verification scope](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.3-local-validation.md)
+for the latest local checks and the separately recorded native Safari and
+device coverage.
 
-Install the reviewed lockfile without lifecycle scripts and run the package
-gate:
+Known Playground issue: Safari 26.6.2 can leave body text selected after a
+title-only drag, although the item order updates. Use the dedicated handle
+when body-text selection and copying matter. This issue remains open; see the
+[handle guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/09-handle-acceptance.md).
 
-```sh
-npm ci --ignore-scripts
-npm run verify
-npx --no-install playwright install chromium firefox webkit
-npm run verify:e2e
-npm run verify:playground
-npm run verify:performance
-```
+## License and support
 
-`npm run verify` checks the package-aware license scope, security policy tests,
-TypeScript, unit tests, the ES2020 ESM build, and public type fixtures.
-`verify:e2e` checks package consumer fixtures in Chromium, Firefox, and WebKit;
-`verify:playground` builds and tests the production Playground preview.
-`npm run verify:performance` builds the Playground, exercises all 25 React
-feature routes twice in Chromium, forces garbage collection between resource
-samples, and checks that JS Heap, DOM Nodes, and Event Listeners stabilize after
-the first warm-up pass. See the
-[current verification record](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.2-release-candidate.md)
-for the merged runtime's results. The
-[performance investigation](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.2-performance.md)
-preserves the earlier manual Chrome DevTools procedure and measurement history.
-
-`LICENSE_SCOPE.json` records the reviewed runtime, peer, copied/generated, and
-asset surfaces. The license checker verifies the manifest and lockfile root,
-requires every lock entry to have a routine SPDX classification, and fails
-closed for missing or unreviewed material. A manual-review result exposes only
-the package name, SPDX expression, and use surface.
-
-## Browser evidence
-
-The automated browser gate covers Chromium, Firefox, and Playwright WebKit.
-The merged 0.1.2 runtime passed 238 package E2E and 279 Playground tests.
-Playwright WebKit is engine-compatibility evidence, not Safari certification.
-
-On 2026-09-11, actual macOS Safari 26.6.2 was checked with mouse and keyboard
-across Vanilla, React, Vue, and Svelte: move a card, select part of its text,
-copy/paste it, and move the card again. This is evidence for those flows, not
-blanket Safari certification. Held-modifier clicks in Safari and physical touch
-or pen input were not included. See the
-[verification scope](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.2-release-candidate.md).
+[MIT](./LICENSE) ·
+[Changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md) ·
+[Issues](https://github.com/kim1124/comins-sortable/issues) ·
+[Report a security issue](https://github.com/kim1124/comins-sortable/blob/main/SECURITY.md)

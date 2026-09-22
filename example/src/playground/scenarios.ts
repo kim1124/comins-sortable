@@ -1,4 +1,4 @@
-import type { PlaygroundExampleId } from '../app/navigation.js';
+import type { PlaygroundAdapterId, PlaygroundExampleId } from '../app/navigation.js';
 import type { PlaygroundScenario } from './types.js';
 
 const resetControl = {
@@ -50,7 +50,7 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'modifier-copy',
-    title: { ko: '보조키 복제', en: 'Clone on control' },
+    title: { ko: '보조키 복제', en: 'Copy with Alt/Option' },
     description: {
       ko: 'Alt/Option을 누른 드래그는 복제하고 일반 드래그는 이동합니다.',
       en: 'Hold Alt/Option to copy; drag normally to move.',
@@ -60,17 +60,21 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'handle',
-    title: { ko: '드래그 핸들', en: 'Drag handle' },
+    title: { ko: '드래그 시작 영역', en: 'Drag start areas' },
     description: {
-      ko: '핸들로 항목을 이동한 뒤 본문을 선택하여 복사합니다. 본문 선택은 정렬을 시작하지 않습니다.',
-      en: 'Move items using the handle, then select and copy their text without starting another drag.',
+      ko: '전용 핸들, 제목, 카드 전체를 비교합니다. 핸들 방식은 본문 선택·복사를 유지하고, 제목 방식은 제목에서만, 전체 방식은 입력 컨트롤을 제외한 카드에서 이동을 시작합니다.',
+      en: 'Compare a dedicated handle, the title, and the whole card. Handle mode preserves body-text selection; title mode starts only on the title, and whole-card mode excludes interactive controls.',
     },
     api: ['handle', 'ignore'],
-    controls: [resetControl],
+    controls: [{ id: 'drag-start', kind: 'select', label: { ko: '드래그 시작 영역', en: 'Drag start area' }, options: [
+      { value: 'handle', label: { ko: '전용 핸들', en: 'Dedicated handle' } },
+      { value: 'title', label: { ko: '제목 영역', en: 'Title only' } },
+      { value: 'card', label: { ko: '카드 전체', en: 'Whole card' } },
+    ] }, resetControl],
   },
   {
     id: 'transition',
-    title: { ko: '단일 전환', en: 'Transition' },
+    title: { ko: '전환 효과', en: 'Sorting animation' },
     description: { ko: '제어 상태 갱신과 드래그 재배치를 FLIP 전환으로 연결합니다.', en: 'Animate controlled updates and drag layout changes with FLIP.' },
     api: ['animation', 'prefers-reduced-motion'],
     controls: [{ id: 'reverse-items', kind: 'button', label: { ko: '순서 뒤집기', en: 'Reverse items' } }, resetControl],
@@ -154,14 +158,14 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'nested-controlled',
-    title: { ko: '제어형 중첩 상태', en: 'Nested controlled state' },
-    description: { ko: '중첩 목록의 각 collection을 불변 상태 갱신으로 제어합니다.', en: 'Control every nested collection with immutable state updates.' },
+    title: { ko: '목록별 상태 제어', en: 'Per-list state control' },
+    description: { ko: '부모 목록과 자식 목록을 별도 배열로 관리합니다. 자식 순서 뒤집기를 눌러 부모 순서는 유지하면서 자식 목록만 갱신되는지 확인하세요.', en: 'Keep parent and child lists in separate arrays. Press Reverse children to update the child list while keeping the parent order unchanged.' },
     api: ['parent', 'onItemsChange', 'onChange'],
     controls: [{ id: 'reverse-child', kind: 'button', label: { ko: '자식 순서 뒤집기', en: 'Reverse children' } }, resetControl],
   },
   {
     id: 'functional-third-party',
-    title: { ko: '함수형 컴포넌트 중첩', en: 'Functional third-party' },
+    title: { ko: '사용자 컴포넌트 중첩', en: 'Nested consumer components' },
     description: { ko: '사용자 host 컴포넌트와 중첩 정렬 계약을 함께 구성합니다.', en: 'Compose nested sorting with a consumer-owned functional host.' },
     api: ['as', 'tag', 'parent'],
     controls: [resetControl],
@@ -205,23 +209,27 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'tree',
-    title: { ko: '트리 데이터 정렬', en: 'Tree data sorting' },
+    title: { ko: '하위 트리 이동', en: 'Subtree movement' },
     description: {
-      ko: '중첩 목록의 영역을 따로 관리하는 대신 하나의 트리 데이터로 3단계 계층을 관리합니다. Review를 Design의 자식 영역으로 옮기면 Document와 Observe도 함께 이동합니다.',
-      en: 'Manage three levels as one tree value instead of separate nested lists. Move Review into the children of Design to move Document and Observe with it.',
+      ko: '하나의 children 트리에서 부모 관계를 변경합니다. Review를 Design의 자식 영역으로 옮겨 Document와 Observe가 Review 아래에 그대로 따라가는지 확인하세요.',
+      en: 'Change parent relationships within one children tree. Move Review into Design and check that Document and Observe remain under Review.',
     },
     api: ['createSortableTree', 'getAreas', 'updateArea'],
     controls: [{ id: 'reverse-child', kind: 'button', label: { ko: '자식 순서 뒤집기', en: 'Reverse children' } }, resetControl],
   },
   {
     id: 'custom-placeholder',
-    title: { ko: '커스텀 Placeholder', en: 'Custom placeholder' },
+    title: { ko: '드롭 피드백 스타일', en: 'Drop feedback styles' },
     description: {
-      ko: '사용자 클래스와 공개 CSS 변수로 드래그 Placeholder 표현을 커스텀합니다.',
-      en: 'Customize drag placeholder feedback with a consumer class and public CSS variables.',
+      ko: '두 목록 사이를 드래그하며 기본·사용자 스타일과 대상 이동 허용을 전환합니다. 허용 위치는 삽입 표시, 거부 위치는 대상과 드래그 요소의 테두리로 구분합니다.',
+      en: 'Drag between lists and compare default/custom styles and destination acceptance. Accepted positions show an insertion marker; rejected positions outline the target and dragged item.',
     },
-    api: ['placeholder.className', '--comins-sortable-placeholder-*'],
-    controls: [resetControl],
+    api: ['placeholder.className', '--comins-sortable-placeholder-*', '--comins-sortable-rejection-outline', 'accept'],
+    controls: [
+      { id: 'custom-feedback', kind: 'toggle', label: { ko: '사용자 스타일', en: 'Custom styles' } },
+      { id: 'accept-destination', kind: 'toggle', label: { ko: '대상 이동 허용', en: 'Accept destination' } },
+      resetControl,
+    ],
   },
   {
     id: 'skeleton-placeholder',
@@ -235,6 +243,64 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
 ];
 
-export function scenarioById(id: PlaygroundExampleId): PlaygroundScenario {
-  return playgroundScenarios.find((scenario) => scenario.id === id) ?? playgroundScenarios[0]!;
+export function scenarioById(id: PlaygroundExampleId, adapter: PlaygroundAdapterId = 'react'): PlaygroundScenario {
+  const scenario = playgroundScenarios.find((entry) => entry.id === id) ?? playgroundScenarios[0]!;
+  const api = scenario.api.flatMap((name) => {
+    if (['ignore', 'disabled', 'grid collision', 'nested-cycle', 'prefers-reduced-motion'].includes(name)) return [];
+    if (name === 'copyElement') return adapter === 'vanilla' ? [name] : [];
+    if (name === 'copyItem') return adapter === 'vanilla' ? [] : [name];
+    if (name === 'itemKey' && adapter === 'vanilla') return [];
+    if (name === 'items') return [adapter === 'vanilla' ? 'item' : adapter === 'vue' ? 'modelValue' : name];
+    if (name === 'onItemsChange') return [adapter === 'vanilla' ? 'onChange' : adapter === 'vue' ? 'update:modelValue' : name];
+    if (name === 'item selector') return adapter === 'vanilla' || adapter === 'svelte' ? ['item'] : [];
+    if ((name === 'header' || name === 'footer') && (adapter === 'vanilla' || adapter === 'svelte')) return ['item'];
+    return [name];
+  });
+  const resolved = { ...scenario, api: [...new Set(api)] };
+  if (id === 'modifier-copy' && adapter === 'vanilla') resolved.api.push('copyElement');
+  if (id === 'tree' && adapter === 'vanilla') resolved.api.push('applyChange');
+  if (id === 'third-party' || id === 'functional-third-party') {
+    const nested = id === 'functional-third-party';
+    const hosts = {
+      react: {
+        api: ['as', 'areaProps'],
+        description: { ko: 'React의 as에 사용자 컴포넌트를 전달합니다. 컴포넌트는 ref와 정렬 속성을 실제 section DOM으로 전달합니다.', en: 'Pass a consumer component through React as. It forwards the ref and sortable attributes to a section element.' },
+      },
+      vue: {
+        api: ['tag', 'componentProps'],
+        description: { ko: 'Vue의 tag에 사용자 컴포넌트를 전달하고 componentProps로 Host 속성을 지정합니다. 컴포넌트의 루트 section이 정렬 Host가 됩니다.', en: 'Pass a consumer component through Vue tag and host attributes through componentProps. Its root section becomes the sortable host.' },
+      },
+      svelte: {
+        api: ['sortable', 'item'],
+        description: { ko: '직접 작성한 div에 use:sortable 액션을 연결합니다. React·Vue의 Host 컴포넌트 교체와 달리 실제 DOM에 정렬을 연결하는 방식입니다.', en: 'Attach the use:sortable action to a div you render. This registers the actual DOM element; it does not replace a host component through React or Vue props.' },
+      },
+      vanilla: {
+        api: ['createSortable', 'item'],
+        description: { ko: '직접 생성한 div를 createSortable에 전달합니다. 컴포넌트나 ref 전달 없이 실제 DOM을 정렬 Host로 등록합니다.', en: 'Pass a div you create to createSortable. The actual DOM is registered as the host without a component or ref-forwarding contract.' },
+      },
+    }[adapter];
+    return {
+      ...resolved,
+      title: adapter === 'vanilla' || adapter === 'svelte'
+        ? { ko: nested ? '사용자 컨테이너 중첩' : '사용자 컨테이너 연결', en: nested ? 'Nested custom containers' : 'Custom container binding' }
+        : resolved.title,
+      description: {
+        ko: hosts.description.ko + (nested ? ' 자식 영역은 parent로 Research와 연결합니다.' : ''),
+        en: hosts.description.en + (nested ? ' The child area declares Research as its parent.' : ''),
+      },
+      api: [...hosts.api, ...(nested ? ['parent'] : [])],
+    };
+  }
+  if (adapter === 'vanilla') {
+    if (id === 'simple') resolved.description = { ko: '하나의 목록에서 DOM 항목의 순서를 직접 변경합니다.', en: 'Reorder DOM items within one list.' };
+    if (id === 'two-lists') resolved.description = { ko: '같은 그룹의 두 DOM 목록 사이에서 항목을 이동합니다.', en: 'Move DOM items between two grouped lists.' };
+    if (id === 'transition') resolved.description = { ko: '드래그 재배치를 FLIP 전환으로 표시합니다. 순서 뒤집기는 DOM 순서를 직접 바꾼 뒤 영역을 갱신합니다.', en: 'Animate drag layout changes with FLIP. Reverse items directly changes DOM order and refreshes the area.' };
+    if (id === 'nested-controlled') return {
+      ...resolved,
+      title: { ko: '목록별 DOM 갱신', en: 'Per-list DOM updates' },
+      description: { ko: '부모·자식 DOM 목록을 별도로 다룹니다. 자식 순서 뒤집기는 부모 순서를 유지하면서 자식 DOM만 재배치하고 refreshArea로 영역을 갱신합니다. 배열 상태를 제어하는 예제가 아닙니다.', en: 'Manage parent and child DOM lists separately. Reverse children reorders only the child DOM and calls refreshArea, preserving the parent order. This example does not control array state.' },
+      api: ['parent', 'refreshArea', 'onChange'],
+    };
+  }
+  return resolved;
 }

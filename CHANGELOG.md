@@ -2,7 +2,74 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
-## 0.1.2 - Unreleased
+## 0.1.3 - 2026-09-22
+
+### Fixed
+
+- Preserve the known footer boundary when a populated list becomes empty, so
+  insertion feedback and Vanilla transfers return between its fixed slots.
+  Keep React header/footer DOM stable when the item count changes.
+- Refresh Vanilla Playground item counts after transfers, including emptying
+  and refilling a list.
+
+- Replace the previous multi-selection class when `selectedClass` changes and
+  remove selection markers, selected IDs, and range anchors when an area is
+  unregistered or its scope is destroyed.
+- Scale auto-scroll by elapsed time to retain consistent speed across display
+  refresh rates, avoid extra movement from duplicate callbacks, and limit
+  catch-up after a delayed frame.
+- Support negative horizontal scroll offsets in RTL containers and pages.
+- Clear multi-selection and range anchors when resetting the React, Vue, and
+  Svelte Playground examples, matching the Vanilla reset behavior.
+- Hide insertion feedback when no valid drop destination exists while retaining
+  the move placeholder's layout space, then restore feedback on reentry without
+  shrinking the scroll range.
+
+- Update live Playground labels when switching languages without resetting list
+  order or selection. Correct the modifier-copy title to Alt/Option.
+
+### Changed
+
+- Compare handle, title-only, and whole-card activation in Drag start areas,
+  preserving the default handle and body-text selection in other examples.
+- Expand Drop feedback styles with two lists, acceptance and style controls,
+  and CSS showing separate insertion and rejection feedback.
+- Clarify sorting animation and custom-container example names and structures;
+  correct the border shorthand in both Placeholder guides.
+
+- Remove the decorative color stripe from Playground cards while preserving
+  drag handles and body-text selection.
+- Rename the nested controlled and tree examples to Per-list state control and
+  Subtree movement. Add initial structure diagrams and bilingual steps that
+  explain expected outcomes and shared behavior.
+
+- Resolve Playground descriptions and API labels per adapter, distinguishing
+  Vanilla DOM updates from framework array state and direct DOM hosts from
+  React/Vue component hosts.
+- Show correctly named source files, helper dependencies, and a route-specific
+  entry in View code, using public package imports and explicit build prerequisites.
+
+### Documentation
+
+- Focus the README on usage and examples, remove fixed current-version prose,
+  and add npm search keywords and a description covering all four adapters.
+- Explain Playground selection resets and invalid-destination feedback in the
+  English and Korean guides. Link the latest local validation separately from
+  earlier artifact, native Safari, and GIF capture records.
+- Refresh the Playground GIF on 2026-09-22 from the current working source:
+  empty-slot return, drag start areas, accepted/rejected CSS feedback, per-list
+  state updates, and subtree movement. Align the README and both guide languages
+  with these scenes and the current names.
+- Use an absolute repository asset URL for the README logo so npm rendering
+  does not depend on the unpublished `example/` directory.
+
+### Known issue
+
+- Native Safari 26.6.2 can retain body-text selection after a title-only drag
+  in the React Playground. Reordering succeeds; the selection issue remains open.
+  See the handle guide and the current verification record.
+
+## 0.1.2 - 2026-09-11
 
 ### Added
 

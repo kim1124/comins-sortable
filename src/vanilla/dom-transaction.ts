@@ -1,4 +1,5 @@
 import { SortableError } from '../core.js';
+import { itemBoundary } from '../core/item-boundary.js';
 import type { CopyItemContext, SortableChange, SortableId } from '../core.js';
 
 export interface DomTransactionArea {
@@ -34,6 +35,12 @@ export interface DomTransaction {
 }
 
 export function createDomTransaction(registry: DomTransactionRegistry): DomTransaction {
+  const boundaries = new WeakMap<Element, Element | null>();
+  const trailingBoundary = (parent: Element, items: readonly Element[]): Element | null => {
+    const boundary = itemBoundary(parent, items, boundaries.get(parent));
+    boundaries.set(parent, boundary);
+    return boundary;
+  };
   let snapshot: DomSnapshot | null = null;
   let preparedCopy: { sourceAreaId: string; element: Element; itemId: SortableId } | null = null;
 
@@ -214,11 +221,4 @@ function isTransactionArea(
   area: Element | DomTransactionArea,
 ): area is DomTransactionArea {
   return 'element' in area;
-}
-
-function trailingBoundary(parent: Element, items: readonly Element[]): Element | null {
-  const last = items[items.length - 1];
-  if (last === undefined) return null;
-  const children = Array.from(parent.children);
-  return children[children.indexOf(last) + 1] ?? null;
 }

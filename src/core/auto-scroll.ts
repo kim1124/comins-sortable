@@ -3,6 +3,8 @@ import type { SortablePlatform } from './platform.js';
 
 const EDGE_DISTANCE = 32;
 const MAX_VELOCITY = 20;
+const FRAME_DURATION = 1000 / 60;
+const MAX_ELAPSED = 50;
 const SCROLLABLE_OVERFLOW = new Set(['auto', 'scroll', 'overlay']);
 
 export interface AutoScrollInput {
@@ -12,15 +14,31 @@ export interface AutoScrollInput {
 }
 
 export interface AutoScroller {
+  reset(): void;
+  // An eligible target is returned even when no time has elapsed, to keep
+  // the scope's next animation frame scheduled without adding distance.
   step(input: AutoScrollInput): Element | Window | null;
 }
 
 export function createAutoScroller(platform: SortablePlatform): AutoScroller {
+  let previousTime: number | null = null;
   return {
+    reset() {
+      previousTime = null;
+    },
     step(input) {
       if (!input.enabled) {
+        previousTime = null;
         return null;
       }
+      const now = platform.window.performance.now();
+      const elapsed = previousTime === null
+        ? FRAME_DURATION
+        : Math.min(MAX_ELAPSED, Math.max(0, now - previousTime));
+      previousTime = now;
+      const scale = elapsed / FRAME_DURATION;
+      // At zero elapsed time, inspect eligibility but do not scroll.
+      const velocityScale = scale || 1;
 
       for (const element of scrollCandidates(input.hitChain)) {
         const scrollable = asScrollableElement(element);
@@ -30,15 +48,16 @@ export function createAutoScroller(platform: SortablePlatform): AutoScroller {
         const style = platform.window.getComputedStyle(element);
         const rect = element.getBoundingClientRect();
         const velocityX = SCROLLABLE_OVERFLOW.has(style.overflowX)
-          ? edgeVelocity(input.point.x, rect.left, rect.right)
+          ? edgeVelocity(input.point.x, rect.left, rect.right) * velocityScale
           : 0;
         const velocityY = SCROLLABLE_OVERFLOW.has(style.overflowY)
-          ? edgeVelocity(input.point.y, rect.top, rect.bottom)
+          ? edgeVelocity(input.point.y, rect.top, rect.bottom) * velocityScale
           : 0;
         const left = availableVelocity(
           velocityX,
           scrollable.scrollLeft,
           scrollable.scrollWidth - scrollable.clientWidth,
+          style.direction === 'rtl',
         );
         const top = availableVelocity(
           velocityY,
@@ -46,26 +65,30 @@ export function createAutoScroller(platform: SortablePlatform): AutoScroller {
           scrollable.scrollHeight - scrollable.clientHeight,
         );
         if (left !== 0 || top !== 0) {
-          scrollable.scrollBy({ left, top, behavior: 'auto' });
+          if (scale !== 0) scrollable.scrollBy({ left, top, behavior: 'auto' });
           return element;
         }
       }
 
       const root = platform.document.documentElement;
       const windowLeft = availableVelocity(
-        edgeVelocity(input.point.x, 0, platform.window.innerWidth),
+        edgeVelocity(input.point.x, 0, platform.window.innerWidth) * velocityScale,
         platform.window.scrollX,
         root.scrollWidth - platform.window.innerWidth,
+        platform.window.getComputedStyle(root).direction === 'rtl',
       );
       const windowTop = availableVelocity(
-        edgeVelocity(input.point.y, 0, platform.window.innerHeight),
+        edgeVelocity(input.point.y, 0, platform.window.innerHeight) * velocityScale,
         platform.window.scrollY,
         root.scrollHeight - platform.window.innerHeight,
       );
       if (windowLeft === 0 && windowTop === 0) {
+        previousTime = null;
         return null;
       }
-      platform.window.scrollBy({ left: windowLeft, top: windowTop, behavior: 'auto' });
+      if (scale !== 0) {
+        platform.window.scrollBy({ left: windowLeft, top: windowTop, behavior: 'auto' });
+      }
       return platform.window;
     },
   };
@@ -110,14 +133,18 @@ function availableVelocity(
   velocity: number,
   position: number,
   maximum: number,
+  rtl = false,
 ): number {
-  if ((velocity < 0 && position <= 0) || (velocity > 0 && position >= maximum)) {
+  const extent = Math.max(0, maximum);
+  const lower = rtl ? -extent : 0;
+  const upper = rtl ? 0 : extent;
+  if ((velocity < 0 && position <= lower) || (velocity > 0 && position >= upper)) {
     return 0;
   }
   if (velocity < 0) {
-    return -Math.min(-velocity, position);
+    return -Math.min(-velocity, position - lower);
   }
-  return Math.min(velocity, Math.max(0, maximum - position));
+  return Math.min(velocity, Math.max(0, upper - position));
 }
 
 function asScrollableElement(element: Element): Element | null {

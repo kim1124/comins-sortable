@@ -62,6 +62,12 @@ Vanilla/Svelte에서는 `item: ':scope > .task-item'`처럼 직접 항목만 지
 있습니다. 자식 항목에 `matches()`를 호출하지 않고 등록 Area에서 선택자를 평가합니다.
 헤더·푸터에는 `.task-item`을 붙이지 않습니다.
 
+항목이 모두 다른 목록으로 이동해도 기존 항목 구간의 footer 경계를 유지합니다.
+다시 넣을 때 미리보기와 실제 항목은 동일하게 header와 footer 사이에 위치합니다.
+React의 header·footer는 항목 수가 바뀌어도 같은 DOM을 유지하도록 별도 렌더링
+위치를 사용합니다. 이 동작은 이미 관찰한 경계를 보존하며, 최초부터 빈 임의 DOM에서
+어떤 비정렬 요소가 header인지 footer인지 자동으로 판별하는 계약은 아닙니다.
+
 `third-party`는 외부 UI 패키지 의존성 없이 소비자 컴포넌트를 Host로 쓰는 예제입니다.
 이름이 외부 라이브러리 통합을 보증하지는 않습니다. 테이블 행·열 Playground 데모는
 제거되었으며, 일반 Host API의 존재를 테이블 정렬 지원 근거로 사용하지 않습니다.
@@ -72,3 +78,15 @@ Playground:
 - <http://127.0.0.1:4003/examples/footer-slot/react>
 - <http://127.0.0.1:4003/examples/header-slot/react>
 - <http://127.0.0.1:4003/examples/two-list-slots/react>
+
+## Playground Host 설명
+
+React는 `as`와 ref 전달, Vue는 `tag`와 `componentProps`를 사용합니다.
+Svelte는 직접 작성한 `div`에 `use:sortable`을 연결하고, Vanilla는 생성한 `div`를
+`createSortable`에 전달합니다. 뒤의 두 탭은 컴포넌트 교체 예제가 아니라 직접 DOM
+등록 예제입니다. `functional-third-party` 경로도 이 차이를 유지하며 `parent`로
+자식 영역을 연결합니다.
+
+화면의 **사용자 컨테이너 연결/중첩** 안내는 실제 DOM 구조와 연결 API를 함께
+보여줍니다. Host는 정렬 항목을 직접 담는 요소이며, DOM 이벤트와 커스텀 이벤트를
+비교하는 개념이 아닙니다. Vanilla의 변경 알림은 `onChange` 옵션 callback입니다.

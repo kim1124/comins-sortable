@@ -99,4 +99,4 @@ presets. It is the only declared side-effect entry. See
 All entry points are ESM and target ES2020. React, React DOM, Vue, and Svelte are
 optional peer dependencies; the package has zero runtime dependencies. The
 browser evidence and certification boundary are maintained in the repository
-[README](../../README.md#browser-evidence).
+[README](../../README.md#browser-support).

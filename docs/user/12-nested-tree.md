@@ -65,16 +65,28 @@ fail without mutating the input.
 
 ## What the Playground examples demonstrate
 
-- **Nested lists** keep separate root and child arrays. They demonstrate DOM
+- **Nested lists** in React, Vue, and Svelte keep separate root and child arrays. They demonstrate DOM
   nesting, the `parent` relationship, and transfers between lists.
-- **Tree data sorting** keeps one recursive `children` value and derives each
+- **Per-list state control** (`nested-controlled`) in React, Vue, and Svelte updates parent and child arrays
+  separately. Reverse children changes only the child array, preserving the
+  parent order. The initial structure and instructions explain these updates.
+- **Per-list DOM updates** is the Vanilla tab of the same `nested-controlled` route.
+  It reorders child DOM and calls `refreshArea`; it does not update controlled
+  array state. The regular Vanilla nested-list example also operates on DOM.
+- **Subtree movement** (`tree`) keeps one recursive `children` value and derives each
   area through `createSortableTree`. The initial three levels are Research →
   Review → Document/Observe, alongside an empty Design folder. Move Review into
   Design to carry both descendants with it. Parent relationships update after
   the move, while cycles remain rejected.
 
-Both examples use the same Core sorting engine. Their distinction is the state
-model and subtree preservation, rather than a separate drag interaction.
+In React, Vue, and Svelte, per-list state control and subtree movement are both controlled and use the
+same Core sorting engine. Both reject cycles. The distinction is updating
+individual list arrays versus managing parent changes and subtree preservation
+in one tree. The structure diagram summarizes the initial state; the actual
+card layout shows the current state after a move.
+
+The refreshed [Playground GIF](../playground-preview.md) demonstrates both the
+independent child-array update and Review moving with its descendants.
 
 Playground:
 
