@@ -121,12 +121,29 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
   --comins-sortable-placeholder-border-radius: 10px;
   min-height: 64px;
 }
-.cs-demo-placeholder--custom {
+[data-feedback-style="custom"] .cs-demo-placeholder--custom {
   --comins-sortable-placeholder-background: #fff4cf;
   --comins-sortable-placeholder-border: 3px dotted #b87508;
   --comins-sortable-placeholder-border-radius: 18px;
   --comins-sortable-placeholder-opacity: .82;
 }
+[data-feedback-style="custom"] {
+  --comins-sortable-rejection-outline: 3px dashed #7c3aed;
+  --comins-sortable-rejection-outline-offset: 3px;
+}
+.cs-demo-board[data-drag-mode="title"] .cs-demo-handle,
+.cs-demo-board[data-drag-mode="card"] .cs-demo-handle { display: none; }
+.cs-demo-board[data-drag-mode="title"] .cs-demo-card__copy > strong,
+.cs-demo-board[data-drag-mode="card"] .cs-demo-card,
+.cs-demo-board[data-drag-mode="card"] .cs-demo-card * {
+  cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none;
+}
+.cs-playground__choice { display: grid; gap: 5px; font-size: 12px; }
+.cs-playground__choice select { padding: 8px; border: 1px solid #b8c9c1; border-radius: 6px; background: white; }
+.cs-playground__example-guide { margin: 16px 24px; padding: 16px; border: 1px solid #dfe7e3; border-radius: 10px; background: #f7faf8; }
+.cs-playground__example-guide h2 { font-size: 14px; margin: 0 0 8px; }
+.cs-playground__example-guide p { font-size: 12px; line-height: 1.6; }
+.cs-playground__example-guide pre { overflow: auto; font-size: 12px; line-height: 1.5; }
 .cs-demo-placeholder--skeleton {
   --comins-sortable-placeholder-border: 1px solid #b8c8c0;
   --comins-sortable-placeholder-border-radius: 10px;

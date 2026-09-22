@@ -52,10 +52,12 @@ const catalog: Readonly<Record<string, DemoItem>> = {
 const items = (...ids: string[]): DemoItem[] => ids.map((id) => ({ ...catalog[id]! }));
 
 export function createDemoState(exampleId: PlaygroundExampleId): DemoState {
+  if (exampleId === 'custom-placeholder') {
+    return { todo: items('research', 'design', 'build', 'review'), done: items('release'), child: [] };
+  }
   if (
     exampleId === 'simple'
     || exampleId === 'handle'
-    || exampleId === 'custom-placeholder'
     || exampleId === 'skeleton-placeholder'
   ) {
     return { todo: items('research', 'design', 'build', 'review'), done: [], child: [] };
@@ -201,12 +203,19 @@ export function playgroundOperation(change: SortableChange): PlaygroundOperation
 
 export function hasSecondArea(exampleId: PlaygroundExampleId): boolean {
   return exampleId === 'two-lists'
+    || exampleId === 'custom-placeholder'
     || exampleId === 'clone'
     || exampleId === 'custom-clone'
     || exampleId === 'modifier-copy'
     || exampleId === 'two-list-slots'
     || exampleId === 'empty'
     || exampleId === 'accept';
+}
+
+export type DemoDragMode = 'handle' | 'title' | 'card';
+
+export function dragHandle(mode: DemoDragMode): string | undefined {
+  return mode === 'card' ? undefined : mode === 'title' ? '.cs-demo-card__copy > strong' : '.cs-demo-handle';
 }
 
 export function isNestedExample(exampleId: PlaygroundExampleId): boolean {

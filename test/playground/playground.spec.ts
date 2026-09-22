@@ -8,6 +8,80 @@ type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
 const adapters: readonly Adapter[] = ['vanilla', 'react', 'vue', 'svelte'];
 
 for (const adapter of adapters) {
+  test(`${adapter} empty slots retain preview and committed item boundaries @human-review`, async ({ page }) => {
+    await page.goto(`/examples/two-list-slots/${adapter}`);
+    await waitForRuntime(page);
+    const footer = await page.locator('[data-demo-area="todo"] > [data-demo-slot="footer"]').elementHandle();
+    for (const id of ['research', 'design', 'build']) {
+      await dragItem(page, 'todo', id, { areaId: 'done', beforeId: 'review' });
+    }
+    await expect.poll(async () => (await model(page)).todo).toEqual([]);
+    await expect(page.locator('[data-demo-column="todo"] > header small')).toHaveText('0 items');
+    await expect(page.locator('[data-demo-column="done"] > header small')).toHaveText('4 items');
+    expect(await footer?.evaluate((element) => element.isConnected)).toBe(true);
+    const drag = await beginDrag(page, 'done', 'build');
+    const header = await page.locator('[data-demo-area="todo"] > [data-demo-slot="header"]').boundingBox();
+    if (!header) throw new Error('Missing header');
+    await page.mouse.move(header.x + header.width / 2, header.y + header.height + 4, { steps: 12 });
+    const children = page.locator('[data-demo-area="todo"] > *');
+    await expect(children.nth(1)).toHaveAttribute('data-comins-sortable-placeholder', '');
+    await expect(children.last()).toHaveAttribute('data-demo-slot', 'footer');
+    await drag.drop();
+    await expect(children.nth(1)).toHaveAttribute('data-sortable-id', 'build');
+    await expect(children.last()).toHaveAttribute('data-demo-slot', 'footer');
+    await expect.poll(async () => (await model(page)).todo).toEqual(['build']);
+    await expect(page.locator('[data-demo-column="todo"] > header small')).toHaveText('1 items');
+    await expect(page.locator('[data-demo-column="done"] > header small')).toHaveText('3 items');
+  });
+
+  test(`${adapter} drag origin modes preserve order and restore text selection @human-review`, async ({ page }) => {
+    await page.goto(`/examples/handle/${adapter}`);
+    await waitForRuntime(page);
+    const choice = page.getByLabel('드래그 시작 영역', { exact: true });
+    await choice.selectOption('card');
+    let drag = await beginDrag(page, 'todo', 'build', { handle: '.cs-demo-card__copy small' });
+    await drag.moveBefore('todo', 'research');
+    await drag.drop();
+    await expect.poll(async () => (await model(page)).todo?.[0]).toBe('build');
+    await choice.selectOption('title');
+    drag = await beginDrag(page, 'todo', 'design', { handle: '.cs-demo-card__copy strong' });
+    await drag.moveBefore('todo', 'build');
+    await drag.drop();
+    await expect.poll(async () => (await model(page)).todo?.[0]).toBe('design');
+    await choice.selectOption('handle');
+    await selectCardTitle(page, 'design');
+    await page.getByRole('button', { name: '데이터 초기화', exact: true }).click();
+    await expect(choice).toHaveValue('handle');
+    await expectModelAndDom(page, { todo: ['research', 'design', 'build', 'review'] });
+  });
+
+  test(`${adapter} feedback styles change accepted and rejected indicators @human-review`, async ({ page }) => {
+    await page.goto(`/examples/custom-placeholder/${adapter}`);
+    await waitForRuntime(page);
+    const drag = await beginDrag(page, 'todo', 'build');
+    await drag.moveBefore('done', 'release');
+    await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCSS('border-top-style', 'dotted');
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await page.getByRole('button', { name: '사용자 스타일', exact: true }).click();
+    const standard = await beginDrag(page, 'todo', 'build');
+    await standard.moveBefore('done', 'release');
+    await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCSS('border-top-style', 'dashed');
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+    await page.getByRole('button', { name: '사용자 스타일', exact: true }).click();
+    await page.getByRole('button', { name: '대상 이동 허용', exact: true }).click();
+    const rejected = await beginDrag(page, 'todo', 'build');
+    await rejected.moveBefore('done', 'release', false);
+    await expect(page.locator('[data-demo-area="done"]')).toHaveAttribute('data-comins-sortable-rejection', 'not-accepted');
+    await expect(page.locator('[data-demo-area="done"]')).toHaveCSS('outline-style', 'dashed');
+    await expect(page.locator('[data-comins-sortable-placeholder]')).toHaveCSS('visibility', 'hidden');
+    await rejected.drop();
+    await expect.poll(async () => (await model(page)).done).toEqual(['release']);
+  });
+}
+
+for (const adapter of adapters) {
   test(`${adapter} documentation follows the selected adapter @docs`, async ({ page, browserName }) => {
     await page.goto(`/examples/simple/${adapter}`);
     await waitForRuntime(page);

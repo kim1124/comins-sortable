@@ -22,6 +22,33 @@ const copyContext = {
   },
 };
 
+test('DOM transfers preserve header and footer after emptying and refilling a list', () => {
+  const fixture = domFixture({ todo: ['a'], done: ['c'] });
+  const todo = fixture.areas.todo!;
+  const header = fakeElement('LI', { ownerDocument: todo.ownerDocument });
+  const footer = fakeElement('LI', { ownerDocument: todo.ownerDocument });
+  const item = todo.children[0]!;
+  todo.insertBefore(header, item);
+  todo.appendChild(footer);
+  const registry = new Map<string, DomTransactionArea>([...fixture.registry].map(([areaId, element]) => [
+    areaId, { element, item: '[data-sortable-id]' },
+  ]));
+  const transaction = createDomTransaction(registry);
+  transaction.apply({
+    operation: 'transfer', itemId: 'a', source: { areaId: 'todo', index: 0 }, destination: { areaId: 'done', index: 0 },
+    orders: [{ areaId: 'todo', itemIds: [] }, { areaId: 'done', itemIds: ['a', 'c'] }],
+  });
+  transaction.release();
+  assert.deepEqual(Array.from(todo.children), [header, footer]);
+  transaction.apply({
+    operation: 'transfer', itemId: 'a', source: { areaId: 'done', index: 0 }, destination: { areaId: 'todo', index: 0 },
+    orders: [{ areaId: 'done', itemIds: ['c'] }, { areaId: 'todo', itemIds: ['a'] }],
+  });
+  assert.deepEqual(Array.from(todo.children), [header, item, footer]);
+  transaction.rollback();
+  assert.deepEqual(Array.from(todo.children), [header, footer]);
+});
+
 function transferChange(
   itemId: string,
   sourceAreaId: string,

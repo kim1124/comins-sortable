@@ -19,6 +19,7 @@ import {
 } from './locale.js';
 import { message } from './messages.js';
 import { NestedExampleGuide } from './NestedExampleGuide.js';
+import { ExampleGuides } from './ExampleGuides.js';
 import { loadPlaygroundDemo } from '../adapters/registry.js';
 import { PlaygroundRuntimeHost } from '../playground/runtime-host.js';
 import { exampleEntry, loadSourceFiles, primarySourcePath, type PlaygroundSourceFile } from '../playground/source-files.js';
@@ -43,6 +44,7 @@ const adapterNames = {
 const defaultToggles: Readonly<Record<string, boolean>> = {
   'accept-destination': true,
   'invert-swap': false,
+  'custom-feedback': true,
 };
 
 const defaultValues: Readonly<Record<string, number>> = {
@@ -68,6 +70,7 @@ export function PlaygroundApp(): ReactElement {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [toggles, setToggles] = useState<Record<string, boolean>>(() => ({ ...defaultToggles }));
   const [values, setValues] = useState<Record<string, number>>(() => ({ ...defaultValues }));
+  const [dragMode, setDragMode] = useState('handle');
   const runtimeTarget = useRef<HTMLDivElement | null>(null);
   const runtimeHost = useRef<PlaygroundRuntimeHost | null>(null);
   const sourcePanel = useRef<HTMLElement | null>(null);
@@ -123,6 +126,7 @@ export function PlaygroundApp(): ReactElement {
     setOperation(null);
     setToggles({ ...defaultToggles });
     setValues({ ...defaultValues });
+    setDragMode('handle');
     void loadDemoModule(route)
       .then(async (demoModule) => {
         if (cancelled) return;
@@ -156,14 +160,20 @@ export function PlaygroundApp(): ReactElement {
     setRoute(next);
   };
 
-  const dispatch = (controlId: string, kind: 'button' | 'toggle' | 'range', value?: number): void => {
+  const dispatch = (controlId: string, kind: 'button' | 'toggle' | 'range' | 'select', value?: number | string): void => {
     if (controlId === 'reset') {
       setToggles({ ...defaultToggles });
       setValues({ ...defaultValues });
+      setDragMode('handle');
       runtimeHost.current?.reset();
       return;
     }
-    if (kind === 'range' && value !== undefined) {
+    if (kind === 'select' && typeof value === 'string') {
+      setDragMode(value);
+      runtimeHost.current?.dispatch(controlId, value);
+      return;
+    }
+    if (kind === 'range' && typeof value === 'number') {
       setValues((current) => ({ ...current, [controlId]: value }));
       runtimeHost.current?.dispatch(controlId, value);
       return;
@@ -227,7 +237,11 @@ export function PlaygroundApp(): ReactElement {
               <span className="cs-playground__route">examples / {route.exampleId}</span>
               <h1>{scenario.title[locale]}</h1>
               <p>{scenario.description[locale]}</p>
-              <p>{locale === 'ko'
+              <p>{route.exampleId === 'handle' && dragMode !== 'handle'
+                ? locale === 'ko'
+                  ? dragMode === 'title' ? '카드 제목을 잡아 이동합니다. 아래 설명 글자는 계속 선택할 수 있습니다.' : '카드 어느 곳에서든 이동합니다. 이 모드에서는 본문 드래그도 정렬로 처리합니다.'
+                  : dragMode === 'title' ? 'Drag the card title. The detail text remains selectable.' : 'Drag anywhere on a card. Dragging body text starts sorting in this mode.'
+                : locale === 'ko'
                 ? '왼쪽 핸들을 잡아 이동하고, 본문 글자는 드래그로 선택하여 복사할 수 있습니다.'
                 : 'Drag the left handle to move an item. Select text in the card body to copy it.'}</p>
               <div className="cs-playground__api-list" aria-label="API">
@@ -265,7 +279,14 @@ export function PlaygroundApp(): ReactElement {
               <p>{locale === 'ko' ? '실행 중 옵션을 변경할 수 있습니다.' : 'Change options while the demo is running.'}</p>
             </div>
             <div className="cs-playground__control-actions">
-              {scenario.controls.map((control) => control.kind === 'range' ? (
+              {scenario.controls.map((control) => control.kind === 'select' ? (
+                <label key={control.id} className="cs-playground__choice">
+                  <span>{control.label[locale]}</span>
+                  <select aria-label={control.label[locale]} value={dragMode} onChange={(event) => dispatch(control.id, control.kind, event.target.value)}>
+                    {control.options?.map((option) => <option key={option.value} value={option.value}>{option.label[locale]}</option>)}
+                  </select>
+                </label>
+              ) : control.kind === 'range' ? (
                 <label key={control.id} className="cs-playground__range">
                   <span>{control.label[locale]} <output>{values[control.id] ?? control.defaultValue}</output></span>
                   <input
@@ -301,6 +322,7 @@ export function PlaygroundApp(): ReactElement {
             </div>
             {status === 'loading' && <p className="cs-playground__notice">{message('loading', locale)}</p>}
             {status === 'error' && <p className="cs-playground__notice" role="alert">{message('error', locale)}</p>}
+            <ExampleGuides exampleId={route.exampleId} adapter={route.adapterId} locale={locale} />
             {(route.exampleId === 'nested-controlled' || route.exampleId === 'tree') && (
               <NestedExampleGuide exampleId={route.exampleId} adapter={route.adapterId} locale={locale} />
             )}

@@ -6,6 +6,12 @@ All notable behavior and public API changes to this project are recorded here.
 
 ### Fixed
 
+- Preserve the known footer boundary when a populated list becomes empty, so
+  insertion feedback and Vanilla transfers return between its fixed slots.
+  Keep React header/footer DOM stable when the item count changes.
+- Refresh Vanilla Playground item counts after transfers, including emptying
+  and refilling a list.
+
 - Replace the previous multi-selection class when `selectedClass` changes and
   remove selection markers, selected IDs, and range anchors when an area is
   unregistered or its scope is destroyed.
@@ -23,6 +29,13 @@ All notable behavior and public API changes to this project are recorded here.
   order or selection. Correct the modifier-copy title to Alt/Option.
 
 ### Changed
+
+- Compare handle, title-only, and whole-card activation in Drag start areas,
+  preserving the default handle and body-text selection in other examples.
+- Expand Drop feedback styles with two lists, acceptance and style controls,
+  and CSS showing separate insertion and rejection feedback.
+- Clarify sorting animation and custom-container example names and structures;
+  correct the border shorthand in both Placeholder guides.
 
 - Remove the decorative color stripe from Playground cards while preserving
   drag handles and body-text selection.
@@ -43,9 +56,18 @@ All notable behavior and public API changes to this project are recorded here.
 - Explain Playground selection resets and invalid-destination feedback in the
   English and Korean guides. Link the latest local validation separately from
   earlier artifact, native Safari, and GIF capture records.
-- Capture a new Playground GIF from the 0.1.3 working source, showing selection
-  reset, per-list state updates, subtree movement, and scroll-boundary feedback.
-  Update the README and capture record to match the scenes and current design.
+- Refresh the Playground GIF on 2026-09-22 from the current working source:
+  empty-slot return, drag start areas, accepted/rejected CSS feedback, per-list
+  state updates, and subtree movement. Align the README and both guide languages
+  with these scenes and the current names.
+- Use an absolute repository asset URL for the README logo so npm rendering
+  does not depend on the unpublished `example/` directory.
+
+### Known issue
+
+- Native Safari 26.6.2 can retain body-text selection after a title-only drag
+  in the React Playground. Reordering succeeds; the selection issue remains open.
+  See the handle guide and the current verification record.
 
 ## 0.1.2 - 2026-09-11
 

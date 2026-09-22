@@ -42,6 +42,16 @@ DOC 사이트에서 예제를 인용할 때는 **경로, 어댑터, 언어, 검�
 언어 전환은 현재 정렬과 선택을 유지하고 안내 문구를 갱신합니다. Research·Design 같은
 카드 데이터 이름은 번역 대상이 아닙니다.
 
+`handle` 경로는 **드래그 시작 영역**이며 전용 핸들·제목·전체 카드 모드를 비교합니다.
+`transition`은 **전환 효과**, `custom-placeholder`는 **드롭 피드백 스타일**입니다.
+후자는 두 목록에서 기본/사용자 CSS와 대상 수락 여부를 비교합니다. 거부 시에는
+Placeholder를 숨기고 대상·드래그 요소를 표시합니다. DOC 사이트의 모든 예제에서
+핸들만 지원한다고 설명하거나 거부 표시를 Placeholder와 동일시하지 않습니다.
+2026-09-22 [GIF](./playground-preview.md)는 슬롯 복귀, 드래그 시작 영역, 피드백 CSS,
+목록별 상태 갱신과 하위 트리 이동을 실제 Chromium에서 촬영했습니다. 모든 예제나
+Safari 결과를 대표하지 않습니다. Safari 제목 드래그의 선택 잔류는
+[핸들 가이드](./ko/09-handle-acceptance.md)의 미해결 제한으로 함께 안내합니다.
+
 ## English
 
 Record the route, adapter, locale, and validated source version when citing a
@@ -71,3 +81,14 @@ Use the returned handle for controls, reset, locale updates, and destruction.
 For a documentation site, provide the complete file set or separately validate
 a reduced example. Switching languages preserves order and selection; fixture
 item names such as Research and Design remain unchanged.
+
+The stable `handle` route now compares handle, title, and whole-card activation.
+`transition` is Sorting animation; `custom-placeholder` is Drop feedback styles,
+comparing default/custom CSS and acceptance across two lists. Rejection hides
+its placeholder and marks the target and dragged element separately. Do not
+present the library as handle-only or conflate rejection with its placeholder.
+The [2026-09-22 GIF](./playground-preview.md) captures slots, drag start modes,
+feedback CSS, per-list state updates, and subtree movement in Chromium. It does
+not cover every example or represent Safari behavior. Keep the open Safari
+title-drag selection issue from the [handle guide](./user/09-handle-acceptance.md)
+when adapting this material for a documentation site.

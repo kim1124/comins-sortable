@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { basename, isAbsolute, join } from 'node:path';
 
@@ -200,6 +201,7 @@ function parseScope(root) {
   const reviewedAssets = scope.trackedMaterial.assets;
   const reviewedPaths = new Set();
   for (const asset of reviewedAssets) {
+    const brand = asset?.useSurface === 'playground-brand';
     if (!hasExactKeys(asset, [
       'generated',
       'license',
@@ -208,14 +210,23 @@ function parseScope(root) {
       'path',
       'source',
       'useSurface',
+      ...(brand ? ['sha256'] : []),
     ])
       || !isSafeRelativePath(asset.path)
-      || !isSafeRelativePath(asset.source, true)
+      || !isSafeRelativePath(asset.source, !brand)
       || asset.origin !== 'first-party'
       || asset.license !== 'MIT'
-      || asset.useSurface !== 'repository-documentation'
-      || asset.generated !== true
-      || !sameJson(asset.modifications, ['resized', 'gif-encoded'])
+      || (brand ? (
+        !asset.path.endsWith('.svg')
+        || !asset.source.startsWith('reports/') || !asset.source.endsWith('.md')
+        || asset.generated !== false || !isEmptyArray(asset.modifications)
+        || !/^[a-f0-9]{64}$/.test(asset.sha256)
+        || createHash('sha256').update(readFileSync(join(root, asset.path))).digest('hex') !== asset.sha256
+      ) : (
+        asset.useSurface !== 'repository-documentation'
+        || asset.generated !== true
+        || !sameJson(asset.modifications, ['resized', 'gif-encoded'])
+      ))
       || reviewedPaths.has(asset.path)) {
       throw new Error('evidence review required');
     }
@@ -394,7 +405,9 @@ try {
     const reviewedAssetPaths = new Set(reviewedAssets.map((asset) => asset.path));
     if (reviewedAssets.some((asset) => (
       !paths.includes(asset.path)
-      || !paths.some((path) => path.startsWith(asset.source))
+      || !(asset.useSurface === 'playground-brand'
+        ? paths.includes(asset.source)
+        : paths.some((path) => path.startsWith(asset.source)))
       || !isAsset(asset.path)
     ))) throw new Error('reviewed asset drift');
     if (paths.some((path) => (

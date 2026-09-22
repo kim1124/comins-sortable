@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -303,6 +304,24 @@ test('accepts exact first-party generated documentation asset evidence', (t) => 
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, '');
   assert.equal(result.stderr, '');
+});
+
+test('accepts documented first-party brand assets only while their reviewed bytes match', (t) => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"/>\n';
+  const asset = {
+    path: 'example/public/comins-symbol.svg', source: 'reports/brand.md',
+    origin: 'first-party', license: 'MIT', useSurface: 'playground-brand',
+    generated: false, modifications: [], sha256: createHash('sha256').update(svg).digest('hex'),
+  };
+  const cwd = packageFixture({ scope: {
+    ...cleanScope, trackedMaterial: { ...cleanScope.trackedMaterial, assets: [asset] },
+  } });
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  track(cwd, asset.source, 'Approved first-party symbol provenance.\n');
+  track(cwd, asset.path, svg);
+  assert.equal(run(cwd).status, 0);
+  writeFileSync(join(cwd, asset.path), '<svg/>');
+  constantFailure(run(cwd));
 });
 
 test('rejects incomplete or non-first-party asset evidence', (t) => {

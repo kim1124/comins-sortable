@@ -9,6 +9,7 @@ import {
 } from './collision.js';
 import { SortableError } from './errors.js';
 import { createFeedback } from './feedback.js';
+import { itemBoundary } from './item-boundary.js';
 import {
   GeometryCache,
   resolveDirection,
@@ -101,6 +102,7 @@ interface NormalizedAreaOptions {
 
 interface ScopeArea {
   element: Element;
+  itemBoundary: Element | null;
   options: NormalizedAreaOptions;
   rawOptions: SortableAreaOptions;
   registered: RegisteredArea;
@@ -943,6 +945,7 @@ export function createSortableScopeInternal(
     element.setAttribute('data-comins-sortable-area', normalized.areaId);
     const area: ScopeArea = {
       element,
+      itemBoundary: null,
       options: normalized,
       rawOptions: areaOptions,
       registered,
@@ -959,6 +962,7 @@ export function createSortableScopeInternal(
       ),
       disposed: false,
     };
+    directItems(area);
     area.pointerDown = ((event: PointerEvent) => startAttempt(area, event)) as EventListener;
     area.contextMenu = ((event: MouseEvent) => {
       if (!area.options.multiDrag || area.options.disabled || !event.ctrlKey) return;
@@ -1064,6 +1068,7 @@ export function createSortableScopeInternal(
       if (area === undefined || area.disposed) {
         throw new SortableError('INVALID_ELEMENT');
       }
+      directItems(area);
       area.animator.play();
       invalidateTargets(areaTargets(area), 'framework');
     },
@@ -1413,12 +1418,14 @@ function registeredArea(
 }
 
 function directItems(area: ScopeArea): Element[] {
-  return Array.from(area.element.querySelectorAll(area.options.item)).filter(
+  const items = Array.from(area.element.querySelectorAll(area.options.item)).filter(
     (element) => (
       element.parentElement === area.element
       && !element.hasAttribute('data-comins-sortable-placeholder')
     ),
   );
+  area.itemBoundary = itemBoundary(area.element, items, area.itemBoundary);
+  return items;
 }
 
 function locateDestination(
@@ -1742,23 +1749,8 @@ function trailingNonSortableSibling(
   area: ScopeArea,
   items: readonly Element[],
 ): Element | null {
-  const lastItem = items[items.length - 1];
-  if (lastItem === undefined) {
-    return null;
-  }
-  const children = Array.from(area.element.children);
-  const lastItemIndex = children.indexOf(lastItem);
-  for (let index = lastItemIndex + 1; index < children.length; index += 1) {
-    const child = children[index] as Element;
-    if (
-      items.includes(child)
-      || child.hasAttribute('data-comins-sortable-placeholder')
-    ) {
-      continue;
-    }
-    return child;
-  }
-  return null;
+  area.itemBoundary = itemBoundary(area.element, items, area.itemBoundary);
+  return area.itemBoundary;
 }
 
 function pointerSnapshot(

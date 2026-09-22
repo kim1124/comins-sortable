@@ -60,17 +60,21 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'handle',
-    title: { ko: '드래그 핸들', en: 'Drag handle' },
+    title: { ko: '드래그 시작 영역', en: 'Drag start areas' },
     description: {
-      ko: '핸들로 항목을 이동한 뒤 본문을 선택하여 복사합니다. 본문 선택은 정렬을 시작하지 않습니다.',
-      en: 'Move items using the handle, then select and copy their text without starting another drag.',
+      ko: '전용 핸들, 제목, 카드 전체를 비교합니다. 핸들 방식은 본문 선택·복사를 유지하고, 제목 방식은 제목에서만, 전체 방식은 입력 컨트롤을 제외한 카드에서 이동을 시작합니다.',
+      en: 'Compare a dedicated handle, the title, and the whole card. Handle mode preserves body-text selection; title mode starts only on the title, and whole-card mode excludes interactive controls.',
     },
     api: ['handle', 'ignore'],
-    controls: [resetControl],
+    controls: [{ id: 'drag-start', kind: 'select', label: { ko: '드래그 시작 영역', en: 'Drag start area' }, options: [
+      { value: 'handle', label: { ko: '전용 핸들', en: 'Dedicated handle' } },
+      { value: 'title', label: { ko: '제목 영역', en: 'Title only' } },
+      { value: 'card', label: { ko: '카드 전체', en: 'Whole card' } },
+    ] }, resetControl],
   },
   {
     id: 'transition',
-    title: { ko: '단일 전환', en: 'Transition' },
+    title: { ko: '전환 효과', en: 'Sorting animation' },
     description: { ko: '제어 상태 갱신과 드래그 재배치를 FLIP 전환으로 연결합니다.', en: 'Animate controlled updates and drag layout changes with FLIP.' },
     api: ['animation', 'prefers-reduced-motion'],
     controls: [{ id: 'reverse-items', kind: 'button', label: { ko: '순서 뒤집기', en: 'Reverse items' } }, resetControl],
@@ -161,7 +165,7 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'functional-third-party',
-    title: { ko: '함수형 컴포넌트 중첩', en: 'Functional third-party' },
+    title: { ko: '사용자 컴포넌트 중첩', en: 'Nested consumer components' },
     description: { ko: '사용자 host 컴포넌트와 중첩 정렬 계약을 함께 구성합니다.', en: 'Compose nested sorting with a consumer-owned functional host.' },
     api: ['as', 'tag', 'parent'],
     controls: [resetControl],
@@ -215,13 +219,17 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'custom-placeholder',
-    title: { ko: '커스텀 Placeholder', en: 'Custom placeholder' },
+    title: { ko: '드롭 피드백 스타일', en: 'Drop feedback styles' },
     description: {
-      ko: '사용자 클래스와 공개 CSS 변수로 드래그 Placeholder 표현을 커스텀합니다.',
-      en: 'Customize drag placeholder feedback with a consumer class and public CSS variables.',
+      ko: '두 목록 사이를 드래그하며 기본·사용자 스타일과 대상 이동 허용을 전환합니다. 허용 위치는 삽입 표시, 거부 위치는 대상과 드래그 요소의 테두리로 구분합니다.',
+      en: 'Drag between lists and compare default/custom styles and destination acceptance. Accepted positions show an insertion marker; rejected positions outline the target and dragged item.',
     },
-    api: ['placeholder.className', '--comins-sortable-placeholder-*'],
-    controls: [resetControl],
+    api: ['placeholder.className', '--comins-sortable-placeholder-*', '--comins-sortable-rejection-outline', 'accept'],
+    controls: [
+      { id: 'custom-feedback', kind: 'toggle', label: { ko: '사용자 스타일', en: 'Custom styles' } },
+      { id: 'accept-destination', kind: 'toggle', label: { ko: '대상 이동 허용', en: 'Accept destination' } },
+      resetControl,
+    ],
   },
   {
     id: 'skeleton-placeholder',
@@ -274,7 +282,7 @@ export function scenarioById(id: PlaygroundExampleId, adapter: PlaygroundAdapter
     return {
       ...resolved,
       title: adapter === 'vanilla' || adapter === 'svelte'
-        ? { ko: nested ? '직접 DOM Host 중첩' : '직접 DOM Host', en: nested ? 'Nested DOM hosts' : 'Direct DOM host' }
+        ? { ko: nested ? '사용자 컨테이너 중첩' : '사용자 컨테이너 연결', en: nested ? 'Nested custom containers' : 'Custom container binding' }
         : resolved.title,
       description: {
         ko: hosts.description.ko + (nested ? ' 자식 영역은 parent로 Research와 연결합니다.' : ''),

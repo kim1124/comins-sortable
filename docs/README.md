@@ -41,27 +41,43 @@ http://127.0.0.1:4003/examples/<example>/<adapter>
 `<adapter>` is `vanilla`, `react`, `vue`, or `svelte`. Use **View code** in the
 Playground to compare the same feature across adapters.
 
-There are 25 examples for each of the four adapters. Drag the left handle to
-sort, and select the body text to copy it. For multi-drag, modifier-click the
+There are 25 examples for each of the four adapters. By default, drag the left handle to
+sort, and select the body text to copy it. Drag start areas additionally compares
+title-only and whole-card modes. Drop feedback styles compares acceptance and
+custom CSS across two lists. For multi-drag, modifier-click the
 handles. Table-row and table-column demos are no longer included.
 
-네 어댑터 각각에 25개 예제가 있습니다. 정렬은 왼쪽 핸들, 텍스트 선택·복사는
-본문에서 수행합니다. 다중 선택은 보조키와 핸들 클릭을 사용합니다.
+네 어댑터 각각에 25개 예제가 있습니다. 기본 정렬은 왼쪽 핸들, 텍스트 선택·복사는
+본문에서 수행합니다. 드래그 시작 영역 예제는 제목·전체 카드 모드도 비교하며,
+드롭 피드백 스타일 예제는 두 목록에서 수락 여부와 사용자 CSS를 비교합니다.
+다중 선택은 보조키와 핸들 클릭을 사용합니다.
 테이블 행·열 데모는 현재 제공하지 않습니다.
 
 In React, Vue, and Svelte **Per-list state control** (`nested-controlled`), change a child array while
 keeping the parent order. In **Subtree movement** (`tree`), move Review under
 Design with its descendants. Both examples explain their initial data structure,
 steps, and expected results. The [Playground preview](./playground-preview.md)
-also shows selection reset and scroll-boundary feedback from the 0.1.3 source.
+also shows empty-slot return, drag start modes, and accepted/rejected CSS feedback.
 
 React·Vue·Svelte의 **목록별 상태 제어**(`nested-controlled`)에서는 부모 순서를 유지하면서 자식 배열을
 변경하고, **하위 트리 이동**(`tree`)에서는 Review와 그 하위 항목을 Design 아래로
 함께 이동합니다. 각 예제는 초기 구조·조작 순서·기대 결과를 설명합니다.
-[Playground 미리보기](./playground-preview.md)에는 0.1.3 소스의 선택 초기화와
-스크롤 경계 미리보기 동작도 담았습니다.
+[Playground 미리보기](./playground-preview.md)에는 빈 슬롯 목록 복귀, 드래그 시작
+영역 전환, 허용·거부 CSS 비교도 담았습니다.
+
+## Known limitation
+
+Native Safari 26.6.2 leaves body-text selection after title-origin dragging in
+the React Playground. The [handle guide](./user/09-handle-acceptance.md) describes
+the open issue and the default dedicated-handle mode.
+
+실제 Safari 26.6.2의 React Playground에서 제목 드래그 후 본문 선택이 남는 결함이
+확인되었습니다. [핸들 가이드](./ko/09-handle-acceptance.md)에 미해결 상태와
+기본 전용 핸들 방식을 안내합니다.
 
 ## Verification records
+
+- [Current artifact and native Safari finding](../reports/2026-09-22-final-artifact-safari-validation.md)
 
 - [0.1.3 local validation after the Playground reset and feedback fixes](./verification/0.1.3-local-validation.md)
 - [0.1.3 earlier artifact and native Safari preparation record](../reports/2026-09-14-0.1.3-preparation.md)
@@ -70,15 +86,15 @@ React·Vue·Svelte의 **목록별 상태 제어**(`nested-controlled`)에서는 
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
-The 0.1.3 local validation record covers the latest reset and feedback fixes.
-The earlier preparation record's tarball, consumer, and native Safari checks
-predate those fixes. The 0.1.2 records remain historical. The refreshed GIF was
-captured from the 0.1.3 working source on 2026-09-16. Local validation and
+The 0.1.3 local validation index separates each follow-up and its verified source.
+Earlier tarball, consumer, and native Safari checks do not cover subsequent
+source changes. The 0.1.2 records remain historical. The refreshed GIF was
+captured from the 0.1.3 working source on 2026-09-22. Local validation and
 capture do not establish publication status.
 
-0.1.3 로컬 검증 기록은 최신 초기화·미리보기 수정을 포함합니다. 이전 준비 기록의
-tarball·소비자·실제 Safari 검증은 이 수정 전 결과입니다. 0.1.2 기록은 이력으로
-유지하고, GIF는 2026-09-16의 0.1.3 작업 소스로 다시 촬영했습니다.
+0.1.3 로컬 검증 색인은 후속 작업별 검증 소스와 범위를 구분합니다. 이전
+tarball·소비자·실제 Safari 검증을 이후 변경 소스의 결과로 사용하지 않습니다. 0.1.2 기록은 이력으로
+유지하고, GIF는 2026-09-22의 0.1.3 작업 소스로 다시 촬영했습니다.
 로컬 검증과 촬영이 배포 완료를 의미하지는 않습니다.
 
 ## Historical records

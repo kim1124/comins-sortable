@@ -4,10 +4,10 @@
   import { createSortableScope, sortable } from '../../../src/svelte.js';
   import type { AfterDragResult, FrameworkSortableChange } from '../../../src/core.js';
   import type { PlaygroundBridge, PlaygroundDemoInput } from '../playground/types.js';
-  import { copyDemoItem, createDemoState, demoModel, demoTreeArea, reverseDemoChildren, hasSecondArea, isCopyExample, isNestedExample, placeholderForExample, playgroundOperation, updateDemoTreeArea, type DemoItem } from './demo-data.js';
+  import { dragHandle, type DemoDragMode, copyDemoItem, createDemoState, demoModel, demoTreeArea, reverseDemoChildren, hasSecondArea, isCopyExample, isNestedExample, placeholderForExample, playgroundOperation, updateDemoTreeArea, type DemoItem } from './demo-data.js';
 
   interface DemoCommands {
-  setLocale(locale: 'ko' | 'en'): void;
+    setLocale(locale: 'ko' | 'en'): void;
     dispatch(controlId: string, value?: string | number | boolean): void;
     reset(): void;
     destroyScope(): void;
@@ -20,6 +20,8 @@
   let state = createDemoState(input.exampleId);
   let locale = input.locale;
   let allowed = true;
+  let dragMode: DemoDragMode = 'handle';
+  let customFeedback = true;
   let copySequence = 0;
   let swapThreshold = 0.5;
   let invertSwap = false;
@@ -57,6 +59,8 @@
   const reset = () => {
     copySequence = 0;
     allowed = true;
+    dragMode = 'handle';
+    customFeedback = true;
     swapThreshold = 0.5;
     invertSwap = false;
     state = createDemoState(input.exampleId);
@@ -67,6 +71,8 @@
   commands.current = {
     setLocale(value) { locale = value; },
     dispatch(controlId, value) {
+      if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) dragMode = value;
+      if (controlId === 'custom-feedback' && typeof value === 'boolean') customFeedback = value;
       if (controlId === 'accept-destination' && typeof value === 'boolean') allowed = value;
       if (controlId === 'reverse-items') state = { ...state, todo: [...state.todo].reverse() };
       if (controlId === 'reverse-child') state = reverseDemoChildren(state);
@@ -84,7 +90,7 @@
     areaId: 'todo',
     group: todoGroup,
     items: input.exampleId === 'tree' ? demoTreeArea(state, 'todo').items : state.todo,
-    itemKey: 'id' as const, handle: '.cs-demo-handle',
+    itemKey: 'id' as const, handle: dragHandle(dragMode),
     autoScroll: input.exampleId === 'auto-scroll',
     animation: input.exampleId === 'transition' ? 180 : false,
     direction: (input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? 'grid' as const : undefined,
@@ -105,10 +111,11 @@
     areaId: 'done',
     group: 'playground',
     items: state.done,
-    itemKey: 'id' as const, handle: '.cs-demo-handle',
+    itemKey: 'id' as const, handle: dragHandle(dragMode),
     item: '.cs-demo-card',
     emptyInsertThreshold: input.exampleId === 'empty' ? 42 : undefined,
-    accept: input.exampleId === 'accept' ? () => allowed : undefined,
+    placeholder: placeholderForExample(input.exampleId),
+    accept: (input.exampleId === 'accept' || input.exampleId === 'custom-placeholder') ? () => allowed : undefined,
     onItemsChange: (items: readonly DemoItem[]) => setItems('done', items),
   };
   $: childOptions = {
@@ -119,7 +126,7 @@
       ? demoTreeArea(state, 'child').parent
       : { areaId: 'todo', itemId: 'research' },
     items: input.exampleId === 'tree' ? demoTreeArea(state, 'child').items : state.child,
-    itemKey: 'id' as const, handle: '.cs-demo-handle',
+    itemKey: 'id' as const, handle: dragHandle(dragMode),
     item: '.cs-demo-card',
     animation: 160,
     onItemsChange: (items: readonly DemoItem[]) => setItems('child', items),
@@ -128,6 +135,8 @@
 
 {#key resetRevision}
 <div
+  data-drag-mode={dragMode}
+  data-feedback-style={input.exampleId === 'custom-placeholder' && customFeedback ? 'custom' : 'default'}
   class:cs-demo-board--scroll={input.exampleId === 'auto-scroll'}
   class:cs-demo-board--nested={isNestedExample(input.exampleId)}
   class:cs-demo-board--grid={(input.exampleId === 'grid' || input.exampleId === 'swap-grid')}

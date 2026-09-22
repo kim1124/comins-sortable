@@ -53,8 +53,8 @@ without a valid destination cancels the move. Reentering a valid area restores
 the feedback. The hidden move placeholder keeps its layout space so hiding it
 does not shrink the scroll range. See [Placeholder Styling](./13-placeholder.md).
 
-The [Playground GIF](../playground-preview.md) shows this edge case in React:
-feedback hides at the bottom padding, returns on reentry, and the item drops last.
+Try this edge case in the `auto-scroll` Playground: drag to the bottom padding,
+then reenter the list before dropping. The current GIF focuses on other examples.
 
 From 0.1.3, auto-scroll scales movement by elapsed time, using the
 existing 60Hz speed as its baseline and limiting catch-up after delayed frames.

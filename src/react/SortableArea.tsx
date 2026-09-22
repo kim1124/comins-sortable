@@ -92,7 +92,9 @@ export function SortableArea<T>(props: SortableAreaProps<T>): ReactElement {
       'data-comins-sortable-area': props.areaId,
     },
     props.header,
-    ...children,
+    // Keep the item collection in one React child slot so header/footer hosts
+    // retain their identity when the collection becomes empty or grows.
+    children,
     props.footer,
   );
 }

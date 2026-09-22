@@ -97,8 +97,8 @@ Shift 범위 기준점을 지웁니다. 초기화 후 Shift+Review를 클릭하�
 선택 상태까지 초기화되지 않습니다. Playground는 관련 sortable 등록을 명시적으로
 다시 생성합니다. 공개 `reset()` API를 추가한 것은 아닙니다.
 
-[Playground GIF](../playground-preview.md)에서 Build 선택 → 초기화 → Shift+Review
-선택 → Review만 맨 앞으로 이동하는 흐름을 확인할 수 있습니다.
+`transitions` Playground에서 Build 선택 → 초기화 → Shift+Review 선택 →
+Review만 맨 앞으로 이동하는 흐름을 확인합니다. 현재 GIF에는 이 초기화 장면이 없습니다.
 
 ## 정렬 전환 기준
 

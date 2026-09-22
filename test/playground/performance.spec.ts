@@ -99,7 +99,7 @@ async function exerciseAllFeatures(page: Page): Promise<void> {
   await expectModel(page, 'todo', ['research', 'build']);
   await expectModel(page, 'done', ['design', 'review']);
 
-  await openFeature(page, '드래그 핸들', 'handle');
+  await openFeature(page, '드래그 시작 영역', 'handle');
   const initialHandleModel = (await model(page)).todo;
   if (initialHandleModel === undefined) throw new Error('Handle model is unavailable');
   const sourceCard = page.locator('[data-sortable-id="design"]');
@@ -117,7 +117,7 @@ async function exerciseAllFeatures(page: Page): Promise<void> {
   await handleDrag.drop();
   await expectModel(page, 'todo', ['design', 'research', 'build', 'review']);
 
-  await openFeature(page, '단일 전환', 'transition');
+  await openFeature(page, '전환 효과', 'transition');
   await page.getByRole('button', { name: '순서 뒤집기' }).click();
   await expectModel(page, 'todo', ['build', 'design', 'research']);
 
@@ -222,7 +222,7 @@ async function exerciseAllFeatures(page: Page): Promise<void> {
   await page.getByRole('button', { name: '자식 순서 뒤집기' }).click();
   await expectModel(page, 'child', ['release', 'review']);
 
-  await openFeature(page, '함수형 컴포넌트 중첩', 'functional-third-party');
+  await openFeature(page, '사용자 컴포넌트 중첩', 'functional-third-party');
   await expect(page.locator('[data-demo-component-host]')).toHaveCount(2);
   await dragItem(page, 'todo', 'build', { areaId: 'child', beforeId: 'review' });
   await expectModel(page, 'child', ['build', 'review', 'release']);
@@ -279,7 +279,7 @@ async function exerciseAllFeatures(page: Page): Promise<void> {
   await expectModel(page, 'tree-children-review', ['document', 'observe']);
 
   for (const [label, route] of [
-    ['커스텀 Placeholder', 'custom-placeholder'],
+    ['드롭 피드백 스타일', 'custom-placeholder'],
     ['Skeleton Placeholder', 'skeleton-placeholder'],
   ] as const) {
     await openFeature(page, label, route);

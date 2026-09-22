@@ -77,6 +77,17 @@ Playground:
 
 ## Playground Host examples
 
+When the final item leaves a populated list, its known footer boundary is
+retained. Refilling places both preview and item between the header and footer.
+React keeps headers and footers in stable render positions as the item count
+changes. This preserves an observed boundary; it does not infer header/footer
+semantics from arbitrary non-item DOM that was empty from the start.
+
+The **Custom container binding / Nested custom containers** guides show the
+actual DOM structure and registration API. A host directly contains sortable
+items; this is not a comparison of DOM and custom events. Vanilla reports
+changes through its `onChange` option callback.
+
 React uses `as` and ref forwarding; Vue uses `tag` and `componentProps`.
 Svelte attaches `use:sortable` to a div, and Vanilla passes a div to
 `createSortable`. These two tabs demonstrate direct DOM registration rather

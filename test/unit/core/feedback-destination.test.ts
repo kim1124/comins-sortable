@@ -2,6 +2,30 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { scopeFixture } from '../helpers/scope-fixtures.js';
+import { fakeElement } from '../helpers/core-fixtures.js';
+
+test('emptying a list retains the footer boundary for insertion feedback', () => {
+  const fixture = scopeFixture({ todoItemIds: ['a'], doneItemIds: ['c'] });
+  const todo = fixture.area('todo');
+  const header = fakeElement('DIV', { ownerDocument: fixture.platform.document });
+  const footer = fakeElement('DIV', { ownerDocument: fixture.platform.document });
+  todo.insertBefore(header, fixture.item('todo', 0));
+  todo.appendChild(footer);
+  fixture.scope.refreshArea?.('todo');
+  fixture.drop('todo', 0, 'done', 0);
+  fixture.platform.flushFrame();
+  fixture.platform.flushFrame();
+  assert.deepEqual(fixture.ids('todo'), []);
+  fixture.begin('done', 0);
+  fixture.move('todo', 0);
+  const placeholder = todo.querySelector('[data-comins-sortable-placeholder]');
+  assert.ok(placeholder);
+  assert.equal(Array.from(todo.children).indexOf(placeholder), 1);
+  assert.equal(Array.from(todo.children).indexOf(footer), 2);
+  fixture.terminate('escape');
+  assert.deepEqual(Array.from(todo.children), [header, footer]);
+  fixture.scope.destroy();
+});
 
 for (const ending of ['outside', 'reenter', 'escape'] as const) {
   test(`move feedback hides outside without removing its space, then handles ${ending}`, () => {

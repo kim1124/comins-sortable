@@ -1,6 +1,6 @@
 # Comins Sortable
 
-<img src="example/public/comins-symbol.svg" width="64" height="64" alt="Comins" />
+<img src="https://raw.githubusercontent.com/kim1124/comins-sortable/main/example/public/comins-symbol.svg" width="64" height="64" alt="Comins" />
 
 Drag-and-drop sorting for Vanilla JavaScript, React, Vue, and Svelte, built on
 one TypeScript core with zero runtime dependencies. Build sortable lists,
@@ -10,31 +10,33 @@ grids, kanban boards, and nested trees with controlled application state.
 · [English docs](https://github.com/kim1124/comins-sortable/blob/main/docs/README.md)
 · [한국어 가이드](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/01-quick-start.md)
 
-![Comins Sortable Playground demonstrating selection reset, per-list state updates, subtree movement, and auto-scroll feedback](https://raw.githubusercontent.com/kim1124/comins-sortable/main/docs/assets/sortable-playground.gif?v=0.1.3)
+![Comins Sortable Playground demonstrating empty-slot return, drag start areas, drop feedback styles, per-list state updates, and subtree movement](https://raw.githubusercontent.com/kim1124/comins-sortable/main/docs/assets/sortable-playground.gif?v=0.1.3-20260922)
 
-The animation shows real React Playground interactions: resetting selection,
-updating a child list independently, moving a subtree with its descendants,
-and hiding or restoring insertion feedback at a scroll boundary.
-Drag a card's left handle to move it; select its body text to copy it.
+The animation shows real React Playground interactions: emptying and refilling
+a list between fixed slots, changing drag start areas, comparing accepted and
+rejected drop styles, updating a child list, and moving a complete subtree.
+By default, drag a card's left handle to move it and select its body text to copy it.
+The Drag start areas example also demonstrates title-only and whole-card dragging.
 
 ## Features
 
 | Capability | What to try in the Playground |
 | --- | --- |
 | Sortable lists and kanban boards | Reorder items, transfer them between lists, or copy them to another list. |
-| Drag handles and text selection | Drag the handle, then select and copy a value from the card body. |
+| Drag start areas and text selection | Compare handle, title-only, and whole-card dragging; use handle mode to select and copy body text. |
 | Multi-drag | Command/Ctrl-click handles, or use Shift for a range, then move the selected items together. |
 | Sorting thresholds | Change the shaded target region to see when a drag changes order; this differs from the distance needed to start dragging. |
 | Grid and Swap Grid | Grid inserts and shifts items. Swap Grid exchanges only the dragged and highlighted cells. |
 | Nested lists and Tree | **Per-list state control** updates separate arrays in React, Vue, and Svelte; Vanilla demonstrates direct DOM updates. **Subtree movement** preserves descendants when a node changes parent. Both include structure diagrams and step-by-step instructions. |
-| Drag feedback | Customize animation, placeholders, skeleton feedback, and auto-scroll. |
+| Drag feedback | Compare accepted/rejected drop styles and their CSS; customize animation, placeholders, skeleton feedback, and auto-scroll. |
 
 Vanilla uses no framework peer. React, React DOM, Vue, and Svelte integrations
 use optional peers (`react`, `react-dom`, `vue`, and `svelte`).
 
 The 0.1.3 changes improve selection cleanup, elapsed-time and RTL auto-scroll,
-and feedback outside valid drop areas. Playground Reset also clears the
-Shift-range anchor. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
+feedback outside valid drop areas, and footer boundaries after a list becomes
+empty. Playground Reset also clears the Shift-range anchor. The examples now
+compare drag start areas and accepted/rejected CSS feedback. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
 for the full change list and the [capture details](https://github.com/kim1124/comins-sortable/blob/main/docs/playground-preview.md)
 for the GIF scenarios.
 
@@ -178,6 +180,11 @@ Consumers can style either their class or these public CSS variables:
 - `--comins-sortable-placeholder-skeleton-highlight`
 - `--comins-sortable-placeholder-skeleton-duration`
 
+For rejected targets and the dragged preview, use
+`--comins-sortable-rejection-outline` and
+`--comins-sortable-rejection-outline-offset` on a shared container. The
+**Drop feedback styles** example compares these with accepted-position styling.
+
 Import `comins-sortable/styles.css` to enable the preset. Reduced-motion mode
 disables the skeleton animation.
 
@@ -192,6 +199,11 @@ input; keyboard reordering is not implemented. See the
 [browser verification scope](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.3-local-validation.md)
 for the latest local checks and the separately recorded native Safari and
 device coverage.
+
+Known Playground issue: Safari 26.6.2 can leave body text selected after a
+title-only drag, although the item order updates. Use the dedicated handle
+when body-text selection and copying matter. This issue remains open; see the
+[handle guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/09-handle-acceptance.md).
 
 ## License and support
 

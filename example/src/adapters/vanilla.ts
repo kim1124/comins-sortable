@@ -3,6 +3,8 @@ import type { AfterDragResult, SortableChange } from '../../../src/core.js';
 import type { PlaygroundDemoModule } from '../playground/types.js';
 import {
   createDemoState,
+  dragHandle,
+  type DemoDragMode,
   copyDemoItem,
   demoModel,
   demoTreeArea,
@@ -76,6 +78,8 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
     let state = createDemoState(input.exampleId);
     let locale = input.locale;
     let allowed = true;
+    let dragMode: DemoDragMode = 'handle';
+    let customFeedback = true;
     let destroyed = false;
     let copySequence = 0;
     let swapThreshold = 0.5;
@@ -91,6 +95,10 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
       const model: Record<string, readonly string[]> = { todo: read('todo') };
       if (hasSecondArea(input.exampleId)) model.done = read('done');
       if (isNestedExample(input.exampleId)) model.child = read('child');
+      for (const areaId of ['todo', 'done']) {
+        const count = container.querySelector(`[data-demo-column="${areaId}"] > header small`);
+        if (count && model[areaId]) count.textContent = `${model[areaId].length} items`;
+      }
       bridge.publishModel(model);
     };
 
@@ -166,12 +174,16 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
         [...state.todo, ...state.done, ...state.child].map((item) => [item.id, item]),
       );
       allowed = true;
+      dragMode = 'handle';
+      customFeedback = true;
       swapThreshold = 0.5;
       invertSwap = false;
       container.replaceChildren();
       if (input.exampleId === 'tree') { renderTree(); return; }
 
       const board = document.createElement('div');
+      board.dataset.dragMode = dragMode;
+      board.dataset.feedbackStyle = input.exampleId === 'custom-placeholder' && customFeedback ? 'custom' : 'default';
       board.className = `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`;
       const todo = area('todo', locale === 'ko' ? '진행할 작업' : 'To do', todoItems);
       const todoList = todo.querySelector<HTMLElement>('[data-demo-area="todo"]')!;
@@ -265,7 +277,8 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           group: 'playground',
           item: '.cs-demo-card', handle: '.cs-demo-handle',
           emptyInsertThreshold: input.exampleId === 'empty' ? 42 : undefined,
-          accept: input.exampleId === 'accept' ? () => allowed : undefined,
+          placeholder: placeholderForExample(input.exampleId),
+          accept: (input.exampleId === 'accept' || input.exampleId === 'custom-placeholder') ? () => allowed : undefined,
         });
       }
       if (childList !== null) {
@@ -285,6 +298,15 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
 
     return {
       dispatch(controlId, value) {
+        if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) {
+          dragMode = value;
+          sortable?.updateArea('todo', { handle: dragHandle(dragMode) });
+          container.querySelector<HTMLElement>('.cs-demo-board')!.dataset.dragMode = dragMode;
+        }
+        if (controlId === 'custom-feedback' && typeof value === 'boolean') {
+          customFeedback = value;
+          container.querySelector<HTMLElement>('.cs-demo-board')!.dataset.feedbackStyle = value ? 'custom' : 'default';
+        }
         if (controlId === 'accept-destination' && typeof value === 'boolean') allowed = value;
         if (controlId === 'swap-threshold' && typeof value === 'number') {
           swapThreshold = value;

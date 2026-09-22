@@ -97,5 +97,5 @@ import합니다. 선언된 유일한 side-effect entry입니다.
 
 모든 entry point는 ESM이며 ES2020을 대상으로 합니다. React, React DOM, Vue,
 Svelte는 optional peer dependency이고 package의 runtime dependency는 0개입니다.
-브라우저 증거와 인증 범위는 저장소 [README](../../README.md#browser-evidence)에서
+브라우저 증거와 인증 범위는 저장소 [README](../../README.md#browser-support)에서
 관리합니다.

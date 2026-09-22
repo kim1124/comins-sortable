@@ -58,7 +58,8 @@ export interface PlaygroundDemoModule {
 export interface PlaygroundControl {
   id: string;
   label: Record<PlaygroundLocale, string>;
-  kind: 'button' | 'toggle' | 'range';
+  kind: 'button' | 'toggle' | 'range' | 'select';
+  options?: readonly { value: string; label: Record<PlaygroundLocale, string> }[];
   min?: number;
   max?: number;
   step?: number;

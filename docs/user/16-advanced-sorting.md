@@ -100,8 +100,8 @@ updates do not reset the selection; replacing an array alone is not a full
 selection reset. The Playground resets the relevant sortable registrations
 explicitly. There is no public `reset()` API.
 
-The [Playground GIF](../playground-preview.md) shows selecting Build, resetting,
-Shift-selecting Review, and moving only Review to the front.
+Try the `transitions` Playground: select Build, reset, Shift-select Review,
+then move Review to the front. This reset sequence is not in the current GIF.
 
 ## Sorting thresholds
 

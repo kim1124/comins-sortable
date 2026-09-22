@@ -19,6 +19,8 @@ import type {
 } from '../playground/types.js';
 import {
   createDemoState,
+  dragHandle,
+  type DemoDragMode,
   copyDemoItem,
   demoModel,
   demoTreeArea,
@@ -74,6 +76,8 @@ export const vueDemoModule: PlaygroundDemoModule = {
       setup() {
         const state = ref<DemoState>(createDemoState(input.exampleId));
         const allowed = ref(true);
+        const dragMode = ref<DemoDragMode>('handle');
+        const customFeedback = ref(true);
         const swapThreshold = ref(0.5);
         const invertSwap = ref(false);
         const resetRevision = ref(0);
@@ -102,6 +106,8 @@ export const vueDemoModule: PlaygroundDemoModule = {
         commands = {
           setLocale(value) { locale.value = value; },
           dispatch(controlId, value) {
+            if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) dragMode.value = value;
+            if (controlId === 'custom-feedback' && typeof value === 'boolean') customFeedback.value = value;
             if (controlId === 'accept-destination' && typeof value === 'boolean') allowed.value = value;
             if (controlId === 'reverse-items') state.value = { ...state.value, todo: [...state.value.todo].reverse() };
             if (controlId === 'reverse-child') state.value = reverseDemoChildren(state.value);
@@ -111,6 +117,8 @@ export const vueDemoModule: PlaygroundDemoModule = {
           reset() {
             copySequence = 0;
             allowed.value = true;
+            dragMode.value = 'handle';
+            customFeedback.value = true;
             swapThreshold.value = 0.5;
             invertSwap.value = false;
             state.value = createDemoState(input.exampleId);
@@ -137,7 +145,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
             group: 'playground',
             parent: treeArea?.parent ?? { areaId: 'todo', itemId: 'research' },
             modelValue: treeArea?.items ?? state.value.child,
-            itemKey: 'id', handle: '.cs-demo-handle',
+            itemKey: 'id', handle: dragHandle(dragMode.value),
             animation: 160,
             'onUpdate:modelValue': (items: readonly DemoItem[]) => setItems('child', items),
           }, {
@@ -149,7 +157,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
           const current = demoTreeArea(state.value, areaId);
           return h(SortableArea<DemoTreeNode>, {
             areaId, group: 'playground', parent: current.parent,
-            modelValue: current.items, itemKey: 'id', handle: '.cs-demo-handle',
+            modelValue: current.items, itemKey: 'id', handle: dragHandle(dragMode.value),
             componentProps: { class: 'cs-demo-list cs-demo-tree-list', role: 'list', 'data-demo-area': areaId },
             'onUpdate:modelValue': (items: readonly DemoTreeNode[]) => setItems(areaId, items),
           }, {
@@ -178,10 +186,10 @@ export const vueDemoModule: PlaygroundDemoModule = {
                 areaId,
                 group: areaId === 'todo' ? todoGroup : 'playground',
                 modelValue: items,
-                itemKey: 'id', handle: '.cs-demo-handle',
+                itemKey: 'id', handle: dragHandle(dragMode.value),
                 autoScroll: input.exampleId === 'auto-scroll',
                 animation,
-                placeholder: areaId === 'todo' ? placeholderForExample(input.exampleId) : undefined,
+                placeholder: placeholderForExample(input.exampleId),
                 emptyInsertThreshold: areaId === 'done' && input.exampleId === 'empty' ? 42 : undefined,
                 direction: (input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? 'grid' : undefined,
                 swapThreshold: input.exampleId === 'thresholds' ? swapThreshold.value : undefined,
@@ -189,7 +197,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
                 swap: (input.exampleId === 'swap' || input.exampleId === 'swap-grid'),
                 multiDrag: input.exampleId === 'transitions',
                 selectedClass: input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined,
-                accept: areaId === 'done' && input.exampleId === 'accept' ? () => allowed.value : undefined,
+                accept: areaId === 'done' && (input.exampleId === 'accept' || input.exampleId === 'custom-placeholder') ? () => allowed.value : undefined,
                 copyItem: areaId === 'todo' && isCopyExample(input.exampleId)
                   ? (item: DemoItem) => copyDemoItem(item, input.exampleId, ++copySequence)
                   : undefined,
@@ -224,6 +232,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
           onAfterDrag: (result: AfterDragResult) => event('afterDrag', result),
         }, {
           default: () => h('div', {
+            'data-drag-mode': dragMode.value, 'data-feedback-style': input.exampleId === 'custom-placeholder' && customFeedback.value ? 'custom' : 'default',
             class: `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`,
           }, [
             input.exampleId === 'tree'

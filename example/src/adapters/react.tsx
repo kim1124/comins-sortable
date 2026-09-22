@@ -23,6 +23,8 @@ import type {
 } from '../playground/types.js';
 import {
   createDemoState,
+  dragHandle,
+  type DemoDragMode,
   copyDemoItem,
   demoModel,
   demoTreeArea,
@@ -87,6 +89,8 @@ function Demo({
 }): ReactElement {
   const [state, setState] = useState<DemoState>(() => createDemoState(input.exampleId));
   const [allowed, setAllowed] = useState(true);
+  const [dragMode, setDragMode] = useState<DemoDragMode>('handle');
+  const [customFeedback, setCustomFeedback] = useState(true);
   const [swapThreshold, setSwapThreshold] = useState(0.5);
   const [invertSwap, setInvertSwap] = useState(false);
   const [resetRevision, setResetRevision] = useState(0);
@@ -122,6 +126,8 @@ function Demo({
     expose({
       setLocale,
       dispatch(controlId, value) {
+        if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) setDragMode(value);
+        if (controlId === 'custom-feedback' && typeof value === 'boolean') setCustomFeedback(value);
         if (controlId === 'accept-destination' && typeof value === 'boolean') setAllowed(value);
         if (controlId === 'reverse-items') setState((current) => ({ ...current, todo: [...current.todo].reverse() }));
         if (controlId === 'reverse-child') setState((current) => (reverseDemoChildren(current)));
@@ -131,6 +137,8 @@ function Demo({
       reset() {
         copySequence.current = 0;
         setAllowed(true);
+        setDragMode('handle');
+        setCustomFeedback(true);
         setSwapThreshold(0.5);
         setInvertSwap(false);
         setState(createDemoState(input.exampleId));
@@ -159,7 +167,7 @@ function Demo({
           group="playground"
           parent={treeArea?.parent ?? { areaId: 'todo', itemId: 'research' }}
           items={treeArea?.items ?? state.child}
-          itemKey="id" handle=".cs-demo-handle"
+          itemKey="id" handle={dragHandle(dragMode)}
           animation={160}
           onItemsChange={(items) => setItems('child', items)}
         >
@@ -174,7 +182,7 @@ function Demo({
     return (
       <SortableArea<DemoTreeNode>
         areaId={areaId} group="playground" parent={current.parent}
-        items={current.items} itemKey="id" handle=".cs-demo-handle" onItemsChange={(items) => setItems(areaId, items)}
+        items={current.items} itemKey="id" handle={dragHandle(dragMode)} onItemsChange={(items) => setItems(areaId, items)}
         areaProps={{ className: 'cs-demo-list cs-demo-tree-list', role: 'list', 'data-demo-area': areaId } as HTMLAttributes<HTMLElement>}
       >
         {(item) => <ItemCard item={item}>
@@ -197,10 +205,10 @@ function Demo({
           areaId={areaId}
           group={areaId === 'todo' ? todoGroup : 'playground'}
           items={items}
-          itemKey="id" handle=".cs-demo-handle"
+          itemKey="id" handle={dragHandle(dragMode)}
           autoScroll={input.exampleId === 'auto-scroll'}
           animation={animation}
-          placeholder={areaId === 'todo' ? placeholderForExample(input.exampleId) : undefined}
+          placeholder={placeholderForExample(input.exampleId)}
           header={input.exampleId === 'header-slot' || input.exampleId === 'two-list-slots'
             ? <div className="cs-demo-slot" data-demo-slot="header">Pinned header</div>
             : undefined}
@@ -214,7 +222,7 @@ function Demo({
           swap={(input.exampleId === 'swap' || input.exampleId === 'swap-grid')}
           multiDrag={input.exampleId === 'transitions'}
           selectedClass={input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined}
-          accept={areaId === 'done' && input.exampleId === 'accept' ? () => allowed : undefined}
+          accept={areaId === 'done' && (input.exampleId === 'accept' || input.exampleId === 'custom-placeholder') ? () => allowed : undefined}
           copyItem={areaId === 'todo' && isCopyExample(input.exampleId)
             ? (item) => copyDemoItem(item, input.exampleId, ++copySequence.current)
             : undefined}
@@ -240,7 +248,7 @@ function Demo({
       onChange={onChange}
       onAfterDrag={(result) => event('afterDrag', result)}
     >
-      <div className={`cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`}>
+      <div data-drag-mode={dragMode} data-feedback-style={input.exampleId === 'custom-placeholder' && customFeedback ? 'custom' : 'default'} className={`cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`}>
         {input.exampleId === 'tree'
           ? <section className="cs-demo-column cs-demo-tree" data-demo-column="todo">{treeArea('todo')}</section>
           : area('todo', state.todo)}

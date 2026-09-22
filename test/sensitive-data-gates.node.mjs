@@ -80,6 +80,15 @@ test('adopts the approved public package boundary under Contract v1.8', () => {
     trackedMaterial: {
       copiedOrGeneratedCode: [],
       assets: [{
+        path: 'example/public/comins-symbol.svg',
+        source: 'reports/2026-09-22-brand.md',
+        origin: 'first-party',
+        license: 'MIT',
+        useSurface: 'playground-brand',
+        generated: false,
+        modifications: [],
+        sha256: '5b4437ea8c4fafd4942583a613205847dae068dd6d5810330d3ece813edafd5d',
+      }, {
         path: 'docs/assets/sortable-playground.gif',
         source: 'example/',
         origin: 'first-party',

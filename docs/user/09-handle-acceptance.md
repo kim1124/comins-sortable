@@ -66,11 +66,26 @@ prevents small pointer movement from immediately starting a drag.
 For cards with selectable text, start moves only from the handle. Set the body's
 `user-select` and `-webkit-user-select` to `text`, and the handle's to `none`.
 Apply `touch-action: none` to the handle to preserve default touch behavior in
-the body. The Playground uses this pattern for all cards and suppresses body
+the body. The Playground uses this pattern by default and suppresses body
 selection only during an active drag. Selection becomes available again after
 completion or cancellation. With `multiDrag`, use modifier keys with handle
 clicks to select items. Input outside the handle or on ignored content does not
 change item selection.
+
+Omit `handle` to start dragging anywhere on an item except default ignored
+inputs, buttons, links, editable elements, and other ignored targets. A selector
+such as `handle=".card-title"` restricts activation to that descendant. The
+**Drag start areas** example compares dedicated handle, title, and whole-card
+modes. Whole-card mode uses body drags for sorting; returning to handle mode
+restores body-text selection. Other examples retain their default handles.
+
+**Known Safari limitation (2026-09-22):** In native Safari 26.6.2, the React
+Playground title-only mode can leave body text selected after reordering. It
+reproduces from a fresh page and is not fixed by switching back to handle mode.
+Dedicated handle mode remains the recommended example for selectable body
+text. Whole-card mode intentionally uses body drags for sorting. See the
+[reproduction and verification scope](../../reports/2026-09-22-final-artifact-safari-validation.md).
+This observation does not establish the same failure in every adapter or browser.
 
 A handle confines pointer activation; a labelled button does not add keyboard
 sorting. Active-drag text-selection suppression is the Playground's styling and
