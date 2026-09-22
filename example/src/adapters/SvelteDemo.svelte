@@ -7,6 +7,7 @@
   import { copyDemoItem, createDemoState, demoModel, demoTreeArea, reverseDemoChildren, hasSecondArea, isCopyExample, isNestedExample, placeholderForExample, playgroundOperation, updateDemoTreeArea, type DemoItem } from './demo-data.js';
 
   interface DemoCommands {
+  setLocale(locale: 'ko' | 'en'): void;
     dispatch(controlId: string, value?: string | number | boolean): void;
     reset(): void;
     destroyScope(): void;
@@ -17,10 +18,12 @@
   export let commands: { current: DemoCommands | null };
 
   let state = createDemoState(input.exampleId);
+  let locale = input.locale;
   let allowed = true;
   let copySequence = 0;
   let swapThreshold = 0.5;
   let invertSwap = false;
+  let resetRevision = 0;
   const secondArea = hasSecondArea(input.exampleId);
   const todoGroup = input.exampleId === 'clone' || input.exampleId === 'custom-clone'
     ? { name: 'playground', pull: 'copy' as const }
@@ -57,10 +60,12 @@
     swapThreshold = 0.5;
     invertSwap = false;
     state = createDemoState(input.exampleId);
+    resetRevision += 1;
     bridge.publishOperation(null);
   };
 
   commands.current = {
+    setLocale(value) { locale = value; },
     dispatch(controlId, value) {
       if (controlId === 'accept-destination' && typeof value === 'boolean') allowed = value;
       if (controlId === 'reverse-items') state = { ...state, todo: [...state.todo].reverse() };
@@ -121,6 +126,7 @@
   };
 </script>
 
+{#key resetRevision}
 <div
   class:cs-demo-board--scroll={input.exampleId === 'auto-scroll'}
   class:cs-demo-board--nested={isNestedExample(input.exampleId)}
@@ -129,11 +135,11 @@
 >
   {#if input.exampleId === 'tree'}
     <section class="cs-demo-column cs-demo-tree" data-demo-column="todo">
-      <SvelteTreeArea {scope} {state} areaId="todo" locale={input.locale} onItemsChange={setItems} />
+      <SvelteTreeArea {scope} {state} areaId="todo" {locale} onItemsChange={setItems} />
     </section>
   {:else}
   <section class="cs-demo-column" data-demo-column="todo">
-    <header><div><strong>To do</strong><small>{state.todo.length} items</small></div></header>
+    <header><div><strong>{locale === 'ko' ? '진행할 작업' : 'To do'}</strong><small>{state.todo.length} items</small></div></header>
     <div
       class:cs-demo-list--grid={(input.exampleId === 'grid' || input.exampleId === 'swap-grid')}
       class="cs-demo-list"
@@ -152,7 +158,7 @@
           <span class="cs-demo-card__copy"><strong>{item.title}</strong><small>{item.detail}</small></span>
           {#if isNestedExample(input.exampleId) && item.id === 'research'}
             <div class="cs-demo-nested-shell">
-              <strong>Research children</strong>
+              <strong>Research {locale === 'ko' ? '하위 항목' : 'children'}</strong>
               <div
                 class="cs-demo-list cs-demo-list--nested"
                 class:cs-demo-component-host={input.exampleId === 'functional-third-party'}
@@ -180,7 +186,7 @@
   {/if}
   {#if secondArea}
     <section class="cs-demo-column" data-demo-column="done">
-      <header><div><strong>Done</strong><small>{state.done.length} items</small></div></header>
+      <header><div><strong>{locale === 'ko' ? '완료' : 'Done'}</strong><small>{state.done.length} items</small></div></header>
       <div class="cs-demo-list" data-demo-area="done" role="list" use:sortable={doneOptions}>
         {#if input.exampleId === 'two-list-slots'}<div class="cs-demo-slot" data-demo-slot="header">Pinned header</div>{/if}
         {#each state.done as item (item.id)}
@@ -194,3 +200,4 @@
     </section>
   {/if}
 </div>
+{/key}

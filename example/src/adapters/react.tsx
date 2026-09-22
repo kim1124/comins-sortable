@@ -42,6 +42,7 @@ import source from './react.tsx?raw';
 import { waitForAdapterReady } from './adapter-ready.js';
 
 interface DemoCommands {
+  setLocale(locale: 'ko' | 'en'): void;
   dispatch(controlId: string, value?: string | number | boolean): void;
   reset(): void;
 }
@@ -88,6 +89,8 @@ function Demo({
   const [allowed, setAllowed] = useState(true);
   const [swapThreshold, setSwapThreshold] = useState(0.5);
   const [invertSwap, setInvertSwap] = useState(false);
+  const [resetRevision, setResetRevision] = useState(0);
+  const [locale, setLocale] = useState(input.locale);
   const copySequence = useRef(0);
   const secondArea = hasSecondArea(input.exampleId);
   const todoGroup = useMemo(() => (
@@ -117,6 +120,7 @@ function Demo({
 
   useEffect(() => {
     expose({
+      setLocale,
       dispatch(controlId, value) {
         if (controlId === 'accept-destination' && typeof value === 'boolean') setAllowed(value);
         if (controlId === 'reverse-items') setState((current) => ({ ...current, todo: [...current.todo].reverse() }));
@@ -130,6 +134,7 @@ function Demo({
         setSwapThreshold(0.5);
         setInvertSwap(false);
         setState(createDemoState(input.exampleId));
+        setResetRevision((revision) => revision + 1);
         bridge.publishOperation(null);
       },
     });
@@ -146,7 +151,7 @@ function Demo({
     const treeArea = input.exampleId === 'tree' ? demoTreeArea(state, 'child') : null;
     return (
       <div className="cs-demo-nested-shell">
-        <strong>Research children</strong>
+        <strong>Research {locale === 'ko' ? '하위 항목' : 'children'}</strong>
         <SortableArea
           as={input.exampleId === 'functional-third-party' ? ComponentHost : 'div'}
           areaProps={{ className: 'cs-demo-list cs-demo-list--nested', role: 'list', 'data-demo-area': 'child' } as HTMLAttributes<HTMLElement>}
@@ -174,7 +179,7 @@ function Demo({
       >
         {(item) => <ItemCard item={item}>
           {item.acceptsChildren && <div className="cs-demo-nested-shell">
-            <strong>{item.title} {input.locale === 'ko' ? '하위 항목' : 'children'}</strong>
+            <strong>{item.title} {locale === 'ko' ? '하위 항목' : 'children'}</strong>
             {treeArea(treeChildAreaId(item))}
           </div>}
         </ItemCard>}
@@ -184,7 +189,7 @@ function Demo({
 
   const area = (areaId: 'todo' | 'done', items: readonly DemoItem[]): ReactElement => (
     <section className="cs-demo-column" data-demo-column={areaId}>
-      <header><div><strong>{areaId === 'todo' ? 'To do' : 'Done'}</strong><small>{items.length} items</small></div></header>
+      <header><div><strong>{areaId === 'todo' ? (locale === 'ko' ? '진행할 작업' : 'To do') : (locale === 'ko' ? '완료' : 'Done')}</strong><small>{items.length} items</small></div></header>
       <div role="list" className="cs-demo-list-shell">
         <SortableArea
           as={input.exampleId === 'third-party' || input.exampleId === 'functional-third-party' ? ComponentHost : 'div'}
@@ -228,6 +233,7 @@ function Demo({
 
   return (
     <SortableRoot<DemoItem>
+      key={resetRevision}
       onBeforeDragStart={() => event('beforeDragStart')}
       onDragStart={({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) })}
       onInsertDragArea={({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId })}
@@ -255,6 +261,7 @@ export const reactDemoModule: PlaygroundDemoModule = {
     await waitForAdapterReady();
     return {
       dispatch(controlId, value) { commands?.dispatch(controlId, value); },
+      setLocale(locale) { commands?.setLocale(locale); },
       reset() { commands?.reset(); },
       destroy() { root.unmount(); },
     };

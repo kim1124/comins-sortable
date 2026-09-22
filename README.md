@@ -1,5 +1,7 @@
 # Comins Sortable
 
+<img src="example/public/comins-symbol.svg" width="64" height="64" alt="Comins" />
+
 Drag-and-drop sorting for Vanilla JavaScript, React, Vue, and Svelte, built on
 one TypeScript core with zero runtime dependencies. Build sortable lists,
 grids, kanban boards, and nested trees with controlled application state.
@@ -8,10 +10,11 @@ grids, kanban boards, and nested trees with controlled application state.
 · [English docs](https://github.com/kim1124/comins-sortable/blob/main/docs/README.md)
 · [한국어 가이드](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/01-quick-start.md)
 
-![Comins Sortable Playground demonstrating handle-based transfer, multi-drag, swap grid, and tree movement](https://raw.githubusercontent.com/kim1124/comins-sortable/main/docs/assets/sortable-playground.gif)
+![Comins Sortable Playground demonstrating selection reset, per-list state updates, subtree movement, and auto-scroll feedback](https://raw.githubusercontent.com/kim1124/comins-sortable/main/docs/assets/sortable-playground.gif?v=0.1.3)
 
-The animation shows real React Playground interactions: transfer between lists,
-multi-selection, a grid swap, and a tree move that carries its descendants.
+The animation shows real React Playground interactions: resetting selection,
+updating a child list independently, moving a subtree with its descendants,
+and hiding or restoring insertion feedback at a scroll boundary.
 Drag a card's left handle to move it; select its body text to copy it.
 
 ## Features
@@ -23,11 +26,17 @@ Drag a card's left handle to move it; select its body text to copy it.
 | Multi-drag | Command/Ctrl-click handles, or use Shift for a range, then move the selected items together. |
 | Sorting thresholds | Change the shaded target region to see when a drag changes order; this differs from the distance needed to start dragging. |
 | Grid and Swap Grid | Grid inserts and shifts items. Swap Grid exchanges only the dragged and highlighted cells. |
-| Nested lists and Tree | Nested lists own separate arrays. Tree owns one recursive value and preserves a moved node's descendants. |
+| Nested lists and Tree | **Per-list state control** updates separate arrays in React, Vue, and Svelte; Vanilla demonstrates direct DOM updates. **Subtree movement** preserves descendants when a node changes parent. Both include structure diagrams and step-by-step instructions. |
 | Drag feedback | Customize animation, placeholders, skeleton feedback, and auto-scroll. |
 
 Vanilla uses no framework peer. React, React DOM, Vue, and Svelte integrations
 use optional peers (`react`, `react-dom`, `vue`, and `svelte`).
+
+The 0.1.3 changes improve selection cleanup, elapsed-time and RTL auto-scroll,
+and feedback outside valid drop areas. Playground Reset also clears the
+Shift-range anchor. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
+for the full change list and the [capture details](https://github.com/kim1124/comins-sortable/blob/main/docs/playground-preview.md)
+for the GIF scenarios.
 
 ## Installation
 
@@ -53,6 +62,9 @@ npm run dev
 
 Open [the React simple-sorting example](http://127.0.0.1:4003/examples/simple/react).
 The development server uses port 4003.
+
+Use **Reset** to restore the example and clear multi-selection, including its
+Shift-range anchor, in all four adapters.
 
 ## Quick Start with React
 
@@ -169,12 +181,17 @@ Consumers can style either their class or these public CSS variables:
 Import `comins-sortable/styles.css` to enable the preset. Reduced-motion mode
 disables the skeleton animation.
 
+Insertion feedback hides outside a valid drop destination and returns on
+reentry. During a move, the hidden placeholder keeps its layout space to
+preserve the list's scroll range.
+
 ## Browser support
 
 Automated tests cover Chromium, Firefox, and WebKit. Sorting uses pointer
 input; keyboard reordering is not implemented. See the
-[browser verification scope](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.2-release-candidate.md)
-for the tested Safari flows and device coverage.
+[browser verification scope](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.3-local-validation.md)
+for the latest local checks and the separately recorded native Safari and
+device coverage.
 
 ## License and support
 

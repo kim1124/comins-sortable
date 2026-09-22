@@ -40,6 +40,7 @@ export interface PlaygroundBridge {
 
 export interface PlaygroundDemoHandle {
   dispatch(controlId: string, value?: string | number | boolean): void;
+  setLocale?(locale: PlaygroundLocale): void;
   reset(): void;
   destroy(): void;
 }

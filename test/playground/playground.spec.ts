@@ -2,9 +2,61 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { exampleIds } from '../../example/src/app/navigation.js';
 import { beginDrag, domIds, dragItem, movePointerToDropTarget, waitForFrameworkRender } from './helpers/drag.js';
+import { bundleDisplayedExample } from './helpers/source-bundle.js';
 
 type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
 const adapters: readonly Adapter[] = ['vanilla', 'react', 'vue', 'svelte'];
+
+for (const adapter of adapters) {
+  test(`${adapter} documentation follows the selected adapter @docs`, async ({ page, browserName }) => {
+    await page.goto(`/examples/simple/${adapter}`);
+    await waitForRuntime(page);
+    const api = page.getByLabel('API', { exact: true });
+    await expect(api).toContainText(adapter === 'vanilla' ? 'item' : adapter === 'vue' ? 'modelValue' : 'items');
+    await expect(api).toContainText(adapter === 'vanilla' ? 'onChange' : adapter === 'vue' ? 'update:modelValue' : 'onItemsChange');
+    if (adapter === 'vanilla' || adapter === 'vue') await expect(api).not.toContainText('onItemsChange');
+    await page.getByRole('button', { name: '코드 보기', exact: true }).click();
+    const files = page.locator('[data-source-file]');
+    await files.selectOption('main.ts');
+    await expect(page.locator('.cs-playground__source pre')).toContainText("exampleId: 'simple'");
+    await files.selectOption('adapters/demo-data.ts');
+    await expect(page.locator('.cs-playground__source pre')).toContainText("from 'comins-sortable/core'");
+    await page.goto(`/examples/tree/${adapter}`);
+    await waitForRuntime(page);
+    await page.getByRole('button', { name: '코드 보기', exact: true }).click();
+    await files.selectOption('main.ts');
+    await expect(page.locator('.cs-playground__source pre')).toContainText("exampleId: 'tree'");
+    if (adapter === 'svelte') {
+      await files.selectOption('adapters/SvelteTreeArea.svelte');
+      await expect(page.locator('.cs-playground__source pre')).toContainText("from 'comins-sortable/svelte'");
+    }
+    if (browserName === 'chromium') await bundleDisplayedExample(page);
+  });
+
+  test(`${adapter} locale changes translate the live tree without resetting its state @docs`, async ({ page }) => {
+    await page.goto(`/examples/tree/${adapter}`);
+    await waitForRuntime(page);
+    await page.getByRole('button', { name: '자식 순서 뒤집기', exact: true }).click();
+    await expect.poll(async () => (await model(page)).child).toEqual(['release', 'review']);
+    const before = await model(page);
+    await page.getByRole('button', { name: 'Switch to English', exact: true }).click();
+    await expect(page.locator('.cs-demo-nested-shell > strong').first()).toHaveText('Research children');
+    await expect.poll(() => model(page)).toEqual(before);
+    await page.getByRole('button', { name: '한국어로 전환', exact: true }).click();
+    await expect(page.locator('.cs-demo-nested-shell > strong').first()).toHaveText('Research 하위 항목');
+    await expect.poll(() => model(page)).toEqual(before);
+
+    await page.goto(`/examples/transitions/${adapter}`);
+    await waitForRuntime(page);
+    const selected = page.locator('[data-sortable-id="build"]');
+    await selected.locator('.cs-demo-handle').click({ modifiers: ['Meta'] });
+    await expect(selected).toHaveClass(/cs-demo-card--selected/);
+    await page.getByRole('button', { name: 'Switch to English', exact: true }).click();
+    await expect(selected).toHaveClass(/cs-demo-card--selected/);
+    await dragItem(page, 'todo', 'build', { areaId: 'todo', beforeId: 'research' });
+    await expect.poll(async () => (await model(page)).todo?.[0]).toBe('build');
+  });
+}
 
 async function selectCardTitle(page: Page, itemId: string): Promise<void> {
   const title = page.locator(`[data-sortable-id="${itemId}"] > .cs-demo-card__copy > strong`);
@@ -271,7 +323,8 @@ test('normalizes routes, keeps locale on navigation, and renders actual source',
   await page.goto('/unknown');
   await expect(page).toHaveURL('/examples/simple/react');
   await waitForRuntime(page);
-  await expect(page.locator('.cs-playground__brand-mark')).toHaveText('co');
+  await expect(page.getByRole('link', { name: 'Comins Sortable 인터랙션 플레이그라운드' }))
+    .toHaveAttribute('href', '/examples/simple/react');
   await expect(page.getByRole('heading', { name: '기본 정렬' })).toBeVisible();
   await expect(page.getByRole('tab', { name: '기본 정렬', exact: true })).toBeVisible();
   await expect(page.getByText('17 / 17 examples')).toHaveCount(0);
@@ -317,7 +370,7 @@ for (const adapter of adapters) {
     await page.goto(`/examples/tree/${adapter}`);
     await waitForRuntime(page);
 
-    await expect(page.getByRole('heading', { name: '트리 데이터 정렬' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '하위 트리 이동' })).toBeVisible();
     await dragItem(page, 'todo', 'design', { areaId: 'child', beforeId: 'review' });
 
     await expect.poll(async () => (await model(page)).todo).toEqual(['research', 'build']);
@@ -343,7 +396,7 @@ for (const adapter of adapters) {
   test(`${adapter} placeholder routes expose consumer styling and skeleton feedback`, async ({ page }) => {
     await page.goto(`/examples/custom-placeholder/${adapter}`);
     await waitForRuntime(page);
-    await activateDrag(page, 'design');
+    const customDrag = await beginDrag(page, 'todo', 'design');
     const custom = page.locator('[data-comins-sortable-placeholder]');
     await expect(custom).toHaveClass(/cs-demo-placeholder--custom/);
     await expect(custom).toHaveAttribute('data-comins-sortable-placeholder-preset', 'default');
@@ -355,11 +408,18 @@ for (const adapter of adapters) {
         radius: style.borderRadius,
       };
     })).toEqual({ background: 'rgb(255, 244, 207)', borderStyle: 'dotted', radius: '18px' });
-    await page.mouse.up();
+    await customDrag.moveOutside();
+    await expect(custom).toHaveCount(1);
+    await expect(custom).toBeHidden();
+    await customDrag.moveBefore('todo', 'research');
+    await expect(custom).toBeVisible();
+    await expect(custom).toHaveClass(/cs-demo-placeholder--custom/);
+    await customDrag.drop();
+    await expectModelAndDom(page, { todo: ['design', 'research', 'build', 'review'] });
 
     await page.goto(`/examples/skeleton-placeholder/${adapter}`);
     await waitForRuntime(page);
-    await activateDrag(page, 'design');
+    const skeletonDrag = await beginDrag(page, 'todo', 'design');
     const skeleton = page.locator('[data-comins-sortable-placeholder]');
     await expect(skeleton).toHaveClass(/cs-demo-placeholder--skeleton/);
     await expect(skeleton).toHaveAttribute('data-comins-sortable-placeholder-preset', 'skeleton');
@@ -367,7 +427,15 @@ for (const adapter of adapters) {
       const style = getComputedStyle(element);
       return `${style.animationName}|${style.backgroundImage}`;
     })).toContain('comins-sortable-placeholder-skeleton|linear-gradient');
-    await page.mouse.up();
+    await skeletonDrag.moveOutside();
+    await expect(skeleton).toHaveCount(1);
+    await expect(skeleton).toBeHidden();
+    await skeletonDrag.moveBefore('todo', 'research');
+    await expect(skeleton).toBeVisible();
+    await expect(skeleton).toHaveAttribute('data-comins-sortable-placeholder-preset', 'skeleton');
+    await page.keyboard.press('Escape');
+    await skeletonDrag.drop();
+    await expectModelAndDom(page, { todo: ['research', 'design', 'build', 'review'] });
   });
 }
 
@@ -444,6 +512,35 @@ for (const adapter of adapters) {
 }
 
 for (const adapter of adapters) {
+  test(`${adapter} reset clears multi-selection and its range anchor @reset-selection`, async ({ page }) => {
+    await page.goto(`/examples/transitions/${adapter}`);
+    await waitForRuntime(page);
+    const initial = ['research', 'design', 'build', 'review', 'release', 'document', 'observe', 'measure'];
+    const selected = page.locator('[data-comins-sortable-selected]');
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await page.getByRole('button', { name: 'Drag Build', exact: true }).click({ modifiers: ['Meta'] });
+      await expect(selected).toHaveCount(1);
+      await page.getByRole('button', { name: '데이터 초기화' }).click();
+      await expectModelAndDom(page, { todo: initial });
+      await expect(selected).toHaveCount(0);
+      await expect(page.locator('.cs-demo-card--selected')).toHaveCount(0);
+
+      await page.getByRole('button', { name: 'Drag Review', exact: true }).click({ modifiers: ['Shift'] });
+      await expect(selected).toHaveCount(1);
+      await expect(selected).toHaveAttribute('data-sortable-id', 'review');
+      await dragItem(page, 'todo', 'review', { areaId: 'todo', beforeId: 'research' });
+      await expectModelAndDom(page, {
+        todo: ['review', 'research', 'design', 'build', 'release', 'document', 'observe', 'measure'],
+      });
+      await selectCardTitle(page, 'review');
+      // Start the next round from a fresh selection, while retaining the reordered data.
+      await page.getByRole('button', { name: 'Drag Build', exact: true }).click();
+      await page.getByRole('button', { name: 'Drag Build', exact: true }).click({ modifiers: ['Meta'] });
+      await expect(selected).toHaveCount(0);
+    }
+  });
+
   test(`${adapter} multi-drag selects with modifiers and moves the ordered group @drag-contract`, async ({ page }) => {
     await page.goto(`/examples/transitions/${adapter}`);
     await waitForRuntime(page);
@@ -802,6 +899,55 @@ for (const adapter of adapters) {
 }
 
 for (const adapter of adapters) {
+  test(`${adapter} scroll-edge feedback matches drop validity without shrinking the list @edge-feedback`, async ({ page }) => {
+    // Keep the container edge away from the viewport edge so this scenario
+    // exercises container scrolling, without also starting page auto-scroll.
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.goto(`/examples/auto-scroll/${adapter}`);
+    await waitForRuntime(page);
+    const initial = ['research', 'design', 'build', 'review', 'release', 'document', 'observe', 'measure', 'improve'];
+
+    for (const ending of ['outside', 'reenter', 'escape'] as const) {
+      await page.getByRole('button', { name: '데이터 초기화' }).click();
+      await expectModelAndDom(page, { todo: initial });
+      const board = page.locator('.cs-demo-board--scroll');
+      await board.scrollIntoViewIfNeeded();
+      const drag = await beginDrag(page, 'todo', 'research');
+      const boardBox = await board.boundingBox();
+      if (boardBox === null) throw new Error('Missing scroll board');
+      const height = await board.evaluate((element) => element.scrollHeight);
+      await page.mouse.move(boardBox.x + 100, boardBox.y + boardBox.height - 8, { steps: 12 });
+      await expect.poll(() => board.evaluate((element) =>
+        Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop))).toBeLessThan(1);
+
+      const placeholder = page.locator('[data-comins-sortable-placeholder]');
+      await expect(placeholder).toHaveCount(1);
+      await expect(placeholder).toBeHidden();
+      await expect(board).toHaveJSProperty('scrollHeight', height);
+      const scrollTop = await board.evaluate((element) => element.scrollTop);
+      await waitForFrameworkRender(page);
+      await expect(board).toHaveJSProperty('scrollTop', scrollTop);
+
+      if (ending === 'reenter') {
+        const reentryBox = await board.boundingBox();
+        if (reentryBox === null) throw new Error('Missing scroll board after scrolling');
+        await page.mouse.move(reentryBox.x + 100, reentryBox.y + reentryBox.height - 30, { steps: 3 });
+        await expect(placeholder).toBeVisible();
+        await drag.drop();
+        await expectModelAndDom(page, {
+          todo: ['design', 'build', 'review', 'release', 'document', 'observe', 'measure', 'improve', 'research'],
+        });
+      } else {
+        if (ending === 'escape') await page.keyboard.press('Escape');
+        await drag.drop();
+        await expectModelAndDom(page, { todo: initial });
+        await expect(page.getByRole('region', { name: '이벤트 타임라인' }).locator('li').last())
+          .toContainText(ending);
+      }
+      await expect(page.locator('[data-playground-dragging]')).toHaveCount(0);
+    }
+  });
+
   test(`${adapter} auto-scroll route moves its live scroll container`, async ({ page }) => {
     await page.goto(`/examples/auto-scroll/${adapter}`);
     await waitForRuntime(page);

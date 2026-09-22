@@ -18,8 +18,10 @@ import {
   type PlaygroundLocale,
 } from './locale.js';
 import { message } from './messages.js';
+import { NestedExampleGuide } from './NestedExampleGuide.js';
 import { loadPlaygroundDemo } from '../adapters/registry.js';
 import { PlaygroundRuntimeHost } from '../playground/runtime-host.js';
+import { exampleEntry, loadSourceFiles, primarySourcePath, type PlaygroundSourceFile } from '../playground/source-files.js';
 import {
   playgroundScenarios,
   scenarioById,
@@ -60,7 +62,8 @@ export function PlaygroundApp(): ReactElement {
   const [events, setEvents] = useState<readonly PlaygroundEvent[]>([]);
   const [dragStart, setDragStart] = useState<(PlaygroundEvent & { sequence: number }) | null>(null);
   const [operation, setOperation] = useState<PlaygroundOperation | null>(null);
-  const [source, setSource] = useState('');
+  const [sources, setSources] = useState<PlaygroundSourceFile[]>([]);
+  const [sourcePath, setSourcePath] = useState('');
   const [showCode, setShowCode] = useState(false);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [toggles, setToggles] = useState<Record<string, boolean>>(() => ({ ...defaultToggles }));
@@ -68,7 +71,9 @@ export function PlaygroundApp(): ReactElement {
   const runtimeTarget = useRef<HTMLDivElement | null>(null);
   const runtimeHost = useRef<PlaygroundRuntimeHost | null>(null);
   const sourcePanel = useRef<HTMLElement | null>(null);
-  const scenario = scenarioById(route.exampleId);
+  const scenario = scenarioById(route.exampleId, route.adapterId);
+  const sourceFiles = [exampleEntry({ ...route, locale }), ...sources];
+  const source = sourceFiles.find((file) => file.path === sourcePath);
   // Show the upward path used by the comparison instructions on every adapter.
   const threshold = values['swap-threshold'] ?? 0.5;
   const upwardBoundary = (toggles['invert-swap'] ? (1 - threshold) / 2 : (1 + threshold) / 2) * 100;
@@ -87,6 +92,7 @@ export function PlaygroundApp(): ReactElement {
   useEffect(() => {
     document.documentElement.lang = locale;
     writePlaygroundLocale(localStorage, locale);
+    runtimeHost.current?.setLocale(locale);
   }, [locale]);
 
   useEffect(() => {
@@ -111,6 +117,7 @@ export function PlaygroundApp(): ReactElement {
 
     let cancelled = false;
     setStatus('loading');
+    setSources([]);
     setEvents([]);
     setDragStart(null);
     setOperation(null);
@@ -119,7 +126,10 @@ export function PlaygroundApp(): ReactElement {
     void loadDemoModule(route)
       .then(async (demoModule) => {
         if (cancelled) return;
-        setSource(demoModule.source);
+        const files = await loadSourceFiles(route.adapterId, demoModule.source);
+        if (cancelled) return;
+        setSources(files);
+        setSourcePath(primarySourcePath[route.adapterId]);
         await runtimeHost.current?.mount(demoModule, { ...route, locale });
         if (!cancelled) setStatus('ready');
       })
@@ -173,7 +183,7 @@ export function PlaygroundApp(): ReactElement {
     <div className="cs-playground">
       <header className="cs-playground__header">
         <a className="cs-playground__brand" href="/examples/simple/react">
-          <span className="cs-playground__brand-mark" aria-hidden="true">co</span>
+          <img src="/comins-symbol.svg" width="40" height="40" alt="" style={{ flexShrink: 0 }} />
           <span>
             <strong>{message('brand', locale)}</strong>
             <small>{message('eyebrow', locale)}</small>
@@ -205,7 +215,7 @@ export function PlaygroundApp(): ReactElement {
                 className="cs-playground__example-tab"
                 onClick={() => navigate({ ...route, exampleId: item.id })}
               >
-                <span>{item.title[locale]}</span>
+                <span>{scenarioById(item.id, route.adapterId).title[locale]}</span>
               </button>
             ))}
           </div>
@@ -291,6 +301,9 @@ export function PlaygroundApp(): ReactElement {
             </div>
             {status === 'loading' && <p className="cs-playground__notice">{message('loading', locale)}</p>}
             {status === 'error' && <p className="cs-playground__notice" role="alert">{message('error', locale)}</p>}
+            {(route.exampleId === 'nested-controlled' || route.exampleId === 'tree') && (
+              <NestedExampleGuide exampleId={route.exampleId} adapter={route.adapterId} locale={locale} />
+            )}
             {route.exampleId === 'thresholds' && (
               <div className="cs-playground__threshold-guide" data-threshold-guide>
                 <p>{locale === 'ko'
@@ -323,8 +336,16 @@ export function PlaygroundApp(): ReactElement {
               className="cs-playground__panel cs-playground__source"
               aria-label={message('code', locale)}
             >
-              <div className="cs-playground__panel-heading"><span>{route.adapterId}.ts</span><span>read only</span></div>
-              <pre><code>{source}</code></pre>
+              <div className="cs-playground__panel-heading"><span>{source?.path}</span><span>read only</span></div>
+              <p>{locale === 'ko'
+                ? '현재 예제의 main.ts와 공통 어댑터 구현·보조 파일입니다. 라이브러리 경로는 공개 패키지 import로 바꿨습니다. 파일 구조를 유지하고 comins-sortable 및 선택한 프레임워크를 설치한 Vite 환경에서 사용하세요. React는 TSX, Svelte는 .svelte 컴파일 설정이 필요합니다. 단일 파일만으로 실행되는 예제가 아닙니다.'
+                : 'main.ts selects this example; the adapter implementation and helper files are shared. Library imports use the public package. Preserve the file layout in a Vite project with comins-sortable and the selected framework installed. React needs TSX support and Svelte needs .svelte compilation. This is a multi-file example.'}</p>
+              <label>{locale === 'ko' ? '예제 파일' : 'Example file'}{' '}
+                <select data-source-file value={sourcePath} onChange={(event) => setSourcePath(event.target.value)}>
+                  {sourceFiles.map((file) => <option key={file.path} value={file.path}>{file.path}</option>)}
+                </select>
+              </label>
+              <pre><code>{source?.code}</code></pre>
             </section>
           )}
         </main>

@@ -74,6 +74,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
   mount(container, input, bridge) {
     let sortable: Sortable | null = null;
     let state = createDemoState(input.exampleId);
+    let locale = input.locale;
     let allowed = true;
     let destroyed = false;
     let copySequence = 0;
@@ -112,7 +113,8 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
             const shell = document.createElement('div');
             shell.className = 'cs-demo-nested-shell';
             const label = document.createElement('strong');
-            label.textContent = `${item.title} ${input.locale === 'ko' ? '하위 항목' : 'children'}`;
+            label.dataset.childrenTitle = item.title;
+            label.textContent = `${item.title} ${locale === 'ko' ? '하위 항목' : 'children'}`;
             shell.append(label, treeArea(treeChildAreaId(item)));
             element.append(shell);
           }
@@ -171,7 +173,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
 
       const board = document.createElement('div');
       board.className = `cs-demo-board${input.exampleId === 'auto-scroll' ? ' cs-demo-board--scroll' : ''}${isNestedExample(input.exampleId) ? ' cs-demo-board--nested' : ''}${(input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? ' cs-demo-board--grid' : ''}`;
-      const todo = area('todo', input.locale === 'ko' ? '진행할 작업' : 'To do', todoItems);
+      const todo = area('todo', locale === 'ko' ? '진행할 작업' : 'To do', todoItems);
       const todoList = todo.querySelector<HTMLElement>('[data-demo-area="todo"]')!;
       if ((input.exampleId === 'grid' || input.exampleId === 'swap-grid')) todoList.classList.add('cs-demo-list--grid');
       if (input.exampleId === 'third-party' || input.exampleId === 'functional-third-party') {
@@ -183,7 +185,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
       board.append(todo);
       let done: HTMLElement | null = null;
       if (hasSecondArea(input.exampleId)) {
-        done = area('done', input.locale === 'ko' ? '완료' : 'Done', state.done);
+        done = area('done', locale === 'ko' ? '완료' : 'Done', state.done);
         const doneList = done.querySelector<HTMLElement>('[data-demo-area="done"]')!;
         if (input.exampleId === 'two-list-slots') {
           doneList.prepend(slot('header'));
@@ -197,7 +199,8 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
         const shell = document.createElement('div');
         shell.className = 'cs-demo-nested-shell';
         const title = document.createElement('strong');
-        title.textContent = 'Research children';
+        title.dataset.childrenTitle = 'Research';
+        title.textContent = `Research ${locale === 'ko' ? '하위 항목' : 'children'}`;
         childList = document.createElement('div');
         childList.className = 'cs-demo-list cs-demo-list--nested';
         childList.dataset.demoArea = 'child';
@@ -299,6 +302,17 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           for (const item of items.reverse()) target?.append(item);
           sortable?.refreshArea(targetArea);
           publishModel();
+        }
+      },
+      setLocale(value) {
+        locale = value;
+        for (const label of container.querySelectorAll<HTMLElement>('[data-children-title]')) {
+          label.textContent = `${label.dataset.childrenTitle} ${locale === 'ko' ? '하위 항목' : 'children'}`;
+        }
+        for (const areaId of ['todo', 'done']) {
+          const title = container.querySelector(`[data-demo-column="${areaId}"] > header strong`);
+          if (title !== null) title.textContent = areaId === 'todo'
+            ? (locale === 'ko' ? '진행할 작업' : 'To do') : (locale === 'ko' ? '완료' : 'Done');
         }
       },
       reset: render,

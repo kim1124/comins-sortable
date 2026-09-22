@@ -13,11 +13,39 @@ All notable behavior and public API changes to this project are recorded here.
   refresh rates, avoid extra movement from duplicate callbacks, and limit
   catch-up after a delayed frame.
 - Support negative horizontal scroll offsets in RTL containers and pages.
+- Clear multi-selection and range anchors when resetting the React, Vue, and
+  Svelte Playground examples, matching the Vanilla reset behavior.
+- Hide insertion feedback when no valid drop destination exists while retaining
+  the move placeholder's layout space, then restore feedback on reentry without
+  shrinking the scroll range.
+
+- Update live Playground labels when switching languages without resetting list
+  order or selection. Correct the modifier-copy title to Alt/Option.
+
+### Changed
+
+- Remove the decorative color stripe from Playground cards while preserving
+  drag handles and body-text selection.
+- Rename the nested controlled and tree examples to Per-list state control and
+  Subtree movement. Add initial structure diagrams and bilingual steps that
+  explain expected outcomes and shared behavior.
+
+- Resolve Playground descriptions and API labels per adapter, distinguishing
+  Vanilla DOM updates from framework array state and direct DOM hosts from
+  React/Vue component hosts.
+- Show correctly named source files, helper dependencies, and a route-specific
+  entry in View code, using public package imports and explicit build prerequisites.
 
 ### Documentation
 
 - Focus the README on usage and examples, remove fixed current-version prose,
   and add npm search keywords and a description covering all four adapters.
+- Explain Playground selection resets and invalid-destination feedback in the
+  English and Korean guides. Link the latest local validation separately from
+  earlier artifact, native Safari, and GIF capture records.
+- Capture a new Playground GIF from the 0.1.3 working source, showing selection
+  reset, per-list state updates, subtree movement, and scroll-boundary feedback.
+  Update the README and capture record to match the scenes and current design.
 
 ## 0.1.2 - 2026-09-11
 

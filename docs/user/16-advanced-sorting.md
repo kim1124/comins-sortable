@@ -93,6 +93,16 @@ the library's selection markers and range anchor; re-registering starts with
 an empty selection. This cleanup preserves unrelated CSS classes and browser
 text selection.
 
+The Playground's **Reset** button restores the example and clears selected IDs,
+selection styling, and the Shift-range anchor in all four adapters. After a
+reset, Shift-clicking Review selects only Review. Ordinary controlled item
+updates do not reset the selection; replacing an array alone is not a full
+selection reset. The Playground resets the relevant sortable registrations
+explicitly. There is no public `reset()` API.
+
+The [Playground GIF](../playground-preview.md) shows selecting Build, resetting,
+Shift-selecting Review, and moving only Review to the front.
+
 ## Sorting thresholds
 
 `swapThreshold` (0–1) controls where the pointer must enter a target card before

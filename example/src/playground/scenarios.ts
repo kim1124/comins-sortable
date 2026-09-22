@@ -1,4 +1,4 @@
-import type { PlaygroundExampleId } from '../app/navigation.js';
+import type { PlaygroundAdapterId, PlaygroundExampleId } from '../app/navigation.js';
 import type { PlaygroundScenario } from './types.js';
 
 const resetControl = {
@@ -50,7 +50,7 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'modifier-copy',
-    title: { ko: '보조키 복제', en: 'Clone on control' },
+    title: { ko: '보조키 복제', en: 'Copy with Alt/Option' },
     description: {
       ko: 'Alt/Option을 누른 드래그는 복제하고 일반 드래그는 이동합니다.',
       en: 'Hold Alt/Option to copy; drag normally to move.',
@@ -154,8 +154,8 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'nested-controlled',
-    title: { ko: '제어형 중첩 상태', en: 'Nested controlled state' },
-    description: { ko: '중첩 목록의 각 collection을 불변 상태 갱신으로 제어합니다.', en: 'Control every nested collection with immutable state updates.' },
+    title: { ko: '목록별 상태 제어', en: 'Per-list state control' },
+    description: { ko: '부모 목록과 자식 목록을 별도 배열로 관리합니다. 자식 순서 뒤집기를 눌러 부모 순서는 유지하면서 자식 목록만 갱신되는지 확인하세요.', en: 'Keep parent and child lists in separate arrays. Press Reverse children to update the child list while keeping the parent order unchanged.' },
     api: ['parent', 'onItemsChange', 'onChange'],
     controls: [{ id: 'reverse-child', kind: 'button', label: { ko: '자식 순서 뒤집기', en: 'Reverse children' } }, resetControl],
   },
@@ -205,10 +205,10 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
   {
     id: 'tree',
-    title: { ko: '트리 데이터 정렬', en: 'Tree data sorting' },
+    title: { ko: '하위 트리 이동', en: 'Subtree movement' },
     description: {
-      ko: '중첩 목록의 영역을 따로 관리하는 대신 하나의 트리 데이터로 3단계 계층을 관리합니다. Review를 Design의 자식 영역으로 옮기면 Document와 Observe도 함께 이동합니다.',
-      en: 'Manage three levels as one tree value instead of separate nested lists. Move Review into the children of Design to move Document and Observe with it.',
+      ko: '하나의 children 트리에서 부모 관계를 변경합니다. Review를 Design의 자식 영역으로 옮겨 Document와 Observe가 Review 아래에 그대로 따라가는지 확인하세요.',
+      en: 'Change parent relationships within one children tree. Move Review into Design and check that Document and Observe remain under Review.',
     },
     api: ['createSortableTree', 'getAreas', 'updateArea'],
     controls: [{ id: 'reverse-child', kind: 'button', label: { ko: '자식 순서 뒤집기', en: 'Reverse children' } }, resetControl],
@@ -235,6 +235,64 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   },
 ];
 
-export function scenarioById(id: PlaygroundExampleId): PlaygroundScenario {
-  return playgroundScenarios.find((scenario) => scenario.id === id) ?? playgroundScenarios[0]!;
+export function scenarioById(id: PlaygroundExampleId, adapter: PlaygroundAdapterId = 'react'): PlaygroundScenario {
+  const scenario = playgroundScenarios.find((entry) => entry.id === id) ?? playgroundScenarios[0]!;
+  const api = scenario.api.flatMap((name) => {
+    if (['ignore', 'disabled', 'grid collision', 'nested-cycle', 'prefers-reduced-motion'].includes(name)) return [];
+    if (name === 'copyElement') return adapter === 'vanilla' ? [name] : [];
+    if (name === 'copyItem') return adapter === 'vanilla' ? [] : [name];
+    if (name === 'itemKey' && adapter === 'vanilla') return [];
+    if (name === 'items') return [adapter === 'vanilla' ? 'item' : adapter === 'vue' ? 'modelValue' : name];
+    if (name === 'onItemsChange') return [adapter === 'vanilla' ? 'onChange' : adapter === 'vue' ? 'update:modelValue' : name];
+    if (name === 'item selector') return adapter === 'vanilla' || adapter === 'svelte' ? ['item'] : [];
+    if ((name === 'header' || name === 'footer') && (adapter === 'vanilla' || adapter === 'svelte')) return ['item'];
+    return [name];
+  });
+  const resolved = { ...scenario, api: [...new Set(api)] };
+  if (id === 'modifier-copy' && adapter === 'vanilla') resolved.api.push('copyElement');
+  if (id === 'tree' && adapter === 'vanilla') resolved.api.push('applyChange');
+  if (id === 'third-party' || id === 'functional-third-party') {
+    const nested = id === 'functional-third-party';
+    const hosts = {
+      react: {
+        api: ['as', 'areaProps'],
+        description: { ko: 'React의 as에 사용자 컴포넌트를 전달합니다. 컴포넌트는 ref와 정렬 속성을 실제 section DOM으로 전달합니다.', en: 'Pass a consumer component through React as. It forwards the ref and sortable attributes to a section element.' },
+      },
+      vue: {
+        api: ['tag', 'componentProps'],
+        description: { ko: 'Vue의 tag에 사용자 컴포넌트를 전달하고 componentProps로 Host 속성을 지정합니다. 컴포넌트의 루트 section이 정렬 Host가 됩니다.', en: 'Pass a consumer component through Vue tag and host attributes through componentProps. Its root section becomes the sortable host.' },
+      },
+      svelte: {
+        api: ['sortable', 'item'],
+        description: { ko: '직접 작성한 div에 use:sortable 액션을 연결합니다. React·Vue의 Host 컴포넌트 교체와 달리 실제 DOM에 정렬을 연결하는 방식입니다.', en: 'Attach the use:sortable action to a div you render. This registers the actual DOM element; it does not replace a host component through React or Vue props.' },
+      },
+      vanilla: {
+        api: ['createSortable', 'item'],
+        description: { ko: '직접 생성한 div를 createSortable에 전달합니다. 컴포넌트나 ref 전달 없이 실제 DOM을 정렬 Host로 등록합니다.', en: 'Pass a div you create to createSortable. The actual DOM is registered as the host without a component or ref-forwarding contract.' },
+      },
+    }[adapter];
+    return {
+      ...resolved,
+      title: adapter === 'vanilla' || adapter === 'svelte'
+        ? { ko: nested ? '직접 DOM Host 중첩' : '직접 DOM Host', en: nested ? 'Nested DOM hosts' : 'Direct DOM host' }
+        : resolved.title,
+      description: {
+        ko: hosts.description.ko + (nested ? ' 자식 영역은 parent로 Research와 연결합니다.' : ''),
+        en: hosts.description.en + (nested ? ' The child area declares Research as its parent.' : ''),
+      },
+      api: [...hosts.api, ...(nested ? ['parent'] : [])],
+    };
+  }
+  if (adapter === 'vanilla') {
+    if (id === 'simple') resolved.description = { ko: '하나의 목록에서 DOM 항목의 순서를 직접 변경합니다.', en: 'Reorder DOM items within one list.' };
+    if (id === 'two-lists') resolved.description = { ko: '같은 그룹의 두 DOM 목록 사이에서 항목을 이동합니다.', en: 'Move DOM items between two grouped lists.' };
+    if (id === 'transition') resolved.description = { ko: '드래그 재배치를 FLIP 전환으로 표시합니다. 순서 뒤집기는 DOM 순서를 직접 바꾼 뒤 영역을 갱신합니다.', en: 'Animate drag layout changes with FLIP. Reverse items directly changes DOM order and refreshes the area.' };
+    if (id === 'nested-controlled') return {
+      ...resolved,
+      title: { ko: '목록별 DOM 갱신', en: 'Per-list DOM updates' },
+      description: { ko: '부모·자식 DOM 목록을 별도로 다룹니다. 자식 순서 뒤집기는 부모 순서를 유지하면서 자식 DOM만 재배치하고 refreshArea로 영역을 갱신합니다. 배열 상태를 제어하는 예제가 아닙니다.', en: 'Manage parent and child DOM lists separately. Reverse children reorders only the child DOM and calls refreshArea, preserving the parent order. This example does not control array state.' },
+      api: ['parent', 'refreshArea', 'onChange'],
+    };
+  }
+  return resolved;
 }

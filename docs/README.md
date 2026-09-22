@@ -49,20 +49,37 @@ handles. Table-row and table-column demos are no longer included.
 본문에서 수행합니다. 다중 선택은 보조키와 핸들 클릭을 사용합니다.
 테이블 행·열 데모는 현재 제공하지 않습니다.
 
+In React, Vue, and Svelte **Per-list state control** (`nested-controlled`), change a child array while
+keeping the parent order. In **Subtree movement** (`tree`), move Review under
+Design with its descendants. Both examples explain their initial data structure,
+steps, and expected results. The [Playground preview](./playground-preview.md)
+also shows selection reset and scroll-boundary feedback from the 0.1.3 source.
+
+React·Vue·Svelte의 **목록별 상태 제어**(`nested-controlled`)에서는 부모 순서를 유지하면서 자식 배열을
+변경하고, **하위 트리 이동**(`tree`)에서는 Review와 그 하위 항목을 Design 아래로
+함께 이동합니다. 각 예제는 초기 구조·조작 순서·기대 결과를 설명합니다.
+[Playground 미리보기](./playground-preview.md)에는 0.1.3 소스의 선택 초기화와
+스크롤 경계 미리보기 동작도 담았습니다.
+
 ## Verification records
 
-- [0.1.3 local candidate and Safari verification scope](../reports/2026-09-14-0.1.3-preparation.md)
+- [0.1.3 local validation after the Playground reset and feedback fixes](./verification/0.1.3-local-validation.md)
+- [0.1.3 earlier artifact and native Safari preparation record](../reports/2026-09-14-0.1.3-preparation.md)
 - [0.1.2 runtime, browser evidence, and publication checks](./verification/0.1.2-release-candidate.md)
 - [0.1.2 performance and memory verification](./verification/0.1.2-performance.md)
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
-The performance investigation and test gap audit are historical records. The
-0.1.2 release record identifies its merged runtime and publication evidence;
-the 0.1.3 preparation record describes the current local candidate.
+The 0.1.3 local validation record covers the latest reset and feedback fixes.
+The earlier preparation record's tarball, consumer, and native Safari checks
+predate those fixes. The 0.1.2 records remain historical. The refreshed GIF was
+captured from the 0.1.3 working source on 2026-09-16. Local validation and
+capture do not establish publication status.
 
-성능 조사와 테스트 누락 분석은 과거 기록입니다. 0.1.2 배포 기록과
-0.1.3 로컬 후보 준비 기록에서 각 버전의 검증 범위를 확인합니다.
+0.1.3 로컬 검증 기록은 최신 초기화·미리보기 수정을 포함합니다. 이전 준비 기록의
+tarball·소비자·실제 Safari 검증은 이 수정 전 결과입니다. 0.1.2 기록은 이력으로
+유지하고, GIF는 2026-09-16의 0.1.3 작업 소스로 다시 촬영했습니다.
+로컬 검증과 촬영이 배포 완료를 의미하지는 않습니다.
 
 ## Historical records
 
@@ -71,3 +88,13 @@ their recorded implementation stages. They are not current user guides.
 
 `superpowers/specs`와 `superpowers/plans`는 당시 구현 단계의 결정과 증거를
 보존하는 이력 문서이며 현재 사용자 가이드가 아닙니다.
+
+Vanilla uses **Per-list DOM updates** on the same route: it reorders child DOM
+and calls `refreshArea`. The descriptions and API labels follow the selected adapter.
+
+같은 경로의 Vanilla 탭은 **목록별 DOM 갱신**입니다. 자식 DOM을 재배치한 뒤
+`refreshArea`를 호출합니다. 설명과 API 표시는 선택한 어댑터를 기준으로 합니다.
+
+See [Playground reference and source files](./playground-reference.md) before reusing
+these examples in a documentation site. DOC 사이트에서 참조할 때는 위 문서의
+어댑터 구분, 소스 파일 구성과 실행 조건을 함께 확인합니다.

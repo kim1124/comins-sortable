@@ -54,6 +54,13 @@ consumer class 또는 공개 CSS 변수를 재정의할 수 있습니다.
 }
 ```
 
+유효한 드롭 대상이 없으면 삽입 표시를 숨기고, 다시 유효한 영역에 들어오면
+표시를 복원합니다. 이동 중에는 숨겨진 Placeholder의 공간을 유지하여 목록 높이와
+스크롤 범위가 갑자기 줄어들지 않도록 합니다.
+
+[Playground GIF](../playground-preview.md)의 스크롤 경계 장면에서 숨김·재진입·드롭
+순서를 확인할 수 있습니다.
+
 Placeholder는 consumer item 데이터를 복사하지 않습니다. drop, cancel, error,
 unmount 또는 destroy의 모든 종료 경로에서 제거됩니다.
 

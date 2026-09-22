@@ -54,6 +54,13 @@ Override consumer classes or the public variables:
 }
 ```
 
+Insertion feedback is hidden when there is no valid drop destination and restored
+on reentry. During a move, the hidden placeholder retains its layout space so the
+list height and scroll range do not suddenly shrink.
+
+See the scroll-boundary scene in the [Playground GIF](../playground-preview.md)
+for the hide, reentry, and drop sequence.
+
 The placeholder does not copy consumer item data. It is removed on every drop,
 cancel, error, unmount, or destroy path.
 

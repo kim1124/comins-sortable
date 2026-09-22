@@ -74,3 +74,11 @@ Playground:
 - <http://127.0.0.1:4003/examples/footer-slot/react>
 - <http://127.0.0.1:4003/examples/header-slot/react>
 - <http://127.0.0.1:4003/examples/two-list-slots/react>
+
+## Playground Host examples
+
+React uses `as` and ref forwarding; Vue uses `tag` and `componentProps`.
+Svelte attaches `use:sortable` to a div, and Vanilla passes a div to
+`createSortable`. These two tabs demonstrate direct DOM registration rather
+than component replacement. The `functional-third-party` route follows the
+same distinction and connects the child area through `parent`.

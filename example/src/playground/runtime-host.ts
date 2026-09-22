@@ -4,12 +4,14 @@ import type {
   PlaygroundDemoInput,
   PlaygroundDemoModule,
 } from './types.js';
+import type { PlaygroundLocale } from '../app/locale.js';
 
 export class PlaygroundRuntimeHost {
   readonly #container: HTMLElement;
   readonly #sink: PlaygroundBridge;
   #generation = 0;
   #handle: PlaygroundDemoHandle | null = null;
+  #locale: PlaygroundLocale | null = null;
 
   constructor(container: HTMLElement, bridge: PlaygroundBridge) {
     this.#container = container;
@@ -34,6 +36,7 @@ export class PlaygroundRuntimeHost {
     }
 
     this.#handle = handle;
+    handle.setLocale?.(this.#locale ?? input.locale);
     this.#container.dataset.playgroundMounted = `${input.exampleId}/${input.adapterId}`;
   }
 
@@ -43,6 +46,11 @@ export class PlaygroundRuntimeHost {
 
   reset(): void {
     this.#handle?.reset();
+  }
+
+  setLocale(locale: PlaygroundLocale): void {
+    this.#locale = locale;
+    this.#handle?.setLocale?.(locale);
   }
 
   destroy(): void {

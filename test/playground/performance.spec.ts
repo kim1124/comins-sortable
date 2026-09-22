@@ -218,7 +218,7 @@ async function exerciseAllFeatures(page: Page): Promise<void> {
   await expectModel(page, 'todo', ['design', 'research']);
   await expectModel(page, 'child', ['build', 'review', 'release']);
 
-  await openFeature(page, '제어형 중첩 상태', 'nested-controlled');
+  await openFeature(page, '목록별 상태 제어', 'nested-controlled');
   await page.getByRole('button', { name: '자식 순서 뒤집기' }).click();
   await expectModel(page, 'child', ['release', 'review']);
 
@@ -262,7 +262,7 @@ async function exerciseAllFeatures(page: Page): Promise<void> {
   await expect.poll(() => board.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
   await page.mouse.up();
 
-  await openFeature(page, '트리 데이터 정렬', 'tree');
+  await openFeature(page, '하위 트리 이동', 'tree');
   await dragItem(page, 'todo', 'design', { areaId: 'child', beforeId: 'review' });
   await expectModel(page, 'todo', ['research', 'build']);
   await expectModel(page, 'child', ['design', 'review', 'release']);

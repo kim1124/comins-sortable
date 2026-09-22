@@ -72,3 +72,11 @@ Playground:
 - <http://127.0.0.1:4003/examples/footer-slot/react>
 - <http://127.0.0.1:4003/examples/header-slot/react>
 - <http://127.0.0.1:4003/examples/two-list-slots/react>
+
+## Playground Host 설명
+
+React는 `as`와 ref 전달, Vue는 `tag`와 `componentProps`를 사용합니다.
+Svelte는 직접 작성한 `div`에 `use:sortable`을 연결하고, Vanilla는 생성한 `div`를
+`createSortable`에 전달합니다. 뒤의 두 탭은 컴포넌트 교체 예제가 아니라 직접 DOM
+등록 예제입니다. `functional-third-party` 경로도 이 차이를 유지하며 `parent`로
+자식 영역을 연결합니다.

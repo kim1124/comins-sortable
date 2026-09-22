@@ -46,6 +46,16 @@ export function AnimatedScrollExample() {
 unmount 또는 destroy에서 중지합니다. 컨테이너에 실제 overflow와 제한된 크기가
 있어야 하며 option이 scroll CSS를 생성하지는 않습니다.
 
+스크롤 컨테이너와 유효한 드롭 대상의 경계는 다를 수 있습니다. 예를 들어 컨테이너의
+하단 여백에서는 목록이 스크롤되어도 포인터가 등록된 드롭 영역 밖에 있을 수 있습니다.
+이때 삽입 미리보기를 숨기며, 유효한 대상 없이 놓으면 이동을 취소합니다. 유효한
+영역으로 재진입하면 미리보기를 복원합니다. 숨긴 이동용 Placeholder는 공간을
+유지하므로 숨김 때문에 스크롤 범위가 줄어들지 않습니다.
+[Placeholder 스타일](./13-placeholder.md)에서 자세히 설명합니다.
+
+[Playground GIF](../playground-preview.md)에서 React의 하단 여백 이탈 시 미리보기
+숨김, 재진입 시 복원, 마지막 위치로 드롭하는 흐름을 확인할 수 있습니다.
+
 0.1.3부터 기존 60Hz 속도를 기준으로 경과 시간에 비례하여
 스크롤하고, 프레임 지연 뒤 한 번에 지나치게 이동하지 않도록 제한합니다.
 CSS `direction: rtl`인 컨테이너와 페이지의 음수 `scrollLeft` / `scrollX`도

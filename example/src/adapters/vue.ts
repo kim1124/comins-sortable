@@ -38,6 +38,7 @@ import source from './vue.ts?raw';
 import { waitForAdapterReady } from './adapter-ready.js';
 
 interface DemoCommands {
+  setLocale(locale: 'ko' | 'en'): void;
   dispatch(controlId: string, value?: string | number | boolean): void;
   reset(): void;
 }
@@ -75,6 +76,8 @@ export const vueDemoModule: PlaygroundDemoModule = {
         const allowed = ref(true);
         const swapThreshold = ref(0.5);
         const invertSwap = ref(false);
+        const resetRevision = ref(0);
+        const locale = ref(input.locale);
         let copySequence = 0;
         const secondArea = hasSecondArea(input.exampleId);
         const todoGroup = input.exampleId === 'clone' || input.exampleId === 'custom-clone'
@@ -97,6 +100,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
         };
 
         commands = {
+          setLocale(value) { locale.value = value; },
           dispatch(controlId, value) {
             if (controlId === 'accept-destination' && typeof value === 'boolean') allowed.value = value;
             if (controlId === 'reverse-items') state.value = { ...state.value, todo: [...state.value.todo].reverse() };
@@ -110,6 +114,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
             swapThreshold.value = 0.5;
             invertSwap.value = false;
             state.value = createDemoState(input.exampleId);
+            resetRevision.value += 1;
             bridge.publishOperation(null);
           },
         };
@@ -120,7 +125,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
         const childArea = (): VNode => {
           const treeArea = input.exampleId === 'tree' ? demoTreeArea(state.value, 'child') : null;
           return h('div', { class: 'cs-demo-nested-shell' }, [
-          h('strong', 'Research children'),
+          h('strong', `Research ${locale.value === 'ko' ? '하위 항목' : 'children'}`),
           h(SortableArea<DemoItem>, {
             tag: input.exampleId === 'functional-third-party' ? ComponentHost : 'div',
             componentProps: {
@@ -150,7 +155,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
           }, {
             item: ({ item }: { item: DemoTreeNode }) => itemCard(item,
               item.acceptsChildren ? h('div', { class: 'cs-demo-nested-shell' }, [
-                h('strong', `${item.title} ${input.locale === 'ko' ? '하위 항목' : 'children'}`),
+                h('strong', `${item.title} ${locale.value === 'ko' ? '하위 항목' : 'children'}`),
                 treeArea(treeChildAreaId(item)),
               ]) : undefined),
           });
@@ -159,7 +164,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
           'section',
           { class: 'cs-demo-column', 'data-demo-column': areaId },
           [
-            h('header', [h('div', [h('strong', areaId === 'todo' ? 'To do' : 'Done'), h('small', `${items.length} items`)])]),
+            h('header', [h('div', [h('strong', areaId === 'todo' ? (locale.value === 'ko' ? '진행할 작업' : 'To do') : (locale.value === 'ko' ? '완료' : 'Done')), h('small', `${items.length} items`)])]),
             h('div', { class: 'cs-demo-list-shell', role: 'list' }, [
               h(SortableArea<DemoItem>, {
                 tag: input.exampleId === 'third-party' || input.exampleId === 'functional-third-party'
@@ -208,6 +213,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
         );
 
         return () => h(SortableRoot<DemoItem>, {
+          key: resetRevision.value,
           onBeforeDragStart: () => event('beforeDragStart'),
           onDragStart: ({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) }),
           onInsertDragArea: ({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId }),
@@ -234,6 +240,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
     await waitForAdapterReady();
     return {
       dispatch(controlId, value) { commands?.dispatch(controlId, value); },
+      setLocale(locale) { commands?.setLocale(locale); },
       reset() { commands?.reset(); },
       destroy() { commands = null; app.unmount(); },
     };

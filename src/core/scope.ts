@@ -651,6 +651,7 @@ export function createSortableScopeInternal(
       pointer,
       destination: located.destination?.location ?? null,
     };
+    dragging.feedback?.setVisible(located.destination !== undefined);
 
     options.onDrag?.(dragging.context);
     if (!locationsEqual(previousDestination, dragging.context.destination)) {
