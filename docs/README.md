@@ -77,7 +77,8 @@ the open issue and the default dedicated-handle mode.
 
 ## Verification records
 
-- [Current artifact and native Safari finding](../reports/2026-09-22-final-artifact-safari-validation.md)
+- [0.1.3 publication and post-publication verification](../reports/2026-09-22-0.1.3-publication.md)
+- [Pre-publication artifact and native Safari finding](../reports/2026-09-22-final-artifact-safari-validation.md)
 
 - [0.1.3 local validation after the Playground reset and feedback fixes](./verification/0.1.3-local-validation.md)
 - [0.1.3 earlier artifact and native Safari preparation record](../reports/2026-09-14-0.1.3-preparation.md)
@@ -91,11 +92,15 @@ Earlier tarball, consumer, and native Safari checks do not cover subsequent
 source changes. The 0.1.2 records remain historical. The refreshed GIF was
 captured from the 0.1.3 working source on 2026-09-22. Local validation and
 capture do not establish publication status.
+Version 0.1.3 was published on 2026-09-22; the publication record above documents
+the exact public artifact, signatures, provenance, consumer checks, and closure.
 
 0.1.3 로컬 검증 색인은 후속 작업별 검증 소스와 범위를 구분합니다. 이전
 tarball·소비자·실제 Safari 검증을 이후 변경 소스의 결과로 사용하지 않습니다. 0.1.2 기록은 이력으로
 유지하고, GIF는 2026-09-22의 0.1.3 작업 소스로 다시 촬영했습니다.
 로컬 검증과 촬영이 배포 완료를 의미하지는 않습니다.
+0.1.3은 2026-09-22에 공개되었습니다. 위 배포 기록에서 실제 공개 파일·서명·출처·
+소비자 검증과 배포 종료 상태를 확인할 수 있습니다.
 
 ## Historical records
 
