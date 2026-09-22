@@ -88,7 +88,7 @@
     "test:playground": "playwright test --config=playwright.playground.config.ts",
     "test:performance": "playwright test --config=playwright.performance.config.ts",
     "verify:e2e": "npm run test:e2e",
-    "verify:playground": "npm run playground:build && npm run test:playground",
+    "verify:playground": "npm run build && npm run playground:build && npm run test:playground",
     "verify:performance": "npm run playground:build && npm run test:performance",
     "verify:package-artifact": "node scripts/verify-package-artifact.mjs",
     "verify:full": "npm run verify && npm run verify:e2e",

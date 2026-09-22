@@ -2,7 +2,7 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
-## 0.1.3 - 2026-09-14
+## 0.1.3 - 2026-09-22
 
 ### Fixed
 
