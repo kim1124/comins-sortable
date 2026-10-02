@@ -7,7 +7,6 @@ export const DEFAULT_IGNORE_SELECTOR = [
   'select',
   'button',
   'a[href]',
-  '[contenteditable="true"]',
   '[data-comins-sortable-ignore]',
 ].join(',');
 
@@ -370,8 +369,18 @@ export function allowsPointerTarget(
     ? null
     : closestWithin(target, source, options.handle);
   if (options.handle !== undefined && handle === null) return false;
-  return handle !== null
-    || closestWithin(target, source, options.ignore ?? DEFAULT_IGNORE_SELECTOR) === null;
+  if (handle !== null) return true;
+  if (options.ignore === undefined && isEditable(target)) return false;
+  return closestWithin(target, source, options.ignore ?? DEFAULT_IGNORE_SELECTOR) === null;
+}
+
+function isEditable(target: Element): boolean {
+  // Use the browser's effective state, including inheritance and false islands.
+  // SVG descendants do not expose this property; consult their HTML ancestor.
+  for (let element: Element | null = target; element !== null; element = element.parentElement) {
+    if ('isContentEditable' in element) return element.isContentEditable === true;
+  }
+  return false;
 }
 
 function canStartPointer(input: PointerInput): boolean {

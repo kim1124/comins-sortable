@@ -36,7 +36,6 @@ import type { SortablePlatform } from './platform.js';
 import {
   allowsPointerTarget,
   createPointerSensor,
-  DEFAULT_IGNORE_SELECTOR,
 } from './pointer.js';
 import type {
   PointerInput,
@@ -82,7 +81,7 @@ interface NormalizedAreaOptions {
   direction: SortableDirection;
   disabled: boolean;
   handle?: string;
-  ignore: string;
+  ignore?: string;
   activationDistance: number;
   emptyInsertThreshold: number;
   swapThreshold?: number;
@@ -118,6 +117,7 @@ interface ScopeArea {
 type RejectionReason = 'disabled' | 'not-accepted' | 'nested-cycle';
 
 interface ActiveDrag {
+  areaSnapshots: ReadonlyMap<ScopeArea, { elements: readonly Element[]; ids: readonly SortableId[] }>;
   sourceArea: ScopeArea;
   sourceElement: Element;
   sourceElements: readonly Element[];
@@ -405,7 +405,13 @@ export function createSortableScopeInternal(
       finishing.feedback?.destroy();
       for (const area of animatedAreas) area.animator.play();
     } else {
-      finishing.feedback?.rollback();
+      // An external owner can reorder, replace or remove the source during a
+      // drag. In that case only release our feedback; never reinsert stale DOM.
+      if (session.state.status === 'dragging' && !areaUnchanged(finishing, finishing.sourceArea)) {
+        finishing.feedback?.destroy();
+      } else {
+        finishing.feedback?.rollback();
+      }
       for (const area of animatedAreas) area.animator.cancel(true);
     }
 
@@ -447,7 +453,10 @@ export function createSortableScopeInternal(
             registry.itemIds(order.areaId),
             order.itemIds,
           ));
-          if (committed) syncAllSelections();
+          if (committed) {
+            updateSelectionAfterChange(change);
+            syncAllSelections();
+          }
           finish(committed ? 'drop' : 'state-not-committed', change);
         } catch (error) {
           finish('error', undefined, error);
@@ -479,6 +488,12 @@ export function createSortableScopeInternal(
     }
 
     try {
+      const destinationArea = areas.get(destination.areaId);
+      if (!areaUnchanged(dragging, dragging.sourceArea)
+        || destinationArea === undefined || !areaUnchanged(dragging, destinationArea)) {
+        finish('state-not-committed');
+        return;
+      }
       const sourceIds = registry.itemIds(dragging.sourceArea.options.areaId);
       let change: SortableChange | null;
       if (
@@ -559,7 +574,6 @@ export function createSortableScopeInternal(
         finish('drop');
         return;
       }
-      updateSelectionAfterChange(change);
       session.commit(change);
       options.onChange?.(change);
       verifyCommit(change);
@@ -707,6 +721,10 @@ export function createSortableScopeInternal(
   ): boolean => {
     try {
       registry.itemIds(area.options.areaId);
+      const areaSnapshots = new Map([...areas.values()].map((candidate) => {
+        const elements = directItems(candidate);
+        return [candidate, { elements, ids: elements.map((item) => candidate.options.getItemId(item)) }] as const;
+      }));
       const elements = directItems(area);
       const sourceIndex = elements.indexOf(sourceElement);
       if (sourceIndex === -1) {
@@ -751,6 +769,7 @@ export function createSortableScopeInternal(
       if (area.options.disabled) {
         session.activate(activeSession);
         active = {
+          areaSnapshots,
           sourceArea: area,
           sourceElement,
           sourceElements: [sourceElement],
@@ -809,6 +828,7 @@ export function createSortableScopeInternal(
         feedback.place(parent, sourceElement);
       }
       active = {
+        areaSnapshots,
         sourceArea: area,
         sourceElement,
         sourceElements,
@@ -1123,6 +1143,19 @@ export function createSortableScopeInternal(
     }
   }
 
+  function areaUnchanged(dragging: ActiveDrag, area: ScopeArea): boolean {
+    const snapshot = dragging.areaSnapshots.get(area);
+    if (snapshot === undefined || area.disposed) return false;
+    try {
+      const elements = directItems(area);
+      return elements.length === snapshot.elements.length && elements.every((element, index) => (
+        element === snapshot.elements[index] && area.options.getItemId(element) === snapshot.ids[index]
+      ));
+    } catch {
+      return false;
+    }
+  }
+
   function disposeSelection(area: ScopeArea): void {
     clearSelectionMarkers(area);
     selections.delete(area.options.areaId);
@@ -1248,7 +1281,7 @@ function normalizeAreaOptions(
     direction,
     disabled: options.disabled ?? false,
     ...(options.handle === undefined ? {} : { handle: options.handle }),
-    ignore: options.ignore ?? DEFAULT_IGNORE_SELECTOR,
+    ignore: options.ignore,
     activationDistance,
     emptyInsertThreshold,
     ...(swapThreshold === undefined ? {} : { swapThreshold }),

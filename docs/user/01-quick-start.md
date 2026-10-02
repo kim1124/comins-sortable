@@ -32,6 +32,12 @@ and `onItemsChange` (or Vue's `update:modelValue`) must render the proposed
 array. Comins Sortable verifies that render on the next frame. A missing or
 structurally stale render rolls back with `state-not-committed`.
 
+In the 0.1.4 candidate, a drop is also rejected with `state-not-committed`
+if the source or destination item order, IDs, or item elements differ from
+drag activation. No change is emitted for that drop. External source updates
+are preserved when the drag is cancelled; removed items are not reinserted.
+Failed transfers retain the existing multi-selection and range anchor.
+
 Every item needs a stable, group-wide ID. Do not derive `itemKey` from an array
 index.
 
