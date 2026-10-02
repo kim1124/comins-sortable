@@ -2,6 +2,28 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { scopeFixture } from '../helpers/scope-fixtures.js';
 
+for (const failure of ['uncommitted', 'callback'] as const) {
+  test(`a ${failure} transfer preserves selection and the range anchor through option updates`, () => {
+    const fixture = scopeFixture({
+      multiDrag: true, commit: false, todoItemIds: ['a', 'b', 'z'], doneItemIds: ['c'],
+      onChange: failure === 'callback' ? () => { throw new Error('consumer failure'); } : undefined,
+      onError: () => {},
+    });
+    fixture.select('todo', 0); fixture.select('todo', 1, { ctrlKey: true });
+    fixture.begin('todo', 0); fixture.move('done', 0); fixture.release();
+    fixture.platform.flushFrame(); fixture.platform.flushFrame();
+    fixture.scope.updateArea('todo', { selectedClass: 'new-selected' });
+    assert.deepEqual(fixture.ids('todo'), ['a', 'b', 'z']);
+    const selected = () => [...fixture.area('todo').children]
+      .filter((element) => element.hasAttribute('data-comins-sortable-selected'))
+      .map((element) => element.getAttribute('data-sortable-id'));
+    assert.deepEqual(selected(), ['a', 'b']);
+    fixture.select('todo', 2, { shiftKey: true });
+    assert.deepEqual(selected(), ['b', 'z']);
+    fixture.scope.destroy();
+  });
+}
+
 test('changing selectedClass replaces the old marker and deselects cleanly', () => {
   const fixture = scopeFixture({ multiDrag: true, selectedClass: 'old-selection' });
   const item = fixture.item('todo', 0);

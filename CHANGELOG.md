@@ -2,6 +2,19 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
+## 0.1.4 - Unreleased
+
+### Fixed
+
+- Reject a drop with `state-not-committed` when the source or destination item
+  order, IDs, or item elements changed since drag activation. Preserve external
+  source changes during cancellation instead of reinserting stale elements.
+- Update multi-selection only after a successful commit, preserving selection
+  and range anchors when a transfer is rejected or its change callback throws.
+- Respect effective `contenteditable` state for default drag activation,
+  including empty values, `plaintext-only`, inheritance, and non-editable
+  descendants. Explicit handles and custom `ignore` selectors retain priority.
+
 ## 0.1.3 - 2026-09-22
 
 ### Fixed

@@ -100,6 +100,18 @@ test('explicit handle takes precedence over the ignore selector', () => {
   assert.deepEqual(events, ['activate']);
 });
 
+test('default activation ignores effective editability while explicit handle and ignore remain authoritative', () => {
+  for (const options of [{}, { handle: '.handle' }, { ignore: '.consumer-ignore' }]) {
+    const { sensor } = sensorFixture(options);
+    const item = fakeElement('LI');
+    const editable = fakeElement('SPAN', { parentElement: item, selectors: ['.handle'] });
+    Object.defineProperty(editable, 'isContentEditable', { value: true });
+    item.fixtureChildren.push(editable);
+    assert.equal(sensor.pointerDown(pointer({ target: editable }), item), 'handle' in options || 'ignore' in options);
+    sensor.destroy();
+  }
+});
+
 test('accepted mouse attempts suppress native text dragging until release', () => {
   const { platform, sensor } = sensorFixture();
   const item = fakeElement('LI');

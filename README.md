@@ -33,12 +33,12 @@ The Drag start areas example also demonstrates title-only and whole-card draggin
 Vanilla uses no framework peer. React, React DOM, Vue, and Svelte integrations
 use optional peers (`react`, `react-dom`, `vue`, and `svelte`).
 
-The 0.1.3 changes improve selection cleanup, elapsed-time and RTL auto-scroll,
-feedback outside valid drop areas, and footer boundaries after a list becomes
-empty. Playground Reset also clears the Shift-range anchor. The examples now
-compare drag start areas and accepted/rejected CSS feedback. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
-for the full change list and the [capture details](https://github.com/kim1124/comins-sortable/blob/main/docs/playground-preview.md)
-for the GIF scenarios.
+The 0.1.4 candidate rejects stale drops when an application changes either list
+during a drag, preserves multi-selection after failed transfers, and respects
+editable text when starting whole-card drags. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
+and [release preparation](https://github.com/kim1124/comins-sortable/blob/main/reports/2026-10-02-0.1.4-release-preparation.md)
+for changes and publication status. The [GIF capture details](https://github.com/kim1124/comins-sortable/blob/main/docs/playground-preview.md)
+describe the existing example scenes.
 
 ## Installation
 
@@ -196,9 +196,9 @@ preserve the list's scroll range.
 
 Automated tests cover Chromium, Firefox, and WebKit. Sorting uses pointer
 input; keyboard reordering is not implemented. See the
-[browser verification scope](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.3-local-validation.md)
-for the latest local checks and the separately recorded native Safari and
-device coverage.
+[current validation and release scope](https://github.com/kim1124/comins-sortable/blob/main/reports/2026-10-02-0.1.4-release-preparation.md)
+for the candidate checks, and the [earlier browser record](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.3-local-validation.md)
+for separately recorded native Safari and device coverage.
 
 Known Playground issue: Safari 26.6.2 can leave body text selected after a
 title-only drag, although the item order updates. Use the dedicated handle

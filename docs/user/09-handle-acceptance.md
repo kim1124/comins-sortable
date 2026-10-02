@@ -79,6 +79,12 @@ such as `handle=".card-title"` restricts activation to that descendant. The
 modes. Whole-card mode uses body drags for sorting; returning to handle mode
 restores body-text selection. Other examples retain their default handles.
 
+The 0.1.4 candidate uses effective editability for the default exclusion:
+`contenteditable=""`, `"true"`, `"plaintext-only"`, and inherited editable
+content are protected. A `contenteditable="false"` descendant is not excluded
+solely because its parent is editable. A custom `ignore` replaces the default
+exclusions, and an explicit matching `handle` still takes precedence.
+
 **Known Safari limitation (2026-09-22):** In native Safari 26.6.2, the React
 Playground title-only mode can leave body text selected after reordering. It
 reproduces from a fresh page and is not fixed by switching back to handle mode.
