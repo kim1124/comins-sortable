@@ -33,7 +33,7 @@ The Drag start areas example also demonstrates title-only and whole-card draggin
 Vanilla uses no framework peer. React, React DOM, Vue, and Svelte integrations
 use optional peers (`react`, `react-dom`, `vue`, and `svelte`).
 
-The 0.1.4 candidate rejects stale drops when an application changes either list
+Version 0.1.4 rejects stale drops when an application changes either list
 during a drag, preserves multi-selection after failed transfers, and respects
 editable text when starting whole-card drags. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
 and [release preparation](https://github.com/kim1124/comins-sortable/blob/main/reports/2026-10-02-0.1.4-release-preparation.md)
@@ -197,7 +197,7 @@ preserve the list's scroll range.
 Automated tests cover Chromium, Firefox, and WebKit. Sorting uses pointer
 input; keyboard reordering is not implemented. See the
 [current validation and release scope](https://github.com/kim1124/comins-sortable/blob/main/reports/2026-10-02-0.1.4-release-preparation.md)
-for the candidate checks, and the [earlier browser record](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.3-local-validation.md)
+for the 0.1.4 checks, and the [earlier browser record](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.3-local-validation.md)
 for separately recorded native Safari and device coverage.
 
 Known Playground issue: Safari 26.6.2 can leave body text selected after a
