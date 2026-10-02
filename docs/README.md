@@ -89,7 +89,7 @@ the open issue and the default dedicated-handle mode.
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
-The 0.1.4 candidate is under local release preparation and is not published.
+The 0.1.4 source changes have been merged; publication is still pending.
 Its artifact and consumer checks belong to the approved publication workflow.
 The 0.1.3 local validation index separates each follow-up and its verified source.
 Earlier tarball, consumer, and native Safari checks do not cover subsequent
@@ -99,8 +99,8 @@ capture do not establish publication status.
 Version 0.1.3 was published on 2026-09-22; the publication record above documents
 the exact public artifact, signatures, provenance, consumer checks, and closure.
 
-0.1.4 후보는 로컬 릴리즈 준비 단계이며 아직 배포되지 않았습니다.
-정확한 배포 파일과 소비자 검증은 승인 후 배포 워크플로에서 수행합니다.
+0.1.4 소스 변경은 병합됐으며 아직 배포되지 않았습니다.
+정확한 배포 파일과 소비자 검증은 승인된 배포 워크플로에서 수행합니다.
 0.1.3 로컬 검증 색인은 후속 작업별 검증 소스와 범위를 구분합니다. 이전
 tarball·소비자·실제 Safari 검증을 이후 변경 소스의 결과로 사용하지 않습니다. 0.1.2 기록은 이력으로
 유지하고, GIF는 2026-09-22의 0.1.3 작업 소스로 다시 촬영했습니다.

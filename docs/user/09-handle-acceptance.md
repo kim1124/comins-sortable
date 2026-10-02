@@ -79,7 +79,7 @@ such as `handle=".card-title"` restricts activation to that descendant. The
 modes. Whole-card mode uses body drags for sorting; returning to handle mode
 restores body-text selection. Other examples retain their default handles.
 
-The 0.1.4 candidate uses effective editability for the default exclusion:
+Version 0.1.4 uses effective editability for the default exclusion:
 `contenteditable=""`, `"true"`, `"plaintext-only"`, and inherited editable
 content are protected. A `contenteditable="false"` descendant is not excluded
 solely because its parent is editable. A custom `ignore` replaces the default
