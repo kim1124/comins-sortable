@@ -27,6 +27,7 @@
     "test/**/*.tsx"
   ],
   "exclude": [
-    "test/types"
+    "test/types",
+    "test/performance"
   ]
 }

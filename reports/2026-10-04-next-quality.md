@@ -80,3 +80,10 @@ has been performed; implementation is retained on the local `codex-next-quality`
 - Existing browser, artifact/consumer and performance evidence above remains applicable; no implementation change was made during commit preparation.
 - Local Gitleaks 8.30.1 and the configured `.githooks` path were confirmed. Staged content is checked by the pre-commit hook before creating the local commit.
 - Remote push, PR creation, integration and publication remain unperformed. The local commit preserves the implementation, tests and documentation together.
+
+## PR CI follow-up
+
+- PR #33's first Package job failed before the build: the new performance fixture imports `dist/index.js`, but root typecheck included it while a clean checkout had no `dist`. Browser and Performance were skipped because their prerequisite failed. This is a verification-order defect; the previous local build output had hidden it.
+- Reproduced the same missing-module and contextual-type errors in a source archive without `dist`. Moved `test/performance` from pre-build root typecheck to the existing post-build `test:types` project, preserving strict compilation against the built public package.
+- The clean archive then passed typecheck, build and type tests. An intentional temporary type error in its performance fixture was detected by the post-build compiler; the probe was removed afterward.
+- Final local `npm run verify` passed: 57 policy tests, 292 unit tests, typecheck, build and Vue SFC checks. Evidence: `.local/next-quality/ci-fix-verify.log`. No runtime code, dependency or public API changed in this follow-up. Remote CI completion is recorded by the PR checks.
