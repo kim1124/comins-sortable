@@ -77,7 +77,14 @@ fail without mutating the input.
   area through `createSortableTree`. The initial three levels are Research →
   Review → Document/Observe, alongside an empty Design folder. Move Review into
   Design to carry both descendants with it. Parent relationships update after
-  the move, while cycles remain rejected.
+  the move.
+
+In this display, dragging a parent carries its child areas with it, so its own
+descendant areas are not drop targets. Moving Research toward its own Review
+area therefore does not demonstrate explicit cycle-rejection feedback. Core
+rejects a hit-tested destination with `nested-cycle` when its `parent` chain
+makes it a descendant of the dragged item. Observing that rejection requires a
+logical descendant area that remains separately exposed during the drag.
 
 In React, Vue, and Svelte, per-list state control and subtree movement are both controlled and use the
 same Core sorting engine. Both reject cycles. The distinction is updating

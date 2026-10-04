@@ -1,6 +1,8 @@
 # Comins Sortable
 
-<img src="https://raw.githubusercontent.com/kim1124/comins-sortable/main/example/public/comins-symbol.svg" width="64" height="64" alt="Comins" />
+<a href="https://comins-website.vercel.app/ko/"><img src="https://raw.githubusercontent.com/kim1124/comins-sortable/main/example/public/comins-symbol.svg" width="64" height="64" alt="Comins brand website" /></a>
+
+[Comins Brand](https://comins-website.vercel.app/ko/)
 
 Drag-and-drop sorting for Vanilla JavaScript, React, Vue, and Svelte, built on
 one TypeScript core with zero runtime dependencies. Build sortable lists,
@@ -33,13 +35,6 @@ The Drag start areas example also demonstrates title-only and whole-card draggin
 Vanilla uses no framework peer. React, React DOM, Vue, and Svelte integrations
 use optional peers (`react`, `react-dom`, `vue`, and `svelte`).
 
-Version 0.1.4 rejects stale drops when an application changes either list
-during a drag, preserves multi-selection after failed transfers, and respects
-editable text when starting whole-card drags. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
-and [release preparation](https://github.com/kim1124/comins-sortable/blob/main/reports/2026-10-02-0.1.4-release-preparation.md)
-for changes and publication status. The [GIF capture details](https://github.com/kim1124/comins-sortable/blob/main/docs/playground-preview.md)
-describe the existing example scenes.
-
 ## Installation
 
 ```sh
@@ -49,24 +44,6 @@ npm install comins-sortable
 Install the peers used by your chosen adapter: React `>=18.2 <20` with React DOM
 `>=18.2 <20`, Vue `>=3.5 <4`, or Svelte `>=5 <6`. Vanilla needs no framework peer.
 Use the repository Playground below to try the examples.
-
-## Run the Playground locally
-
-The Playground currently provides 25 routes per adapter, covering Vanilla
-JavaScript, React, Vue, and Svelte. Clone the repository to run the examples:
-
-```sh
-git clone https://github.com/kim1124/comins-sortable.git
-cd comins-sortable
-npm ci --ignore-scripts
-npm run dev
-```
-
-Open [the React simple-sorting example](http://127.0.0.1:4003/examples/simple/react).
-The development server uses port 4003.
-
-Use **Reset** to restore the example and clear multi-selection, including its
-Shift-range anchor, in all four adapters.
 
 ## Quick Start with React
 
@@ -120,90 +97,63 @@ this module's sorting interaction is pointer-based. See the
 [handle and text-selection guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/09-handle-acceptance.md)
 for styling and multi-selection behavior.
 
-## User Guides
+## Choose an adapter
 
-- [Documentation index](https://github.com/kim1124/comins-sortable/blob/main/docs/README.md)
-- [English Quick Start](https://github.com/kim1124/comins-sortable/blob/main/docs/user/01-quick-start.md)
-- [Korean Quick Start](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/01-quick-start.md)
-- [English Public API Reference](https://github.com/kim1124/comins-sortable/blob/main/docs/user/15-public-api.md)
-- [한글 Public API 레퍼런스](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/15-public-api.md)
-- [All English feature guides](https://github.com/kim1124/comins-sortable/tree/main/docs/user)
-- [모든 한글 기능 가이드](https://github.com/kim1124/comins-sortable/tree/main/docs/ko)
+| Adapter | State updates | Guide |
+| --- | --- | --- |
+| Vanilla JavaScript | Direct DOM sorting with `createSortable` | [Vanilla guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/03-vanilla.md) |
+| React | Controlled `items` and `onItemsChange` | [React guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/04-react.md) |
+| Vue | `v-model` and a typed item slot | [Vue guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/05-vue.md) |
+| Svelte | Controlled items and update callbacks | [Svelte guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/06-svelte.md) |
 
-## Tree API
+Use stable string or number IDs. Framework adapters propose updates; the
+application commits them to its state. Cross-list moves need a shared root.
 
-`createSortableTree` is a framework-neutral, schema-adapted public API. It maps
-one immutable tree value to sortable areas and folds controlled area updates
-back into that value without owning a component hierarchy.
+## Guides and API
 
-```ts
-import { createSortableTree } from 'comins-sortable/core';
+- [English quick start](https://github.com/kim1124/comins-sortable/blob/main/docs/user/01-quick-start.md)
+- [Documentation index](https://github.com/kim1124/comins-sortable/blob/main/docs/README.md) · [한국어 시작하기](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/01-quick-start.md)
+- [Reorder and transfer](https://github.com/kim1124/comins-sortable/blob/main/docs/user/07-reorder-transfer.md) · [Copy and clone](https://github.com/kim1124/comins-sortable/blob/main/docs/user/08-copy-clone.md)
+- [Handles and text selection](https://github.com/kim1124/comins-sortable/blob/main/docs/user/09-handle-acceptance.md) · [Animation and auto-scroll](https://github.com/kim1124/comins-sortable/blob/main/docs/user/10-animation-auto-scroll.md)
+- [Nested lists and tree API](https://github.com/kim1124/comins-sortable/blob/main/docs/user/12-nested-tree.md) · [Placeholder CSS and rejected targets](https://github.com/kim1124/comins-sortable/blob/main/docs/user/13-placeholder.md)
+- [Public API reference](https://github.com/kim1124/comins-sortable/blob/main/docs/user/15-public-api.md) · [한글 API](https://github.com/kim1124/comins-sortable/blob/main/docs/ko/15-public-api.md)
 
-const tree = createSortableTree<Node>({
-  rootAreaId: 'root',
-  getNodeId: (node) => node.id,
-  getChildren: (node) => node.children,
-  withChildren: (node, children) => ({ ...node, children }),
-  getChildrenAreaId: (node) => `children-${node.id}`,
-});
+`createSortableTree` maps your tree schema to sortable areas and applies area
+updates to an immutable tree value. It preserves descendants when a node moves;
+it does not render a tree component. Placeholder classes and CSS variables
+customize insertion and rejection feedback without changing sorting behavior.
 
-const areas = tree.getAreas(nodes);
-const nextNodes = tree.updateArea(nodes, areaId, nextItems);
+## Run the Playground locally
+
+The Playground currently provides 25 routes per adapter, covering Vanilla
+JavaScript, React, Vue, and Svelte. Clone the repository to run the examples:
+
+```sh
+git clone https://github.com/kim1124/comins-sortable.git
+cd comins-sortable
+npm ci --ignore-scripts
+npm run build
+npm run dev
 ```
 
-React, Vue, and Svelte controlled Areas use `updateArea` from their item update
-callback. `applyChange` accepts the typed `FrameworkSortableChange` emitted by
-framework Roots when a consumer needs to fold a whole transaction at once.
+Open [the React simple-sorting example](http://127.0.0.1:4003/examples/simple/react).
+The development server uses port 4003.
 
-## Placeholder styling
+Use **Reset** to restore the example and clear multi-selection, including its
+Shift-range anchor, in all four adapters.
 
-Every Area accepts `placeholder`. `className` adds consumer classes beside the
-stable `comins-sortable__placeholder` class. The optional `skeleton` preset is
-drag feedback only; it is not a general loading-skeleton API.
+## Browser support and limits
 
-```ts
-const areaOptions = {
-  placeholder: {
-    className: 'project-drop-placeholder',
-    preset: 'skeleton' as const,
-  },
-};
-```
+Automated tests cover Chromium, Firefox, and WebKit. Sorting uses pointer input;
+keyboard reordering is not implemented. Browser touch emulation is distinct
+from physical-device testing. See the [changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md)
+for published changes and the [performance verification guide](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/next-quality-performance.md)
+for reproducible large-list and resource measurements.
 
-Consumers can style either their class or these public CSS variables:
-
-- `--comins-sortable-placeholder-background`
-- `--comins-sortable-placeholder-border`
-- `--comins-sortable-placeholder-border-radius`
-- `--comins-sortable-placeholder-opacity`
-- `--comins-sortable-placeholder-skeleton-base`
-- `--comins-sortable-placeholder-skeleton-highlight`
-- `--comins-sortable-placeholder-skeleton-duration`
-
-For rejected targets and the dragged preview, use
-`--comins-sortable-rejection-outline` and
-`--comins-sortable-rejection-outline-offset` on a shared container. The
-**Drop feedback styles** example compares these with accepted-position styling.
-
-Import `comins-sortable/styles.css` to enable the preset. Reduced-motion mode
-disables the skeleton animation.
-
-Insertion feedback hides outside a valid drop destination and returns on
-reentry. During a move, the hidden placeholder keeps its layout space to
-preserve the list's scroll range.
-
-## Browser support
-
-Automated tests cover Chromium, Firefox, and WebKit. Sorting uses pointer
-input; keyboard reordering is not implemented. See the
-[current validation and release scope](https://github.com/kim1124/comins-sortable/blob/main/reports/2026-10-02-0.1.4-release-preparation.md)
-for the 0.1.4 checks, and the [earlier browser record](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.3-local-validation.md)
-for separately recorded native Safari and device coverage.
-
-Known Playground issue: Safari 26.6.2 can leave body text selected after a
-title-only drag, although the item order updates. Use the dedicated handle
-when body-text selection and copying matter. This issue remains open; see the
+A previously recorded native Safari title-only drag can leave body text selected.
+Use a dedicated handle when selecting and copying body text matters; see the
 [handle guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/09-handle-acceptance.md).
+Automated WebKit results do not establish native Safari or Galaxy coverage.
 
 ## License and support
 

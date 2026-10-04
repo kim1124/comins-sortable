@@ -84,8 +84,7 @@ export class AreaRegistry {
       return [];
     }
 
-    this.validateItemIds(this.areas.values());
-    return this.collectItemIds(area);
+    return this.validateItemIds(this.areas.values()).get(area) ?? [];
   }
 
   areasInGroup(group: string): readonly RegisteredArea[] {
@@ -99,7 +98,8 @@ export class AreaRegistry {
     );
   }
 
-  private validateItemIds(areas: Iterable<RegisteredArea>): void {
+  private validateItemIds(areas: Iterable<RegisteredArea>): Map<RegisteredArea, readonly SortableId[]> {
+    const collected = new Map<RegisteredArea, readonly SortableId[]>();
     const idsByGroup = new Map<string, Set<SortableId>>();
 
     for (const area of areas) {
@@ -109,13 +109,16 @@ export class AreaRegistry {
         idsByGroup.set(area.group, ids);
       }
 
-      for (const itemId of this.collectItemIds(area)) {
+      const itemIds = this.collectItemIds(area);
+      collected.set(area, itemIds);
+      for (const itemId of itemIds) {
         if (ids.has(itemId)) {
           throw new SortableError('DUPLICATE_ITEM_ID');
         }
         ids.add(itemId);
       }
     }
+    return collected;
   }
 
   private collectItemIds(area: RegisteredArea): readonly SortableId[] {

@@ -47,7 +47,9 @@ export function createLayoutAnimator(
 ): SortableLayoutAnimator {
   let itemSelector = initialItemSelector;
   let options = normalizeAnimation(initialAnimation);
-  let previous = positions(area, itemSelector);
+  const capturePositions = () => options === null || options.duration === 0
+    ? new Map<Element, DOMRect>() : positions(area, itemSelector);
+  let previous = capturePositions();
   let animations = new Set<Animation>();
   let listening = false;
   let destroyed = false;
@@ -61,7 +63,7 @@ export function createLayoutAnimator(
 
   const invalidate = (): void => {
     cancelAnimations();
-    previous = positions(area, itemSelector);
+    previous = capturePositions();
   };
 
   const startInvalidationListeners = (): void => {
@@ -90,7 +92,7 @@ export function createLayoutAnimator(
     play() {
       if (destroyed) return;
       cancelAnimations();
-      const current = positions(area, itemSelector);
+      const current = capturePositions();
       const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
       if (options !== null && options.duration > 0 && !reducedMotion) {
         for (const [element, rect] of current) {
@@ -113,7 +115,7 @@ export function createLayoutAnimator(
     cancel(refresh = false) {
       if (destroyed) return;
       cancelAnimations();
-      if (refresh) previous = positions(area, itemSelector);
+      if (refresh) previous = capturePositions();
     },
     update(nextItemSelector, nextAnimation) {
       if (destroyed) return;

@@ -74,11 +74,11 @@
     "check:npm-profile": "node scripts/check-npm-public-identity.mjs --profile",
     "check:licenses": "node scripts/check-licenses.mjs",
     "lint": "npm run typecheck",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
     "test": "node scripts/run-unit-tests.mjs",
     "test:run": "node scripts/run-unit-tests.mjs",
     "test:policy": "node --test --test-concurrency=1 test/*.node.mjs",
-    "test:types": "tsc -p test/types/tsconfig.json --noEmit",
+    "test:types": "node node_modules/typescript/bin/tsc -p test/types/tsconfig.json --noEmit && node scripts/check-vue-sfc-types.mjs",
     "test:consumer": "node scripts/consumer-smoke.mjs",
     "example:build": "node scripts/build-browser-fixtures.mjs",
     "example:serve": "node scripts/serve-browser-fixtures.mjs",
@@ -89,10 +89,11 @@
     "test:performance": "playwright test --config=playwright.performance.config.ts",
     "verify:e2e": "npm run test:e2e",
     "verify:playground": "npm run build && npm run playground:build && npm run test:playground",
-    "verify:performance": "npm run playground:build && npm run test:performance",
+    "verify:performance": "npm run build && npm run playground:build && npm run test:performance",
     "verify:package-artifact": "node scripts/verify-package-artifact.mjs",
     "verify:full": "npm run verify && npm run verify:e2e",
-    "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types"
+    "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types",
+    "benchmark:sortable": "npm run build && node scripts/benchmark-sortable.mjs"
   },
   "peerDependencies": {
     "react": ">=18.2 <20",
@@ -125,7 +126,9 @@
     "svelte": "^5.56.8",
     "tsx": "^4.23.10",
     "typescript": "^7.0.2",
+    "typescript-sfc": "npm:typescript@6.0.3",
     "vite": "^7.3.6",
-    "vue": "^3.5.41"
+    "vue": "^3.5.41",
+    "vue-tsc": "3.3.12"
   }
 }

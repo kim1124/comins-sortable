@@ -77,6 +77,7 @@ the open issue and the default dedicated-handle mode.
 
 ## Verification records
 
+- [0.1.4 publication and post-publication verification](../reports/2026-10-02-0.1.4-publication.md)
 - [0.1.4 release preparation and current verification scope](../reports/2026-10-02-0.1.4-release-preparation.md)
 - [2026-10-02 drag consistency fixes and regression evidence](../reports/2026-10-02-drag-consistency-fixes.md)
 - [0.1.3 publication and post-publication verification](../reports/2026-09-22-0.1.3-publication.md)
@@ -89,8 +90,9 @@ the open issue and the default dedicated-handle mode.
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
-The 0.1.4 source changes have been merged; publication is still pending.
-Its artifact and consumer checks belong to the approved publication workflow.
+Version 0.1.4 was published on 2026-10-02 and is the npm latest release.
+The public tarball matches the workflow artifact; integrity, registry signature,
+provenance, and consumer installation checks passed. See its publication record above.
 The 0.1.3 local validation index separates each follow-up and its verified source.
 Earlier tarball, consumer, and native Safari checks do not cover subsequent
 source changes. The 0.1.2 records remain historical. The refreshed GIF was
@@ -99,8 +101,9 @@ capture do not establish publication status.
 Version 0.1.3 was published on 2026-09-22; the publication record above documents
 the exact public artifact, signatures, provenance, consumer checks, and closure.
 
-0.1.4 소스 변경은 병합됐으며 아직 배포되지 않았습니다.
-정확한 배포 파일과 소비자 검증은 승인된 배포 워크플로에서 수행합니다.
+0.1.4는 2026-10-02에 공개됐으며 npm latest 버전입니다.
+공개 파일과 워크플로 파일의 일치, 무결성·레지스트리 서명·출처·소비자 설치
+검증을 통과했습니다. 세부 근거는 위 0.1.4 배포 기록에서 확인할 수 있습니다.
 0.1.3 로컬 검증 색인은 후속 작업별 검증 소스와 범위를 구분합니다. 이전
 tarball·소비자·실제 Safari 검증을 이후 변경 소스의 결과로 사용하지 않습니다. 0.1.2 기록은 이력으로
 유지하고, GIF는 2026-09-22의 0.1.3 작업 소스로 다시 촬영했습니다.
@@ -125,3 +128,9 @@ and calls `refreshArea`. The descriptions and API labels follow the selected ada
 See [Playground reference and source files](./playground-reference.md) before reusing
 these examples in a documentation site. DOC 사이트에서 참조할 때는 위 문서의
 어댑터 구분, 소스 파일 구성과 실행 조건을 함께 확인합니다.
+
+## Development verification
+
+[Clean-checkout and direct-interaction verification workflow](./verification/workflow.md)
+
+[Large-list performance and resource checks](./verification/next-quality-performance.md)

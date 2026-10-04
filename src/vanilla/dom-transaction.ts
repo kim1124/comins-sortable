@@ -28,6 +28,7 @@ interface CopyDomSnapshot {
 type DomSnapshot = MoveDomSnapshot | CopyDomSnapshot;
 
 export interface DomTransaction {
+  rememberArea(areaId: string): void;
   prepareCopy(areaId: string, context: CopyItemContext): SortableId;
   apply(change: SortableChange): void;
   rollback(): void;
@@ -156,6 +157,10 @@ export function createDomTransaction(registry: DomTransactionRegistry): DomTrans
   };
 
   return {
+    rememberArea(areaId) {
+      const area = registry.get(areaId);
+      trailingBoundary(areaElement(area), directItems(area));
+    },
     prepareCopy,
     apply,
     rollback,

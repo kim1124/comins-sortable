@@ -58,3 +58,26 @@ test('layout animator plays FLIP deltas, honors reduced motion, and cancels reso
   assert.equal(calls.length, 1);
   animator.destroy();
 });
+
+for (const disabled of [false, 0] as const) {
+  test(`disabled animation (${disabled}) does not measure or retain item positions`, () => {
+    const platform = fakePlatform();
+    const area = fakeElement('DIV', { ownerDocument: platform.document });
+    const item = fakeElement('DIV', { ownerDocument: platform.document, attributes: { 'data-sortable-item': '' } });
+    area.appendChild(item);
+    let reads = 0;
+    item.getBoundingClientRect = () => { reads++; return item.rect as DOMRect; };
+    const animator = createLayoutAnimator(area, '[data-sortable-item]', disabled, platform.window);
+    animator.play(); animator.cancel(true); animator.update('[data-sortable-item]', disabled);
+    assert.equal(reads, 0);
+    assert.equal(platform.listenerCount(), 0);
+    animator.update('[data-sortable-item]', 150);
+    assert.equal(reads, 1, 'enabling animation establishes fresh positions');
+    animator.play();
+    assert.equal(reads, 2);
+    animator.update('[data-sortable-item]', disabled);
+    animator.cancel(true);
+    assert.equal(reads, 2, 'disabling again stops layout reads');
+    animator.destroy();
+  });
+}

@@ -34,3 +34,11 @@ Use `tag` for an intrinsic tag or component host and `componentProps` for host
 attributes. The host must forward its element so the adapter can register it.
 
 Playground: <http://127.0.0.1:4003/examples/simple/vue>
+
+## Template type checking
+
+The item model determines the type of `item-key`, the item slot, `copyItem`,
+and `update:modelValue`. Check actual `.vue` files with Vue's SFC type checker;
+checking only TypeScript files does not validate template inference. Explicit
+`SortableArea<Item>` with `h()` remains supported. A parent Root does not infer
+its transaction item type from child Areas automatically.

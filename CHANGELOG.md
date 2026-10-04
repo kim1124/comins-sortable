@@ -2,6 +2,31 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
+## Unreleased
+
+### Fixed
+
+- Remember Vanilla slot boundaries at registration so externally emptying a list
+  before its first drop keeps the next inserted item before the pinned footer.
+- Infer Vue SFC item keys, item slots, copy callbacks and model updates from
+  `modelValue`. Preserve typed `h()` usage and Vue component attributes/instance
+  properties. Emit writable array copies so `v-model` also handles rollback
+  from readonly or frozen input arrays.
+- Avoid layout reads and retained item positions when sorting animation is
+  disabled or has zero duration. Reuse IDs collected during registry validation
+  within the same read while continuing to validate every later read.
+
+### Changed
+
+- Update the development-only devalue dependency to 5.9.4.
+- Validate actual Vue SFC consumers against the packaged declarations and both
+  minimum and development Vue versions.
+- Add reproducible large-list latency and resource measurements, browser touch
+  scenarios for all four adapters, and text-selection restoration checks.
+- Run browser and performance CI for dependency manifest/lockfile changes and
+  build fresh package output before performance verification.
+- Streamline the README around installation, adapter choice and focused guides.
+
 ## 0.1.4
 
 ### Fixed

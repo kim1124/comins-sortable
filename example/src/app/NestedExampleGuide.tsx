@@ -30,7 +30,7 @@ const guides = {
       steps: [
         'Review의 핸들을 잡아 Design의 빈 하위 영역으로 옮깁니다.',
         'Design → Review → Document / Observe 구조가 됩니다. Review 아래 두 항목은 따로 옮길 필요가 없습니다.',
-        '데이터 초기화 후 Research를 자신의 Review 하위 영역으로 옮기면 순환 구조가 되므로 거부됩니다.',
+        '데이터 초기화 후 Research의 핸들을 잡아 움직여 보세요. Review와 그 하위 항목도 함께 움직이며, 자기 하위 영역은 드롭 대상이 되지 않습니다.',
       ],
       distinction: '목록별 상태 제어와 같은 드래그 엔진을 사용합니다. 이 예제는 부모 변경 시 하위 트리 보존과 전체 트리 갱신을 보여줍니다. 순환 이동 방지는 두 예제의 공통 동작입니다.',
     },
@@ -39,7 +39,7 @@ const guides = {
       steps: [
         'Drag Review by its handle into the empty child area under Design.',
         'The result is Design → Review → Document / Observe. Both descendants travel with Review.',
-        'Reset, then try moving Research into its own Review child area. The cycle is rejected.',
+        'Reset, then drag Research by its handle. Review and its descendants move with it; its own child areas are not drop targets.',
       ],
       distinction: 'Both examples use the same drag engine. This one demonstrates preserving a subtree and updating the whole tree when its parent changes. Both examples reject cycles.',
     },

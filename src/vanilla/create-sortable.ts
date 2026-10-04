@@ -47,6 +47,7 @@ export function createSortable(
       withCopyPreparation(areaOptions, transaction),
     );
     areas.set(areaOptions.areaId, registered);
+    transaction.rememberArea(areaOptions.areaId);
     return () => {
       unregisterScope();
       if (areas.get(areaOptions.areaId) === registered) {

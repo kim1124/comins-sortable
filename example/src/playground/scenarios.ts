@@ -152,7 +152,7 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   {
     id: 'nested',
     title: { ko: '중첩 목록', en: 'Nested lists' },
-    description: { ko: '일반 이중 목록과 달리 Research 항목이 parent 관계로 자식 목록을 소유합니다. 항목은 계층 사이를 이동할 수 있지만 Research 자체를 자기 자식 목록으로 이동하면 순환 구조가 되므로 거부합니다.', en: 'Unlike two independent lists, the Research item owns its child list through parent metadata. Items can move across levels, while moving Research into its own child list is rejected as a cycle.' },
+    description: { ko: '일반 이중 목록과 달리 Research 항목이 parent 관계로 자식 목록을 소유합니다. 항목은 계층 사이를 이동할 수 있습니다. Research를 드래그하면 자식 목록도 함께 움직이며, 자기 자식 목록은 드롭 대상이 되지 않습니다.', en: 'Unlike two independent lists, the Research item owns its child list through parent metadata. Items can move across levels. Dragging Research carries its child list with it; its own child list is not a drop target.' },
     api: ['parent', 'nested-cycle'],
     controls: [resetControl],
   },

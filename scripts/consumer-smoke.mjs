@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { access, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,6 +47,18 @@ try {
     ],
     { cwd: consumerRoot, env: npmEnvironment, stdio: 'inherit' },
   );
+
+  const sfcRoot = join(consumerRoot, 'vue-sfc');
+  await cp(join(repositoryRoot, 'test/types/vue-sfc'), sfcRoot, { recursive: true });
+  const checkSfc = () => execFileSync(process.execPath, [join(scriptsRoot, 'check-vue-sfc-types.mjs'), sfcRoot], {
+    cwd: consumerRoot, env: npmEnvironment, stdio: 'inherit',
+  });
+  checkSfc(); // Minimum supported Vue peer, installed from the exact package artifact.
+  const developmentVue = JSON.parse(await readFile(join(repositoryRoot, 'node_modules/vue/package.json'), 'utf8')).version;
+  execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--no-package-lock', `vue@${developmentVue}`], {
+    cwd: consumerRoot, env: npmEnvironment, stdio: 'inherit',
+  });
+  checkSfc();
 
   const smokePath = join(consumerRoot, 'smoke.mjs');
   await writeFile(
