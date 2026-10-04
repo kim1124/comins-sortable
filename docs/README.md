@@ -77,6 +77,8 @@ the open issue and the default dedicated-handle mode.
 
 ## Verification records
 
+- [0.1.5 release preparation (not yet published)](../reports/2026-10-04-0.1.5-release-preparation.md)
+
 - [0.1.4 publication and post-publication verification](../reports/2026-10-02-0.1.4-publication.md)
 - [0.1.4 release preparation and current verification scope](../reports/2026-10-02-0.1.4-release-preparation.md)
 - [2026-10-02 drag consistency fixes and regression evidence](../reports/2026-10-02-drag-consistency-fixes.md)
