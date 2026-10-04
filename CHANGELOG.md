@@ -2,7 +2,7 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
-## Unreleased
+## 0.1.5
 
 ### Fixed
 
