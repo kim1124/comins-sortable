@@ -131,4 +131,6 @@ these examples in a documentation site. DOC 사이트에서 참조할 때는 위
 
 ## Development verification
 
+[Clean-checkout and direct-interaction verification workflow](./verification/workflow.md)
+
 [Large-list performance and resource checks](./verification/next-quality-performance.md)

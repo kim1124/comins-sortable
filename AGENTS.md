@@ -25,3 +25,12 @@
 - The implemented public package boundary must validate with `npm run verify`.
   Release candidates must additionally pass the exact-artifact, consumer, and
   browser gates owned by this module.
+- Follow [verification workflow](docs/verification/workflow.md) when changing
+  build scripts, compiler configuration, dependencies, or verification fixtures.
+  Before pushing those changes, run `npm ci --ignore-scripts` and `npm run verify`
+  at the candidate commit in an isolated checkout without generated output or
+  shared `node_modules`. Check artifact-dependent fixtures after the build.
+- Direct drag verification must confirm the actual source area/item and live
+  destination hit, then check the final order, termination reason and cleanup.
+  An unchanged tree alone does not prove that cycle rejection ran. Keep public
+  Playground evidence separate from fixture-only and native-device evidence.
