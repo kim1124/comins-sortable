@@ -77,7 +77,8 @@ the open issue and the default dedicated-handle mode.
 
 ## Verification records
 
-- [0.1.5 release preparation (not yet published)](../reports/2026-10-04-0.1.5-release-preparation.md)
+- [0.1.5 publication and post-publication verification](../reports/2026-10-04-0.1.5-publication.md)
+- [0.1.5 release preparation](../reports/2026-10-04-0.1.5-release-preparation.md)
 
 - [0.1.4 publication and post-publication verification](../reports/2026-10-02-0.1.4-publication.md)
 - [0.1.4 release preparation and current verification scope](../reports/2026-10-02-0.1.4-release-preparation.md)
@@ -92,7 +93,7 @@ the open issue and the default dedicated-handle mode.
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
-Version 0.1.4 was published on 2026-10-02 and is the npm latest release.
+Version 0.1.5 was published on 2026-10-04 and is the npm latest release.
 The public tarball matches the workflow artifact; integrity, registry signature,
 provenance, and consumer installation checks passed. See its publication record above.
 The 0.1.3 local validation index separates each follow-up and its verified source.
@@ -103,9 +104,9 @@ capture do not establish publication status.
 Version 0.1.3 was published on 2026-09-22; the publication record above documents
 the exact public artifact, signatures, provenance, consumer checks, and closure.
 
-0.1.4는 2026-10-02에 공개됐으며 npm latest 버전입니다.
+0.1.5는 2026-10-04에 공개됐으며 npm latest 버전입니다.
 공개 파일과 워크플로 파일의 일치, 무결성·레지스트리 서명·출처·소비자 설치
-검증을 통과했습니다. 세부 근거는 위 0.1.4 배포 기록에서 확인할 수 있습니다.
+검증을 통과했습니다. 세부 근거는 위 0.1.5 배포 기록에서 확인할 수 있습니다.
 0.1.3 로컬 검증 색인은 후속 작업별 검증 소스와 범위를 구분합니다. 이전
 tarball·소비자·실제 Safari 검증을 이후 변경 소스의 결과로 사용하지 않습니다. 0.1.2 기록은 이력으로
 유지하고, GIF는 2026-09-22의 0.1.3 작업 소스로 다시 촬영했습니다.
