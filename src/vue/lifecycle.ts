@@ -130,7 +130,8 @@ function createBinding<T>(
     },
     getItems: () => getProps().modelValue,
     getItemId: (item) => resolveItemId(item, getProps().itemKey),
-    setItems: emitModelValue,
+    // v-model supports mutable refs; rollback may supply a readonly/frozen input.
+    setItems: (items) => emitModelValue([...items]),
     getElement,
     getItemElements: () => {
       const area = getElement();

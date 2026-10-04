@@ -121,3 +121,11 @@ Playground:
 
 - <http://127.0.0.1:4003/examples/handle/react>
 - <http://127.0.0.1:4003/examples/accept/react>
+
+## Touch verification scope
+
+Browser tests send native Chromium touch input for handle sorting, body scrolling,
+empty-list transfers, secondary pointers, cancellation and auto-scroll in all four
+adapters. Dedicated handles use `touch-action: none`; the body remains available
+for scrolling and text selection. Whole-card mode intentionally reserves its
+body for dragging. These tests are not physical Galaxy or native Safari results.

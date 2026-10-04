@@ -94,3 +94,17 @@ test('registry rescans direct items and rejects missing IDs', () => {
     hasCode('MISSING_ITEM_ID'),
   );
 });
+
+test('itemIds validates each item once per synchronous read and rescans later reads', () => {
+  const registry = new AreaRegistry();
+  const entry = area('todo', 'tasks', ['a', 'b']);
+  const original = entry.getItemId;
+  let calls = 0;
+  entry.getItemId = (element) => { calls++; return original(element); };
+  registry.register(entry);
+  calls = 0;
+  assert.deepEqual(registry.itemIds('todo'), ['a', 'b']);
+  assert.equal(calls, 2);
+  registry.itemIds('todo');
+  assert.equal(calls, 4);
+});

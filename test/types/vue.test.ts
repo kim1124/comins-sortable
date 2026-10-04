@@ -91,3 +91,12 @@ void useSortable;
 // @ts-expect-error Vue v1 exposes no public sortable directive
 const sortableDirective = (await import('comins-sortable/vue')).vSortable;
 void sortableDirective;
+
+// Existing readonly event consumers also accept a newly emitted mutable array.
+const readonlyUpdate = (items: readonly Task[]) => { void items; };
+h(SortableArea<Task>, { areaId: 'readonly-callback', modelValue: tasks, itemKey: 'id', 'onUpdate:modelValue': readonlyUpdate });
+
+const instance = null as unknown as InstanceType<typeof SortableArea<Task>>;
+const host = instance.$el;
+const nextTick: Promise<void> = instance.$nextTick();
+void host; void nextTick;

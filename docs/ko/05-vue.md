@@ -34,3 +34,11 @@ Area는 scope를 공유합니다. 전체 불변 transaction은 `SortableRoot`의
 합니다.
 
 Playground: <http://127.0.0.1:4003/examples/simple/vue>
+
+## 템플릿 타입 검사
+
+항목 모델에서 `item-key`, item 슬롯, `copyItem`, `update:modelValue` 타입을
+추론합니다. TypeScript 파일만 검사해서는 템플릿 추론을 검증할 수 없으므로
+Vue SFC 검사기로 실제 `.vue` 파일을 검사해야 합니다. 기존 `h()`와 명시적인
+`SortableArea<Item>` 사용도 지원합니다. 부모 Root가 자식 Area에서 트랜잭션의
+항목 타입을 자동으로 추론하지는 않습니다.

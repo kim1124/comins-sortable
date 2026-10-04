@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: 'test/playground',
-  testMatch: 'playground.spec.ts',
+  testMatch: ['playground.spec.ts', 'touch.spec.ts'],
   fullyParallel: true,
   retries: 0,
   use: {
@@ -16,8 +16,9 @@ export default defineConfig({
     timeout: 30_000,
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    { name: 'chromium-touch', grep: /@touch/, use: { ...devices['Desktop Chrome'], hasTouch: true, isMobile: true } },
+    { name: 'chromium', grepInvert: /@touch/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', grepInvert: /@touch/, use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', grepInvert: /@touch/, use: { ...devices['Desktop Safari'] } },
   ],
 });

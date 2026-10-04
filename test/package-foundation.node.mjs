@@ -112,9 +112,9 @@ test('defines package build, test, and typecheck entry points', () => {
     manifest.scripts['check:npm-bootstrap'],
     'node scripts/check-npm-public-identity.mjs --bootstrap-version',
   );
-  assert.equal(manifest.scripts.typecheck, 'tsc --noEmit');
+  assert.equal(manifest.scripts.typecheck, 'node node_modules/typescript/bin/tsc --noEmit');
   assert.equal(manifest.scripts.test, 'node scripts/run-unit-tests.mjs');
-  assert.equal(manifest.scripts['test:types'], 'tsc -p test/types/tsconfig.json --noEmit');
+  assert.equal(manifest.scripts['test:types'], 'node node_modules/typescript/bin/tsc -p test/types/tsconfig.json --noEmit && node scripts/check-vue-sfc-types.mjs');
   assert.equal(manifest.scripts['test:consumer'], 'node scripts/consumer-smoke.mjs');
   assert.equal(
     manifest.scripts['test:performance'],
@@ -122,7 +122,7 @@ test('defines package build, test, and typecheck entry points', () => {
   );
   assert.equal(
     manifest.scripts['verify:performance'],
-    'npm run playground:build && npm run test:performance',
+    'npm run build && npm run playground:build && npm run test:performance',
   );
   assert.equal(manifest.scripts['verify:package-artifact'], 'node scripts/verify-package-artifact.mjs');
   assert.match(manifest.scripts.verify, /npm run check:licenses/);

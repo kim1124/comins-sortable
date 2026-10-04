@@ -128,3 +128,7 @@ and calls `refreshArea`. The descriptions and API labels follow the selected ada
 See [Playground reference and source files](./playground-reference.md) before reusing
 these examples in a documentation site. DOC 사이트에서 참조할 때는 위 문서의
 어댑터 구분, 소스 파일 구성과 실행 조건을 함께 확인합니다.
+
+## Development verification
+
+[Large-list performance and resource checks](./verification/next-quality-performance.md)

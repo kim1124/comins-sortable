@@ -148,7 +148,10 @@ test('shared lifecycle uses the latest model and emit callback without registrat
     },
   };
   lifecycle.update(props);
-  binding?.setItems([{ id: 'd' }]);
+  const immutableUpdate = Object.freeze([{ id: 'd' }]);
+  binding?.setItems(immutableUpdate);
+  assert.notEqual(emitted[0], immutableUpdate, 'v-model emits a writable copy even on rollback');
+  assert.equal(Object.isFrozen(emitted[0]), false);
   assert.deepEqual(binding?.copyItem?.({
     ...dragContext(),
     itemId: 'c',

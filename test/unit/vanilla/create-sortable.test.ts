@@ -319,3 +319,27 @@ function ids(element: { fixtureChildren: readonly Element[] }): readonly string[
     child.getAttribute('data-sortable-id') as string
   ));
 }
+
+test('externally emptying a registered list retains its footer before the first drop', async () => {
+  const { createSortable } = await import('../../../src/index.js');
+  const platform = fakePlatform();
+  const todo = area(platform.document, 0, ['a', 'b']);
+  const done = area(platform.document, 200, ['c']);
+  const header = fakeElement('HEADER', { ownerDocument: platform.document });
+  const footer = fakeElement('FOOTER', { ownerDocument: platform.document });
+  done.insertBefore(header, done.children[0]!); done.appendChild(footer);
+  const sortable = createSortable(todo, { ...options(), group: 'lists' });
+  sortable.registerArea(done, { areaId: 'done', item: '[data-sortable-id]', group: 'lists' });
+  done.removeChild(done.children[1]!);
+  const source = todo.children[1]!;
+  const start = pointer({ clientX: 10, clientY: 40, target: source });
+  platform.setHits([source, todo]); todo.dispatch('pointerdown', start);
+  platform.dispatchDocument('pointermove', pointer({ ...start, clientX: 16 })); platform.flushFrame();
+  platform.setHits([done]);
+  const end = pointer({ clientX: 210, clientY: 45, target: done });
+  platform.dispatchDocument('pointermove', end); platform.flushFrame();
+  assert.equal(done.children[1]?.hasAttribute('data-comins-sortable-placeholder'), true);
+  platform.dispatchDocument('pointerup', end); platform.flushFrame();
+  assert.deepEqual([...done.children], [header, source, footer]);
+  sortable.destroy();
+});

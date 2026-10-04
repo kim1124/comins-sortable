@@ -1,6 +1,6 @@
 import { cloneVNode, defineComponent, inject, isVNode, onBeforeUnmount, onUpdated } from 'vue';
 import { h } from 'vue';
-import type { Component, ComponentPublicInstance, PropType, VNodeChild } from 'vue';
+import type { AllowedComponentProps, Component, ComponentCustomProps, ComponentPublicInstance, PropType, VNodeChild, VNodeProps } from 'vue';
 
 import type {
   CopyItem,
@@ -123,14 +123,16 @@ const SortableAreaComponent = defineComponent({
   },
 });
 
-export type VueSortableAreaComponent = typeof SortableAreaComponent & {
-  new <T>(): {
-    $props: VueSortableAreaProps<T> & {
-      'onUpdate:modelValue'?: (items: readonly T[]) => void;
+// Keep component statics without the unknown-valued constructor from defineComponent.
+// The props argument lets Vue template tooling infer T from modelValue.
+export type VueSortableAreaComponent = Omit<typeof SortableAreaComponent, never> & {
+  new <T>(props: VueSortableAreaProps<T> & VNodeProps & AllowedComponentProps & ComponentCustomProps): Omit<InstanceType<typeof SortableAreaComponent>, '$props' | '$slots' | '$emit'> & {
+    $props: VueSortableAreaProps<T> & VNodeProps & AllowedComponentProps & ComponentCustomProps & {
+      'onUpdate:modelValue'?: (items: T[]) => void;
     };
     $slots: VueSortableAreaSlots<T>;
-    $emit(event: 'update:modelValue', items: readonly T[]): void;
+    $emit(event: 'update:modelValue', items: T[]): void;
   };
 };
 
-export const SortableArea = SortableAreaComponent as VueSortableAreaComponent;
+export const SortableArea = SortableAreaComponent as unknown as VueSortableAreaComponent;

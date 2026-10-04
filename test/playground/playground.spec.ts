@@ -49,7 +49,7 @@ for (const adapter of adapters) {
     await drag.drop();
     await expect.poll(async () => (await model(page)).todo?.[0]).toBe('design');
     await choice.selectOption('handle');
-    await selectCardTitle(page, 'design');
+    await selectCardText(page, 'design');
     await page.getByRole('button', { name: '데이터 초기화', exact: true }).click();
     await expect(choice).toHaveValue('handle');
     await expectModelAndDom(page, { todo: ['research', 'design', 'build', 'review'] });
@@ -132,8 +132,8 @@ for (const adapter of adapters) {
   });
 }
 
-async function selectCardTitle(page: Page, itemId: string): Promise<void> {
-  const title = page.locator(`[data-sortable-id="${itemId}"] > .cs-demo-card__copy > strong`);
+async function selectCardText(page: Page, itemId: string, part = 'strong'): Promise<void> {
+  const title = page.locator(`[data-sortable-id="${itemId}"] > .cs-demo-card__copy > ${part}`);
   await title.scrollIntoViewIfNeeded();
   const bounds = await title.evaluate((element) => {
     const range = document.createRange();
@@ -172,20 +172,20 @@ for (const adapter of adapters) {
     await waitForRuntime(page);
     await dragItem(page, 'todo', 'design', { areaId: 'done', beforeId: 'review' });
     await expectModelAndDom(page, { todo: ['research', 'design', 'build'], done: ['design-copy-1', 'review'] });
-    await selectCardTitle(page, 'design-copy-1');
+    await selectCardText(page, 'design-copy-1');
     const copiedDrag = await beginDrag(page, 'done', 'design-copy-1');
     // Enter the list first so the destination geometry includes its placeholder.
     await copiedDrag.moveBefore('todo', 'research');
     await copiedDrag.moveBefore('todo', 'build');
     await copiedDrag.drop();
     await expectModelAndDom(page, { todo: ['research', 'design', 'design-copy-1', 'build'], done: ['review'] });
-    await selectCardTitle(page, 'design-copy-1');
+    await selectCardText(page, 'design-copy-1');
   });
 
   test(`${adapter} text remains selectable before and after moving and cancelling @text-copy`, async ({ page }) => {
     await page.goto(`/examples/handle/${adapter}`);
     await waitForRuntime(page);
-    await selectCardTitle(page, 'research');
+    await selectCardText(page, 'research');
     await expectModelAndDom(page, { todo: ['research', 'design', 'build', 'review'] });
     const drag = await beginDrag(page, 'todo', 'design', { handle: '.cs-demo-handle' });
     await expect(page.locator('[data-playground-dragging]')).toHaveCount(1);
@@ -198,7 +198,7 @@ for (const adapter of adapters) {
     await drag.drop();
     await expectModelAndDom(page, { todo: ['design', 'research', 'build', 'review'] });
     await expect(page.locator('[data-playground-dragging]')).toHaveCount(0);
-    await selectCardTitle(page, 'design');
+    await selectCardText(page, 'design');
     for (const ending of ['escape', 'blur', 'pointercancel'] as const) {
       await beginDrag(page, 'todo', 'research', { handle: '.cs-demo-handle' });
       if (ending === 'escape') await page.keyboard.press('Escape');
@@ -207,7 +207,7 @@ for (const adapter of adapters) {
       await page.mouse.up();
       await expect(page.locator('[data-playground-dragging]')).toHaveCount(0);
       await expectModelAndDom(page, { todo: ['design', 'research', 'build', 'review'] });
-      await selectCardTitle(page, 'research');
+      await selectCardText(page, 'research');
     }
   });
 }
@@ -224,7 +224,7 @@ for (const adapter of adapters) {
     await expect.poll(() => selected.evaluateAll((items) => items.map((item) => item.getAttribute('data-sortable-id'))))
       .toEqual(['research', 'build']);
     await page.keyboard.press('Escape');
-    await selectCardTitle(page, 'design');
+    await selectCardText(page, 'design');
     await expect.poll(() => selected.evaluateAll((items) => items.map((item) => item.getAttribute('data-sortable-id'))))
       .toEqual(['research', 'build']);
     const menuCancelled = async (selector: string, ctrlKey: boolean) => page.locator(selector).evaluate((element, ctrl) => {
@@ -607,7 +607,7 @@ for (const adapter of adapters) {
       await expectModelAndDom(page, {
         todo: ['review', 'research', 'design', 'build', 'release', 'document', 'observe', 'measure'],
       });
-      await selectCardTitle(page, 'review');
+      await selectCardText(page, 'review');
       // Start the next round from a fresh selection, while retaining the reordered data.
       await page.getByRole('button', { name: 'Drag Build', exact: true }).click();
       await page.getByRole('button', { name: 'Drag Build', exact: true }).click({ modifiers: ['Meta'] });
@@ -1050,3 +1050,33 @@ test('mobile route has no page overflow and reduced motion removes transitions',
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect.poll(() => page.locator('.cs-demo-card').first().evaluate((element) => getComputedStyle(element).transitionDuration)).toBe('0s');
 });
+
+for (const adapter of adapters) {
+  for (const mode of ['handle', 'title', 'card'] as const) {
+    for (const ending of ['drop', 'escape', 'pointercancel'] as const) {
+    test(`${adapter} ${mode} activation restores permitted text selection after ${ending} and reset @text-copy`, async ({ page }) => {
+      await page.goto(`/examples/handle/${adapter}`);
+      await waitForRuntime(page);
+      const choice = page.getByLabel('드래그 시작 영역', { exact: true });
+      await choice.selectOption(mode);
+      const handle = mode === 'handle' ? '.cs-demo-handle' : mode === 'title' ? '.cs-demo-card__copy strong' : '.cs-demo-card__copy small';
+      const drag = await beginDrag(page, 'todo', 'design', { handle });
+      if (ending === 'drop') {
+        await drag.moveBefore('todo', 'research'); await drag.drop();
+      } else {
+        if (ending === 'escape') await page.keyboard.press('Escape');
+        else await page.evaluate(() => document.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1 })));
+        await page.mouse.up();
+      }
+      await expect(page.locator('[data-playground-dragging]')).toHaveCount(0);
+      await expectModelAndDom(page, { todo: ending === 'drop' ? ['design', 'research', 'build', 'review'] : ['research', 'design', 'build', 'review'] });
+      // Whole-card mode intentionally reserves the body for dragging.
+      if (mode === 'card') await choice.selectOption('handle');
+      await selectCardText(page, 'research', mode === 'title' ? 'small' : 'strong');
+      await page.getByRole('button', { name: '데이터 초기화', exact: true }).click();
+      await expect(choice).toHaveValue('handle');
+      await selectCardText(page, 'research');
+    });
+    }
+  }
+}

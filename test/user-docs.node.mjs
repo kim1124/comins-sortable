@@ -88,7 +88,7 @@ function playgroundIds() {
   return [...block.matchAll(/'([^']+)'/g)].map((match) => match[1]);
 }
 
-test('documents the local Playground immediately after installation', () => {
+test('documents a built local Playground and keeps installation before quick start', () => {
   const readme = read('README.md');
   const installation = readme.indexOf('## Installation');
   const playground = readme.indexOf('## Run the Playground locally');
@@ -96,10 +96,10 @@ test('documents the local Playground immediately after installation', () => {
 
   assert.ok(installation >= 0);
   assert.ok(playground > installation);
-  assert.ok(quickStart > playground);
+  assert.ok(quickStart > installation);
   assert.match(
     readme,
-    /git clone https:\/\/github\.com\/kim1124\/comins-sortable\.git\s+cd comins-sortable\s+npm ci --ignore-scripts\s+npm run dev/,
+    /git clone https:\/\/github\.com\/kim1124\/comins-sortable\.git\s+cd comins-sortable\s+npm ci --ignore-scripts\s+npm run build\s+npm run dev/,
   );
   assert.match(readme, /http:\/\/127\.0\.0\.1:4003\/examples\/simple\/react/);
   assert.match(
