@@ -16,17 +16,18 @@ repository Playground to try multi-drag, thresholds, grid, and swap.
 The 0.1.6 candidate fixes transformed feedback coordinates, same-frame alignment
 when placeholders resize a list, detached-preview dimensions and the
 source-map-js development dependency. Public APIs and runtime dependencies
-remain unchanged. The latest local gates passed 292 unit, 301 Core E2E,
+remain unchanged. The Vite 8 integrated gates passed 72 policy, 292 unit, 301 Core E2E,
 653 Playground E2E and 5 resource tests, followed by desktop Chrome Computer Use.
 
-This candidate is local and unpublished; npm latest and the manifest remain
-0.1.5 (checked 2026-10-12). Read [changes and current evidence](./verification/0.1.6-local-validation.md)
+The candidate manifest is 0.1.6. Canonical staging, maintainer approval and
+registry closure are separate release stages. Read [changes and current evidence](./verification/0.1.6-local-validation.md)
 and the [open PR snapshot](./verification/0.1.6-pr-status.md) for integration state.
 
 0.1.6은 드래그 좌표·placeholder 이동 직후 표시·복제 미리보기 크기와 개발
-의존성을 보완한 후보입니다. 전체 자동 검증 후 Chrome에서 7개 이동·복제
-시나리오와 이동 후 본문 선택·복사·붙여넣기를 확인했습니다. 아직 원격 반영·배포
-전이며, 현재 npm 0.1.5의 동작과 후보 설명을 구분해야 합니다.
+의존성을 보완한 버전입니다. Vite 8과 한정 라이선스 승인을 포함한 후보가 전체
+자동 검증을 통과했습니다. Chrome에서 이동·복제 및 이동 후 본문 선택·복사·
+붙여넣기도 확인했습니다. 최종 공개 파일 검증·staging·배포 마감은 별도 단계이며,
+현재 상태는 아래 검증 기록에서 확인할 수 있습니다.
 
 ## User guides
 
@@ -116,7 +117,7 @@ the open issue and the default dedicated-handle mode.
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
-Version 0.1.5 was published on 2026-10-04 and is the npm latest release.
+Version 0.1.5 was published on 2026-10-04.
 The public tarball matches the workflow artifact; integrity, registry signature,
 provenance, and consumer installation checks passed. See its publication record above.
 The 0.1.3 local validation index separates each follow-up and its verified source.
@@ -127,7 +128,7 @@ capture do not establish publication status.
 Version 0.1.3 was published on 2026-09-22; the publication record above documents
 the exact public artifact, signatures, provenance, consumer checks, and closure.
 
-0.1.5는 2026-10-04에 공개됐으며 npm latest 버전입니다.
+0.1.5는 2026-10-04에 공개됐습니다.
 공개 파일과 워크플로 파일의 일치, 무결성·레지스트리 서명·출처·소비자 설치
 검증을 통과했습니다. 세부 근거는 위 0.1.5 배포 기록에서 확인할 수 있습니다.
 0.1.3 로컬 검증 색인은 후속 작업별 검증 소스와 범위를 구분합니다. 이전
