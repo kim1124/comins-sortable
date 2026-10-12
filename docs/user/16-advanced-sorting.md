@@ -126,3 +126,5 @@ Playground: `transitions`, `thresholds`, `swap`, `grid`, and `swap-grid` under
 
 For `[A, B, C, D]`, inserting A after C produces `[B, C, A, D]`. Swapping A
 with C produces `[C, B, A, D]`.
+
+Grid insertion follows the dragged card's viewport center, regardless of where its handle is grabbed. Move the card one cell to reach that slot, including the same column in another row. Area acceptance and `swap` continue to use the pointer's actual hit.

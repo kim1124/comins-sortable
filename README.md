@@ -28,7 +28,7 @@ The Drag start areas example also demonstrates title-only and whole-card draggin
 | Drag start areas and text selection | Compare handle, title-only, and whole-card dragging; use handle mode to select and copy body text. |
 | Multi-drag | Command/Ctrl-click handles, or use Shift for a range, then move the selected items together. |
 | Sorting thresholds | Change the shaded target region to see when a drag changes order; this differs from the distance needed to start dragging. |
-| Grid and Swap Grid | Grid inserts and shifts items. Swap Grid exchanges only the dragged and highlighted cells. |
+| Grid and Swap Grid | Grid inserts and shifts items from the dragged card’s center, including off-center handle grabs. Swap Grid exchanges only the dragged and highlighted cells. |
 | Nested lists and Tree | **Per-list state control** updates separate arrays in React, Vue, and Svelte; Vanilla demonstrates direct DOM updates. **Subtree movement** preserves descendants when a node changes parent. Both include structure diagrams and step-by-step instructions. |
 | Drag feedback | Compare accepted/rejected drop styles and their CSS; customize animation, placeholders, skeleton feedback, and auto-scroll. |
 

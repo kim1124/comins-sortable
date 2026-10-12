@@ -117,6 +117,7 @@ interface ScopeArea {
 type RejectionReason = 'disabled' | 'not-accepted' | 'nested-cycle';
 
 interface ActiveDrag {
+  gridOffset: Point;
   areaSnapshots: ReadonlyMap<ScopeArea, { elements: readonly Element[]; ids: readonly SortableId[] }>;
   sourceArea: ScopeArea;
   sourceElement: Element;
@@ -772,6 +773,7 @@ export function createSortableScopeInternal(
       if (area.options.disabled) {
         session.activate(activeSession);
         active = {
+          gridOffset: { x: 0, y: 0 },
           areaSnapshots,
           sourceArea: area,
           sourceElement,
@@ -820,6 +822,11 @@ export function createSortableScopeInternal(
       geometry.clear();
       for (const candidate of areas.values()) candidate.animator.cancel(true);
       geometry.refreshAtActivation(allTargets());
+      const sourceRect = rectFor(sourceElement);
+      const gridOffset = {
+        x: sourceRect.left + sourceRect.width / 2 - activeSession.origin.clientX,
+        y: sourceRect.top + sourceRect.height / 2 - activeSession.origin.clientY,
+      };
       const feedbackMode = transferMode === 'copy' ? 'copy' : 'move';
       const feedback = createFeedback(
         sourceElement,
@@ -831,6 +838,7 @@ export function createSortableScopeInternal(
         feedback.place(parent, sourceElement);
       }
       active = {
+        gridOffset,
         areaSnapshots,
         sourceArea: area,
         sourceElement,
@@ -1519,16 +1527,23 @@ function locateDestination(
         rect: rectFor(element),
       } satisfies ItemGeometry,
     }));
+    const geometries = itemGeometry.map((entry) => entry.geometry);
+    const direction = resolveDirection(area.options.direction, geometries);
+    // Grid feedback follows the grabbed card's center, independently of where
+    // its handle was pressed. Area hits and swap targets still use the pointer.
+    const point = direction === 'grid'
+      ? { x: pointer.clientX + dragging.gridOffset.x, y: pointer.clientY + dragging.gridOffset.y }
+      : { x: pointer.clientX, y: pointer.clientY };
     const previous = dragging.context.destination;
     const currentPlaceholder = dragging.feedback?.placeholder;
     const placeholderRect = currentPlaceholder?.getBoundingClientRect();
     const overCurrentPlaceholder = (
       currentPlaceholder?.parentElement === area.element
       && placeholderRect !== undefined
-      && pointer.clientX >= placeholderRect.left
-      && pointer.clientX <= placeholderRect.right
-      && pointer.clientY >= placeholderRect.top
-      && pointer.clientY <= placeholderRect.bottom
+      && point.x >= placeholderRect.left
+      && point.x <= placeholderRect.right
+      && point.y >= placeholderRect.top
+      && point.y <= placeholderRect.bottom
     );
     if (
       overCurrentPlaceholder
@@ -1545,15 +1560,13 @@ function locateDestination(
       destinations.set(area, destination);
       return destination;
     }
-    const direction = resolveDirection(
-      area.options.direction,
-      itemGeometry.map((entry) => entry.geometry),
-    );
-    const geometries = itemGeometry.map((entry) => entry.geometry);
-    const point = { x: pointer.clientX, y: pointer.clientY };
     const movement = direction === 'vertical' ? pointer.deltaY : pointer.deltaX;
     const index = direction === 'grid'
-      ? gridInsertionIndex({ pointer: point, items: geometries })
+      ? gridInsertionIndex({
+          pointer: point,
+          items: geometries,
+          previousIndex: previous?.areaId === area.options.areaId ? previous.index : 0,
+        })
       : area.options.swapThreshold !== undefined
         ? thresholdInsertionIndex({
             pointer: point,

@@ -107,6 +107,14 @@ test('grid collision follows visual rows and columns instead of one global axis'
   assert.equal(gridInsertionIndex({ pointer: { x: 86, y: 86 }, items }), 4);
 });
 
+test('grid midpoint ties preserve forward and backward insertion intent across rows', () => {
+  const items = [rectItem('a', 0, 0, 120, 88), rectItem('b', 130, 0, 120, 88), rectItem('c', 0, 98, 120, 88)];
+  assert.equal(gridInsertionIndex({ pointer: { x: 59.5, y: 44 }, items, previousIndex: 0 }), 1);
+  assert.equal(gridInsertionIndex({ pointer: { x: 60.5, y: 44 }, items, previousIndex: 1 }), 0);
+  assert.equal(gridInsertionIndex({ pointer: { x: 59.5, y: 142 }, items, previousIndex: 0 }), 3);
+  assert.equal(gridInsertionIndex({ pointer: { x: 60.5, y: 44 }, items, previousIndex: 2 }), 0);
+});
+
 test('threshold collision keeps the previous insertion in a dead zone', () => {
   const target = rectItem('target', 0, 20, 100, 40);
 

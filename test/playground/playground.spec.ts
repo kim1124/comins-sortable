@@ -694,6 +694,58 @@ for (const adapter of adapters) {
     }
   });
 
+  for (const motion of ['right', 'left', 'down', 'up'] as const) {
+    test(`${adapter} grid follows card center for one-cell ${motion} moves @grid-anchor`, async ({ page }) => {
+      await page.goto(`/examples/grid/${adapter}`);
+      await waitForRuntime(page);
+      const area = page.locator('[data-comins-sortable-area="todo"]');
+      await area.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+      const boxes = await area.locator(':scope > [data-sortable-id]').evaluateAll((elements) => elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+      }));
+      const columns = boxes.filter((box) => Math.abs(box.y - boxes[0]!.y) < 1).length;
+      expect(columns).toBeGreaterThan(1);
+      const from = motion === 'left' ? 1 : motion === 'up' ? columns : 0;
+      const to = motion === 'right' ? 1 : motion === 'down' ? columns : 0;
+      const id = `grid-${from + 1}`;
+      const source = page.locator(`[data-sortable-id="${id}"]`);
+      const handle = await source.locator('.cs-demo-handle').boundingBox();
+      if (handle === null) throw new Error('Missing grid handle');
+      const origin = { x: handle.x + handle.width * (motion === 'down' ? 0.85 : 0.15), y: handle.y + handle.height / 2 };
+      const point = {
+        x: origin.x + boxes[to]!.x - boxes[from]!.x,
+        y: origin.y + boxes[to]!.y - boxes[from]!.y,
+      };
+      await page.mouse.move(origin.x, origin.y);
+      await page.mouse.down();
+      await page.mouse.move(origin.x + 12, origin.y + 12);
+      await expect.poll(async () => JSON.parse(await page.locator('[data-playground-drag-start]').innerText())).toMatchObject({ areaId: 'todo', itemId: id });
+      await expect(source).toHaveAttribute('data-comins-sortable-dragging', '');
+      const hit = await page.evaluate((point) => document.elementsFromPoint(point.x, point.y)
+        .map((element) => ({ areaId: element.closest('[data-comins-sortable-area]')?.getAttribute('data-comins-sortable-area'), itemId: element.closest('[data-sortable-id]')?.getAttribute('data-sortable-id') })), point);
+      expect(hit).toContainEqual({ areaId: 'todo', itemId: `grid-${to + 1}` });
+      await page.mouse.move(point.x, point.y);
+      await waitForFrameworkRender(page);
+      const placeholder = page.locator('[data-comins-sortable-placeholder]');
+      await expect.poll(() => placeholder.evaluate((element) => {
+        let index = 0;
+        for (let sibling = element.previousElementSibling; sibling !== null; sibling = sibling.previousElementSibling) {
+          if (sibling.hasAttribute('data-sortable-id') && !sibling.hasAttribute('data-comins-sortable-dragging')) index++;
+        }
+        return index;
+      })).toBe(to);
+      await page.mouse.up();
+      const expected = Array.from({ length: 20 }, (_, index) => `grid-${index + 1}`);
+      expected.splice(from, 1);
+      expected.splice(to, 0, id);
+      await expectModelAndDom(page, { todo: expected });
+      await expectOperation(page, 'reorder', id, { areaId: 'todo', index: from }, { areaId: 'todo', index: to });
+      await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
+      await expect(page.locator('[data-comins-sortable-placeholder], [data-comins-sortable-dragging], [data-comins-sortable-over]')).toHaveCount(0);
+    });
+  }
+
   test(`${adapter} grid uses two-dimensional positions for first and last moves @drag-contract`, async ({ page }) => {
     await page.goto(`/examples/grid/${adapter}`);
     await waitForRuntime(page);

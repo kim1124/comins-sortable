@@ -6,6 +6,11 @@ All notable behavior and public API changes to this project are recorded here.
 
 ### Fixed
 
+- Use the grabbed card's center for grid insertion and placeholder stability.
+  One-cell handle drags no longer require extra rightward travel or insert into
+  the previous row. Resolve rounded center ties for both forward and backward
+  moves without changing pointer-based area acceptance or swap targets.
+
 - Keep move feedback aligned with viewport pointer coordinates inside
   two-dimensional transformed or fixed-containing-block ancestors, including
   ancestor scrolling. Preserve framework-owned source nodes and restore their

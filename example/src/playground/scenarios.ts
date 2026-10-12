@@ -107,7 +107,7 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
   {
     id: 'grid',
     title: { ko: '그리드', en: 'Grid' },
-    description: { ko: '2차원 그리드에서 행과 열의 실제 카드 위치를 기준으로 항목을 정렬합니다.', en: 'Sort a two-dimensional grid from the actual row and column positions of its cards.' },
+    description: { ko: '드래그한 카드의 중심으로 행과 열의 삽입 위치를 판정합니다. 핸들을 잡고 한 칸 이동해 좌우 정렬과 다른 행의 같은 열 이동을 확인하세요.', en: 'Insert from the dragged card’s center. Grab its handle and move one cell to try adjacent sorting or the same column in another row.' },
     api: ['direction="grid"', 'grid collision'],
     controls: [resetControl],
   },
