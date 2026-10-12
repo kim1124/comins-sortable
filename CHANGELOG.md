@@ -2,6 +2,37 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
+## 0.1.6 - 2026-10-12
+
+### Fixed
+
+- Use the grabbed card's center for grid insertion and placeholder stability.
+  One-cell handle drags no longer require extra rightward travel or insert into
+  the previous row. Resolve rounded center ties for both forward and backward
+  moves without changing pointer-based area acceptance or swap targets.
+
+- Keep move feedback aligned with viewport pointer coordinates inside
+  two-dimensional transformed or fixed-containing-block ancestors, including
+  ancestor scrolling. Preserve framework-owned source nodes and restore their
+  original styles on completion or cancellation.
+- Re-anchor move feedback in the same frame after placeholder relocation changes
+  a scaled or rotated ancestor's size and percentage transform origin.
+- Fit detached copy/table previews to their actual parent coordinate basis
+  when body and source containers use different scales. Prevent inherited CSS
+  minimum or maximum dimensions from resizing the viewport snapshot.
+
+### Changed
+
+- Update the development-only source-map-js dependency to 1.2.2 for
+  GHSA-68fv-2mgg-jv7q. Runtime dependencies and public exports are unchanged.
+- Adopt Vite 8.3.4 with unchanged es2020 Playground target and separate
+  TypeScript package build. Lightning CSS 1.33.0 and its eleven platform
+  packages have a scoped development-only maintainer approval with exact
+  version/source/integrity/license checks; tool code is not distributed.
+- Update Playwright to 1.64.0, Svelte to 5.57.2 and reviewed GitHub Actions pins.
+- Add cross-adapter geometry, capture-loss termination and repeated
+  cancel/drop/nested-remount resource checks.
+
 ## 0.1.5 - 2026-10-04
 
 ### Fixed

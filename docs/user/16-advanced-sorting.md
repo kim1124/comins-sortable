@@ -116,7 +116,7 @@ the opposite edge. The guide and shaded region update with the controls.
 ## Insertion and swap
 
 `direction="grid"` uses both axes and keeps the current destination stable
-while the pointer remains over its placeholder. Ordinary grid sorting inserts
+while the dragged card’s center remains over its placeholder. Ordinary grid sorting inserts
 the item and shifts intervening cells. `swap` exchanges just the dragged and
 highlighted target items within the same area, keeps every other position,
 and emits `swapItemId`. Swap Grid combines `direction="grid"` with `swap`.
@@ -126,3 +126,8 @@ Playground: `transitions`, `thresholds`, `swap`, `grid`, and `swap-grid` under
 
 For `[A, B, C, D]`, inserting A after C produces `[B, C, A, D]`. Swapping A
 with C produces `[C, B, A, D]`.
+
+Grid insertion follows the dragged card's viewport center, regardless of where
+its handle is grabbed. Move the card one cell to reach that slot, including the
+same column in another row. Area acceptance and `swap` continue to use the
+pointer's actual hit.

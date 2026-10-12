@@ -53,6 +53,7 @@ export function insertionIndexExcludingSource(input: {
 export function gridInsertionIndex(input: {
   pointer: Point;
   items: readonly ItemGeometry[];
+  previousIndex?: number;
 }): number {
   if (input.items.length === 0) return 0;
   let closestIndex = 0;
@@ -70,7 +71,13 @@ export function gridInsertionIndex(input: {
   const centerX = closest.rect.left + closest.rect.width / 2;
   const centerY = closest.rect.top + closest.rect.height / 2;
   const withinRow = input.pointer.y >= closest.rect.top && input.pointer.y <= closest.rect.bottom;
-  const after = withinRow ? input.pointer.x >= centerX : input.pointer.y >= centerY;
+  const coordinate = withinRow ? input.pointer.x : input.pointer.y;
+  const midpoint = withinRow ? centerX : centerY;
+  const roundedMidpoint = input.previousIndex !== undefined
+    && Math.abs(coordinate - midpoint) <= MIDPOINT_TIE_TOLERANCE;
+  const after = roundedMidpoint
+    ? closestIndex >= input.previousIndex!
+    : coordinate >= midpoint;
   return closestIndex + (after ? 1 : 0);
 }
 

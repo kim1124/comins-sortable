@@ -77,3 +77,22 @@ Playground:
 
 - <http://127.0.0.1:4003/examples/custom-placeholder/react>
 - <http://127.0.0.1:4003/examples/skeleton-placeholder/react>
+
+## Feedback coordinates (0.1.6 candidate)
+
+The candidate keeps move feedback aligned with viewport pointer coordinates in
+verified two-dimensional transform, filter and containment contexts. Original
+items stay in their consumer-owned parent; completion/cancellation restores
+source styles and clears feedback.
+
+Ancestor scrolling and placeholder relocation can change the fixed-position
+coordinate basis. The candidate re-anchors after scrolling and within the same
+frame after placeholder placement resizes a scaled/rotated list. This fixes the
+previous transient shift; it is CSS geometry support, separate from mobile
+screen-orientation changes. No new option or mobile-only sorting mode is added.
+
+Detached copy/table previews retain measured viewport dimensions without clone
+min/max clamps. Ancestor overflow/paint clipping still follows consumer CSS.
+Nonlinear 3D perspective and transforms changed during a gesture are outside
+the recorded support evidence. See [current candidate validation](../verification/0.1.6-local-validation.md)
+for tested cases, desktop Computer Use and remaining release steps.

@@ -694,6 +694,58 @@ for (const adapter of adapters) {
     }
   });
 
+  for (const motion of ['right', 'left', 'down', 'up'] as const) {
+    test(`${adapter} grid follows card center for one-cell ${motion} moves @grid-anchor`, async ({ page }) => {
+      await page.goto(`/examples/grid/${adapter}`);
+      await waitForRuntime(page);
+      const area = page.locator('[data-comins-sortable-area="todo"]');
+      await area.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+      const boxes = await area.locator(':scope > [data-sortable-id]').evaluateAll((elements) => elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+      }));
+      const columns = boxes.filter((box) => Math.abs(box.y - boxes[0]!.y) < 1).length;
+      expect(columns).toBeGreaterThan(1);
+      const from = motion === 'left' ? 1 : motion === 'up' ? columns : 0;
+      const to = motion === 'right' ? 1 : motion === 'down' ? columns : 0;
+      const id = `grid-${from + 1}`;
+      const source = page.locator(`[data-sortable-id="${id}"]`);
+      const handle = await source.locator('.cs-demo-handle').boundingBox();
+      if (handle === null) throw new Error('Missing grid handle');
+      const origin = { x: handle.x + handle.width * (motion === 'down' ? 0.85 : 0.15), y: handle.y + handle.height / 2 };
+      const point = {
+        x: origin.x + boxes[to]!.x - boxes[from]!.x,
+        y: origin.y + boxes[to]!.y - boxes[from]!.y,
+      };
+      await page.mouse.move(origin.x, origin.y);
+      await page.mouse.down();
+      await page.mouse.move(origin.x + 12, origin.y + 12);
+      await expect.poll(async () => JSON.parse(await page.locator('[data-playground-drag-start]').innerText())).toMatchObject({ areaId: 'todo', itemId: id });
+      await expect(source).toHaveAttribute('data-comins-sortable-dragging', '');
+      const hit = await page.evaluate((point) => document.elementsFromPoint(point.x, point.y)
+        .map((element) => ({ areaId: element.closest('[data-comins-sortable-area]')?.getAttribute('data-comins-sortable-area'), itemId: element.closest('[data-sortable-id]')?.getAttribute('data-sortable-id') })), point);
+      expect(hit).toContainEqual({ areaId: 'todo', itemId: `grid-${to + 1}` });
+      await page.mouse.move(point.x, point.y);
+      await waitForFrameworkRender(page);
+      const placeholder = page.locator('[data-comins-sortable-placeholder]');
+      await expect.poll(() => placeholder.evaluate((element) => {
+        let index = 0;
+        for (let sibling = element.previousElementSibling; sibling !== null; sibling = sibling.previousElementSibling) {
+          if (sibling.hasAttribute('data-sortable-id') && !sibling.hasAttribute('data-comins-sortable-dragging')) index++;
+        }
+        return index;
+      })).toBe(to);
+      await page.mouse.up();
+      const expected = Array.from({ length: 20 }, (_, index) => `grid-${index + 1}`);
+      expected.splice(from, 1);
+      expected.splice(to, 0, id);
+      await expectModelAndDom(page, { todo: expected });
+      await expectOperation(page, 'reorder', id, { areaId: 'todo', index: from }, { areaId: 'todo', index: to });
+      await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
+      await expect(page.locator('[data-comins-sortable-placeholder], [data-comins-sortable-dragging], [data-comins-sortable-over]')).toHaveCount(0);
+    });
+  }
+
   test(`${adapter} grid uses two-dimensional positions for first and last moves @drag-contract`, async ({ page }) => {
     await page.goto(`/examples/grid/${adapter}`);
     await waitForRuntime(page);
@@ -1079,4 +1131,239 @@ for (const adapter of adapters) {
     });
     }
   }
+}
+
+// Catch the first rendered frame after placeholder relocation, before a later
+// pointer move can conceal a shifted percentage transform origin.
+for (const adapter of adapters) {
+  for (const transform of ['scale(0.9)', 'rotate(3deg) scale(0.9)']) {
+    test(`${adapter} placeholder relocation keeps transformed feedback anchored in every frame ${transform} @feedback-relocation`, async ({ page }) => {
+      await page.goto(`/examples/two-lists/${adapter}`);
+      await waitForRuntime(page);
+      const host = page.locator('[data-comins-sortable-area="todo"]');
+      await host.evaluate((el, value) => { (el as HTMLElement).style.transform = value; }, transform);
+      const source = host.locator('[data-sortable-id="design"]');
+      await source.scrollIntoViewIfNeeded();
+      const before = await source.boundingBox();
+      const handle = await source.locator('.cs-demo-handle').boundingBox();
+      if (!before || !handle) throw new Error('Missing relocation source geometry');
+      const origin = { x: handle.x + handle.width / 2, y: handle.y + handle.height / 2 };
+      await page.mouse.move(origin.x, origin.y);
+      await page.mouse.down();
+      await page.mouse.move(origin.x + 12, origin.y + 10);
+      await expect(source).toHaveAttribute('data-comins-sortable-dragging', '');
+      await page.evaluate(({ before, origin }) => {
+        const source = document.querySelector('[data-sortable-id="design"]')!;
+        const samples: { error: number; hitArea: string | null }[] = [];
+        let sequence = 0;
+        Object.assign(window, { relocationSamples: samples });
+        window.addEventListener('pointermove', (event) => {
+          const current = ++sequence;
+          requestAnimationFrame(() => {
+            if (current !== sequence || !source.hasAttribute('data-comins-sortable-dragging')) return;
+            const actual = source.getBoundingClientRect();
+            samples.push({
+              error: Math.max(
+                Math.abs(actual.x - before.x - event.clientX + origin.x),
+                Math.abs(actual.y - before.y - event.clientY + origin.y),
+                Math.abs(actual.width - before.width),
+                Math.abs(actual.height - before.height),
+              ),
+              hitArea: document.elementFromPoint(event.clientX, event.clientY)
+                ?.closest('[data-comins-sortable-area]')?.getAttribute('data-comins-sortable-area') ?? null,
+            });
+          });
+        });
+      }, { before, origin });
+      const target = await page.locator('[data-comins-sortable-area="done"] [data-sortable-id="review"]').boundingBox();
+      if (!target) throw new Error('Missing relocation destination geometry');
+      await page.mouse.move(target.x + target.width / 4, target.y + 5, { steps: 8 });
+      await expect(page.locator('[data-comins-sortable-area="done"] [data-comins-sortable-placeholder]')).toHaveCount(1);
+      const samples = await page.evaluate(() => (
+        window as typeof window & { relocationSamples: { error: number; hitArea: string | null }[] }
+      ).relocationSamples);
+      expect(samples.some((sample) => sample.hitArea === 'done')).toBe(true);
+      expect(Math.max(...samples.map((sample) => sample.error)), JSON.stringify(samples)).toBeLessThan(1.5);
+      await page.mouse.up();
+      await expectModelAndDom(page, { todo: ['research', 'build'], done: ['design', 'review'] });
+      await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
+      await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder]')).toHaveCount(0);
+    });
+  }
+}
+
+// Viewport coordinates must remain correct when CSS creates a fixed containing block.
+for (const adapter of adapters) {
+  for (const ancestorStyle of [
+    { transform: 'none' },
+    { transform: 'translateZ(0)' },
+    { transform: 'scale(0.8)' },
+    { transform: 'rotate(8deg) scale(0.9)' },
+    { contain: 'paint' },
+    { filter: 'blur(0px)' },
+  ]) {
+    test(`${adapter} feedback follows viewport coordinates under ${JSON.stringify(ancestorStyle)} @feedback-geometry`, async ({ page }) => {
+      await page.goto(`/examples/simple/${adapter}`);
+      await waitForRuntime(page);
+      const host = page.locator('[data-comins-sortable-area="todo"]');
+      await host.evaluate((element, style) => Object.assign((element as HTMLElement).style, style), ancestorStyle);
+      const source = host.locator('[data-sortable-id="research"]');
+      const sourceNode = await source.elementHandle();
+      await source.scrollIntoViewIfNeeded();
+      const originalStyles = await source.evaluate((el) => (el as HTMLElement).style.cssText);
+      const before = await source.boundingBox();
+      const handle = await source.locator('.cs-demo-handle').boundingBox();
+      if (!before || !handle) throw new Error('Missing feedback geometry');
+      const x = handle.x + handle.width / 2;
+      const y = handle.y + handle.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x + 12, y + 10);
+      await expect(source).toHaveAttribute('data-comins-sortable-dragging', '');
+      await page.mouse.move(x + 24, y + 20, { steps: 2 });
+      await expect.poll(async () => {
+        const actual = await source.boundingBox();
+        return actual === null ? Infinity : Math.max(
+          Math.abs(actual.x - before.x - 24), Math.abs(actual.y - before.y - 20),
+          Math.abs(actual.width - before.width), Math.abs(actual.height - before.height),
+        );
+      }).toBeLessThan(1.5);
+      expect(await sourceNode?.evaluate((el) => el.parentElement?.getAttribute('data-comins-sortable-area'))).toBe('todo');
+      await page.keyboard.press('Escape');
+      await page.mouse.up();
+      expect(await domIds(page, 'todo')).toEqual(['research', 'design', 'build', 'review']);
+      await expect(page.locator('[data-comins-sortable-placeholder],[data-comins-sortable-dragging]')).toHaveCount(0);
+      expect(await source.evaluate((el) => (el as HTMLElement).style.cssText)).toBe(originalStyles);
+      await expect(page.getByLabel('이벤트 타임라인')).toContainText('escape');
+    });
+  }
+}
+
+for (const adapter of adapters) {
+  test(`${adapter} transformed feedback stays anchored after ancestor scroll @feedback-geometry`, async ({ page }) => {
+    await page.goto(`/examples/simple/${adapter}`);
+    await waitForRuntime(page);
+    const host = page.locator('[data-comins-sortable-area="todo"]');
+    await host.evaluate((el) => Object.assign((el as HTMLElement).style, {
+      transform: 'scale(0.9)', height: '150px', overflow: 'auto',
+    }));
+    const source = host.locator('[data-sortable-id="research"]');
+    const initial = await source.boundingBox();
+    const handle = await source.locator('.cs-demo-handle').boundingBox();
+    if (!initial || !handle) throw new Error('Missing scrolling feedback');
+    const drag = await beginDrag(page, 'todo', 'research');
+    await page.mouse.move(handle.x + handle.width / 2 + 20, handle.y + handle.height / 2 + 20);
+    await expect.poll(async () => Math.abs((await source.boundingBox())!.y - initial.y - 20)).toBeLessThan(1.5);
+    const beforeScroll = await source.boundingBox();
+    await host.evaluate((el) => { el.scrollTop += 35; });
+    await expect.poll(() => host.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    await expect.poll(async () => {
+      const actual = await source.boundingBox();
+      return !actual || !beforeScroll ? Infinity : Math.abs(actual.y - beforeScroll.y);
+    }).toBeLessThan(1.5);
+    await page.keyboard.press('Escape');
+    await drag.drop();
+    expect(await domIds(page, 'todo')).toEqual(['research', 'design', 'build', 'review']);
+    await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder]')).toHaveCount(0);
+  });
+
+  test(`${adapter} transformed move commits the real destination and preserves text copying @feedback-geometry`, async ({ page }) => {
+    await page.goto(`/examples/two-lists/${adapter}`);
+    await waitForRuntime(page);
+    await page.locator('[data-comins-sortable-area="todo"]').evaluate((el) => {
+      (el as HTMLElement).style.transform = 'rotate(3deg) scale(0.9)';
+    });
+    const drag = await beginDrag(page, 'todo', 'design');
+    await drag.moveBefore('done', 'review');
+    await drag.drop();
+    await expectModelAndDom(page, { todo: ['research', 'build'], done: ['design', 'review'] });
+    await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
+    const copied = await page.locator('[data-sortable-id="design"] .cs-demo-card__copy').evaluate((el) => {
+      const range = document.createRange(); range.selectNodeContents(el);
+      const selection = window.getSelection(); selection?.removeAllRanges(); selection?.addRange(range);
+      return selection?.toString();
+    });
+    expect(copied).toContain('Design');
+    await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder]')).toHaveCount(0);
+  });
+
+  test(`${adapter} copy preview retains viewport size from a scaled source @feedback-geometry`, async ({ page }) => {
+    await page.goto(`/examples/clone/${adapter}`);
+    await waitForRuntime(page);
+    await page.locator('[data-comins-sortable-area="todo"]').evaluate((el) => {
+      (el as HTMLElement).style.transform = 'scale(0.8)';
+    });
+    const source = page.locator('[data-sortable-id="design"]');
+    const before = await source.boundingBox();
+    const drag = await beginDrag(page, 'todo', 'design');
+    const preview = await page.locator('[data-comins-sortable-dragging]').boundingBox();
+    if (!before || !preview) throw new Error('Missing copy preview');
+    expect(Math.abs(preview.width - before.width)).toBeLessThan(1.5);
+    expect(Math.abs(preview.height - before.height)).toBeLessThan(1.5);
+    await drag.moveBefore('done', 'review'); await drag.drop();
+    await expectModelAndDom(page, { todo: ['research', 'design', 'build'], done: ['design-copy-1', 'review'] });
+  });
+}
+
+for (const adapter of adapters) {
+  for (const bodyTransform of ['translateZ(0)', 'scale(0.9)']) {
+    test(`${adapter} copy preview fits nested body and source transforms ${bodyTransform} @feedback-geometry`, async ({ page }) => {
+      await page.goto(`/examples/clone/${adapter}`); await waitForRuntime(page);
+      await page.evaluate((transform) => {
+        document.body.style.transform = transform;
+        document.body.style.transformOrigin = '0 0';
+        (document.querySelector('[data-comins-sortable-area="todo"]') as HTMLElement).style.transform = 'scale(0.8)';
+      }, bodyTransform);
+      const source = page.locator('[data-sortable-id="design"]');
+      const before = await source.boundingBox();
+      const drag = await beginDrag(page, 'todo', 'design');
+      const preview = await page.locator('[data-comins-sortable-dragging]').boundingBox();
+      if (!before || !preview) throw new Error('Missing nested copy geometry');
+      expect(Math.abs(preview.width - before.width)).toBeLessThan(1.5);
+      expect(Math.abs(preview.height - before.height)).toBeLessThan(1.5);
+      await drag.moveBefore('done', 'review'); await drag.drop();
+      await expectModelAndDom(page, { todo: ['research', 'design', 'build'], done: ['design-copy-1', 'review'] });
+      await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder]')).toHaveCount(0);
+    });
+  }
+}
+
+for (const bodyTransform of ['translateZ(0)', 'scale(0.9)']) {
+  test(`table preview fits its parent basis under ${bodyTransform} @feedback-geometry`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.goto('/examples/simple/vanilla'); await waitForRuntime(page);
+    // Fixture-only table-tagged item; the public Playground has no table route.
+    await page.evaluate((transform) => {
+      document.body.style.transform = transform; document.body.style.transformOrigin = '0 0';
+      const host = document.querySelector('[data-comins-sortable-area="todo"]') as HTMLElement;
+      host.style.transform = 'scale(0.8)';
+      const item = host.querySelector('[data-sortable-id="design"]')!;
+      const row = document.createElement('tr');
+      for (const attr of Array.from(item.attributes)) row.setAttribute(attr.name, attr.value);
+      const cell = document.createElement('td');
+      cell.style.display = 'block';
+      while (item.firstChild) cell.appendChild(item.firstChild);
+      row.appendChild(cell);
+      Object.assign(row.style, { display: 'block', width: '220px', height: '100px', boxSizing: 'border-box' });
+      item.replaceWith(row);
+    }, bodyTransform);
+    const source = page.locator('[data-sortable-id="design"]');
+    const before = await source.boundingBox(); const handle = await source.locator('.cs-demo-handle').boundingBox();
+    if (!before || !handle) throw new Error('Missing table source geometry');
+    expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-sortable-id]')?.getAttribute('data-sortable-id'), { x: handle.x + handle.width / 2, y: handle.y + handle.height / 2 })).toBe('design');
+    await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(handle.x + handle.width / 2 + 12, handle.y + handle.height / 2 + 12);
+    const preview = page.locator('[data-comins-sortable-dragging]');
+    await expect(preview).toHaveAttribute('inert', '');
+    const actual = await preview.boundingBox();
+    if (!actual) throw new Error('Missing table preview');
+    expect(Math.abs(actual.width - before.width)).toBeLessThan(1.5);
+    expect(Math.abs(actual.height - before.height)).toBeLessThan(1.5);
+    await page.keyboard.press('Escape'); await page.mouse.up();
+    await expect(source).toBeVisible();
+    expect(await source.evaluate((el) => (el as HTMLElement).style.display)).toBe('block');
+    expect(await domIds(page, 'todo')).toEqual(['research', 'design', 'build', 'review']);
+    await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder]')).toHaveCount(0);
+  });
 }

@@ -68,3 +68,17 @@ snapshot and returns `copy` for Alt/Option, otherwise `move`.
 
 Playground: `clone`, `custom-clone`, and `modifier-copy` under
 <http://127.0.0.1:4003/examples/clone/react>.
+
+## Preview geometry (0.1.6 candidate)
+
+The visual drag preview and the new data/element returned by
+`copyItem`/`copyElement` have separate roles. These callbacks and new-ID
+requirements are unchanged. The candidate fits preview dimensions in the
+preview parent's coordinate basis when source and body scales differ, and
+removes inherited min/max clamps from the preview only. Source consumer styles
+remain intact.
+
+Scaled and nested body/source copy checks confirm measured size, retained
+original items, new IDs, final order and feedback cleanup. Table-tagged checks
+are fixtures, not a new public table example. See [feedback coordinates](./13-placeholder.md#feedback-coordinates-016-candidate)
+and [current verification](../verification/0.1.6-local-validation.md).

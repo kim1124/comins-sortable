@@ -28,7 +28,7 @@ The Drag start areas example also demonstrates title-only and whole-card draggin
 | Drag start areas and text selection | Compare handle, title-only, and whole-card dragging; use handle mode to select and copy body text. |
 | Multi-drag | Command/Ctrl-click handles, or use Shift for a range, then move the selected items together. |
 | Sorting thresholds | Change the shaded target region to see when a drag changes order; this differs from the distance needed to start dragging. |
-| Grid and Swap Grid | Grid inserts and shifts items. Swap Grid exchanges only the dragged and highlighted cells. |
+| Grid and Swap Grid | Grid inserts and shifts items from the dragged card’s center, including off-center handle grabs. Swap Grid exchanges only the dragged and highlighted cells. |
 | Nested lists and Tree | **Per-list state control** updates separate arrays in React, Vue, and Svelte; Vanilla demonstrates direct DOM updates. **Subtree movement** preserves descendants when a node changes parent. Both include structure diagrams and step-by-step instructions. |
 | Drag feedback | Compare accepted/rejected drop styles and their CSS; customize animation, placeholders, skeleton feedback, and auto-scroll. |
 
@@ -141,6 +141,33 @@ The development server uses port 4003.
 
 Use **Reset** to restore the example and clear multi-selection, including its
 Shift-range anchor, in all four adapters.
+
+## 0.1.6
+
+Version 0.1.6 keeps the existing public APIs and zero runtime dependencies.
+It fixes:
+
+- Drag feedback offsets inside tested transformed, filtered or contained ancestors,
+  including scrolling and list-size changes after placeholder relocation.
+- Detached copy/table preview sizing when source and body containers use different
+  scales or inherited CSS min/max dimensions.
+- Off-center grid handle drags that needed extra travel or inserted in the previous row.
+- The development-only `source-map-js` dependency, updated to patched 1.2.2.
+
+Development tooling now uses Vite 8.3.4, Playwright 1.64.0 and Svelte 5.57.2.
+Lightning CSS has an exact maintainer-approved development-only license scope;
+its code/binaries are not shipped in the Sortable npm package.
+
+Fresh verification passed 72 policy tests, 293 unit tests, 301 Core E2E tests
+and 701 Playground E2E tests, including 48 adjacent-cell/row grid regressions.
+Desktop Chrome Computer Use confirmed 16 grid drags across all four adapters.
+Feedback/copy geometry and native text copying have separate recorded checks.
+Resource results, including a Svelte GC-sample failure and unchanged-source
+recheck, are recorded in the verification guidance. Touch emulation is separate
+from physical-device verification.
+
+See [changes and verification](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.6-local-validation.md)
+for the scope, evidence and release status.
 
 ## Browser support and limits
 

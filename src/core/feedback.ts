@@ -1,4 +1,5 @@
 import { SortableError } from './errors.js';
+import { fixedFeedbackLayout, fixedFeedbackMover } from './feedback-position.js';
 import type { PointerSnapshot, SortablePlaceholderOptions } from './model.js';
 import type { SortablePlatform } from './platform.js';
 
@@ -40,7 +41,6 @@ export function createFeedback(
   options: SortablePlaceholderOptions = {},
   mode: 'move' | 'copy' = 'move',
 ): SortableFeedback {
-  void platform;
   const styledSource = asStyledElement(source);
   const detachedPreview = mode === 'copy' || isTableLayoutItem(source);
   const dragElement = detachedPreview ? createDragPreview(source) : source;
@@ -52,6 +52,9 @@ export function createFeedback(
   const placeholder = source.ownerDocument.createElement(source.tagName);
   const styledPlaceholder = asStyledElement(placeholder);
   const rect = source.getBoundingClientRect();
+  const fixedLayout = fixedFeedbackLayout(source, previewParent ?? source.parentElement, platform.window);
+  const width = fixedLayout?.width || rect.width;
+  const height = fixedLayout?.height || rect.height;
   const originalStyles = Object.fromEntries(
     FEEDBACK_PROPERTIES.map((property) => [property, styledSource.style[property]]),
   ) as Record<FeedbackProperty, string>;
@@ -78,8 +81,8 @@ export function createFeedback(
   );
   placeholder.setAttribute('aria-hidden', 'true');
   styledPlaceholder.style.boxSizing = 'border-box';
-  styledPlaceholder.style.width = `${rect.width}px`;
-  styledPlaceholder.style.height = `${rect.height}px`;
+  styledPlaceholder.style.width = `${width}px`;
+  styledPlaceholder.style.height = `${height}px`;
 
   if (detachedPreview && mode === 'move') {
     styledSource.style.display = 'none';
@@ -87,8 +90,8 @@ export function createFeedback(
 
   dragElement.setAttribute('data-comins-sortable-dragging', '');
   styledDragElement.style.boxSizing = 'border-box';
-  styledDragElement.style.width = `${rect.width}px`;
-  styledDragElement.style.height = `${rect.height}px`;
+  styledDragElement.style.width = `${detachedPreview ? rect.width : width}px`;
+  styledDragElement.style.height = `${detachedPreview ? rect.height : height}px`;
   styledDragElement.style.left = `${rect.left}px`;
   styledDragElement.style.top = `${rect.top}px`;
   styledDragElement.style.margin = '0';
@@ -98,8 +101,16 @@ export function createFeedback(
   styledDragElement.style.transition = 'none';
   styledDragElement.style.zIndex = '2147483647';
   if (detachedPreview) {
+    // The snapshot is already in viewport units; inherited min/max sizes must
+    // not resize a preview detached from a scaled source container.
+    styledDragElement.style.minWidth = '0';
+    styledDragElement.style.minHeight = '0';
+    styledDragElement.style.maxWidth = 'none';
+    styledDragElement.style.maxHeight = 'none';
     previewParent?.appendChild(dragElement);
   }
+
+  const moveFixed = fixedLayout === null ? null : fixedFeedbackMover(styledDragElement, rect, detachedPreview);
 
   const destroy = (): void => {
     if (disposed) {
@@ -133,7 +144,8 @@ export function createFeedback(
   return {
     placeholder,
     move(pointer) {
-      styledDragElement.style.transform = `translate(${pointer.deltaX}px, ${pointer.deltaY}px)`;
+      if (moveFixed !== null) moveFixed(pointer.deltaX, pointer.deltaY);
+      else styledDragElement.style.transform = `translate(${pointer.deltaX}px, ${pointer.deltaY}px)`;
     },
     place(parent, before) {
       parent.insertBefore(placeholder, before);
