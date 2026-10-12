@@ -1081,6 +1081,65 @@ for (const adapter of adapters) {
   }
 }
 
+// Catch the first rendered frame after placeholder relocation, before a later
+// pointer move can conceal a shifted percentage transform origin.
+for (const adapter of adapters) {
+  for (const transform of ['scale(0.9)', 'rotate(3deg) scale(0.9)']) {
+    test(`${adapter} placeholder relocation keeps transformed feedback anchored in every frame ${transform} @feedback-relocation`, async ({ page }) => {
+      await page.goto(`/examples/two-lists/${adapter}`);
+      await waitForRuntime(page);
+      const host = page.locator('[data-comins-sortable-area="todo"]');
+      await host.evaluate((el, value) => { (el as HTMLElement).style.transform = value; }, transform);
+      const source = host.locator('[data-sortable-id="design"]');
+      await source.scrollIntoViewIfNeeded();
+      const before = await source.boundingBox();
+      const handle = await source.locator('.cs-demo-handle').boundingBox();
+      if (!before || !handle) throw new Error('Missing relocation source geometry');
+      const origin = { x: handle.x + handle.width / 2, y: handle.y + handle.height / 2 };
+      await page.mouse.move(origin.x, origin.y);
+      await page.mouse.down();
+      await page.mouse.move(origin.x + 12, origin.y + 10);
+      await expect(source).toHaveAttribute('data-comins-sortable-dragging', '');
+      await page.evaluate(({ before, origin }) => {
+        const source = document.querySelector('[data-sortable-id="design"]')!;
+        const samples: { error: number; hitArea: string | null }[] = [];
+        let sequence = 0;
+        Object.assign(window, { relocationSamples: samples });
+        window.addEventListener('pointermove', (event) => {
+          const current = ++sequence;
+          requestAnimationFrame(() => {
+            if (current !== sequence || !source.hasAttribute('data-comins-sortable-dragging')) return;
+            const actual = source.getBoundingClientRect();
+            samples.push({
+              error: Math.max(
+                Math.abs(actual.x - before.x - event.clientX + origin.x),
+                Math.abs(actual.y - before.y - event.clientY + origin.y),
+                Math.abs(actual.width - before.width),
+                Math.abs(actual.height - before.height),
+              ),
+              hitArea: document.elementFromPoint(event.clientX, event.clientY)
+                ?.closest('[data-comins-sortable-area]')?.getAttribute('data-comins-sortable-area') ?? null,
+            });
+          });
+        });
+      }, { before, origin });
+      const target = await page.locator('[data-comins-sortable-area="done"] [data-sortable-id="review"]').boundingBox();
+      if (!target) throw new Error('Missing relocation destination geometry');
+      await page.mouse.move(target.x + target.width / 4, target.y + 5, { steps: 8 });
+      await expect(page.locator('[data-comins-sortable-area="done"] [data-comins-sortable-placeholder]')).toHaveCount(1);
+      const samples = await page.evaluate(() => (
+        window as typeof window & { relocationSamples: { error: number; hitArea: string | null }[] }
+      ).relocationSamples);
+      expect(samples.some((sample) => sample.hitArea === 'done')).toBe(true);
+      expect(Math.max(...samples.map((sample) => sample.error)), JSON.stringify(samples)).toBeLessThan(1.5);
+      await page.mouse.up();
+      await expectModelAndDom(page, { todo: ['research', 'build'], done: ['design', 'review'] });
+      await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
+      await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder]')).toHaveCount(0);
+    });
+  }
+}
+
 // Viewport coordinates must remain correct when CSS creates a fixed containing block.
 for (const adapter of adapters) {
   for (const ancestorStyle of [

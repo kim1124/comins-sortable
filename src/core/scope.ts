@@ -702,6 +702,9 @@ export function createSortableScopeInternal(
         ]);
         invalidateTargets([...affectedAreas].flatMap(areaTargets), 'placeholder');
         for (const area of affectedAreas) area.animator.play();
+        // Moving the spacer can resize a transformed ancestor and shift its
+        // percentage transform origin. Re-anchor within this same frame.
+        dragging.feedback?.move(pointer);
         options.onInsertDragArea?.({
           ...dragging.context,
           previousDestination,

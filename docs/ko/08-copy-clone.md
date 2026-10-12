@@ -71,8 +71,12 @@ Playground: <http://127.0.0.1:4003/examples/clone/react> 아래의 `clone`,
 
 ## 복제 표시 크기 (0.1.6 후보)
 
-분리된 drag preview는 시각적 피드백이며, `copyItem`/`copyElement`가 반환하는
-새 항목과 구분합니다. 0.1.6 후보에서는 검증한 source/body scale 조합과 CSS
-최소·최대 크기 제한에 따른 preview 크기를 수정했습니다. callback 계약은
-변경하지 않습니다. [피드백 좌표](./13-placeholder.md)와
-[후보 검증](../verification/0.1.6-local-validation.md)을 참고합니다.
+시각적인 drag preview와 `copyItem`/`copyElement`가 만드는 새 데이터·요소는
+역할이 다릅니다. callback 계약과 새 ID 요구사항은 유지합니다. source와 body의
+scale이 다르면 preview 부모의 좌표 기준에 맞춰 크기를 보정하며, preview에만
+상속된 최소·최대 크기 제한을 제거합니다. 원본의 소비자 스타일은 유지합니다.
+
+단일 축소·body/source 중첩 축소 검사에서 표시 크기, 원본 유지, 새 ID 생성,
+최종 순서와 드래그 표시 정리를 확인했습니다. 테이블 태그 검사는 fixture이며
+공개 테이블 예제가 추가된 것은 아닙니다. [피드백 좌표](./13-placeholder.md)와
+[현재 검증 결과](../verification/0.1.6-local-validation.md)를 참고합니다.

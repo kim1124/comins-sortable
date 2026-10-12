@@ -80,13 +80,19 @@ Playground:
 
 ## Feedback coordinates (0.1.6 candidate)
 
-Move feedback uses viewport coordinates even when a two-dimensional CSS `transform`,
-filter or containment rule creates a fixed-position containing block. The
-original item remains in its consumer-owned parent. Pointer movement and
-ancestor scrolling must not add the parent's offset a second time. Detached
-copy/table previews use the measured viewport size without CSS min/max clamps.
+The candidate keeps move feedback aligned with viewport pointer coordinates in
+verified two-dimensional transform, filter and containment contexts. Original
+items stay in their consumer-owned parent; completion/cancellation restores
+source styles and clears feedback.
 
-Ancestor overflow/paint clipping continues to follow consumer CSS; this does
-not introduce a portal or promise support for nonlinear 3D perspective or
-transforms changed during an active drag. Cancellation restores source styles,
-focus and placeholder cleanup. See the [0.1.6 candidate validation report](../../reports/2026-10-12-0.1.6-implementation.md).
+Ancestor scrolling and placeholder relocation can change the fixed-position
+coordinate basis. The candidate re-anchors after scrolling and within the same
+frame after placeholder placement resizes a scaled/rotated list. This fixes the
+previous transient shift; it is CSS geometry support, separate from mobile
+screen-orientation changes. No new option or mobile-only sorting mode is added.
+
+Detached copy/table previews retain measured viewport dimensions without clone
+min/max clamps. Ancestor overflow/paint clipping still follows consumer CSS.
+Nonlinear 3D perspective and transforms changed during a gesture are outside
+the recorded support evidence. See [current candidate validation](../verification/0.1.6-local-validation.md)
+for tested cases, desktop Computer Use and remaining release steps.

@@ -10,6 +10,8 @@ All notable behavior and public API changes to this project are recorded here.
   two-dimensional transformed or fixed-containing-block ancestors, including
   ancestor scrolling. Preserve framework-owned source nodes and restore their
   original styles on completion or cancellation.
+- Re-anchor move feedback in the same frame after placeholder relocation changes
+  a scaled or rotated ancestor's size and percentage transform origin.
 - Fit detached copy/table previews to their actual parent coordinate basis
   when body and source containers use different scales. Prevent inherited CSS
   minimum or maximum dimensions from resizing the viewport snapshot.

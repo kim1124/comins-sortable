@@ -121,3 +121,16 @@ on the same simple route after forced GC. The existing document/live-node,
 listener, retained-node and heap limits above remain unchanged. JSON samples are
 attached to each Playwright test. This is Chromium fixture evidence, separate
 from native-device certification and the existing 500-cycle Vanilla benchmark.
+
+## Recorded 0.1.6 follow-up measurements
+
+The 2026-10-12 run after the feedback-relocation fix passed all 5 resource tests.
+Warm-to-final heap deltas were Vanilla +0.53, React +0.51, Vue +0.69 and Svelte
++0.65 MiB. DOM, listener, document and live-node counts stayed constant for each
+adapter; the existing bounds above were not relaxed. These measurements do not
+establish a before/after speed improvement or the absence of every leak.
+
+See [current candidate validation](./0.1.6-local-validation.md) and the
+[follow-up report](../../reports/2026-10-12-0.1.6-feedback-relocation.md) for evidence.
+The initial 12-configuration/500-cycle benchmark is earlier evidence and was
+not rerun for this follow-up.

@@ -144,14 +144,24 @@ Shift-range anchor, in all four adapters.
 
 ## 0.1.6 candidate — not yet published
 
-The local 0.1.6 implementation fixes drag offsets inside transformed containers
-and incorrect copy-preview sizing, and updates the development-only
-`source-map-js` dependency to 1.2.2. It also expands lifecycle and per-adapter
-resource verification. Public APIs and runtime dependencies are unchanged.
+The 0.1.6 candidate keeps the existing public APIs and zero runtime dependencies.
+It fixes:
 
-The npm installation above currently provides 0.1.5; these candidate changes
-have not been published. See the [0.1.6 changes and verification](./docs/verification/0.1.6-local-validation.md)
-for the exact fixes, test coverage and remaining release steps.
+- Drag feedback offsets inside tested transformed, filtered or contained ancestors,
+  including scrolling and list-size changes after placeholder relocation.
+- Detached copy/table preview sizing when source and body containers use different
+  scales or inherited CSS min/max dimensions.
+- The development-only `source-map-js` dependency, updated to patched 1.2.2.
+
+Local verification passed 292 unit tests, 301 Core E2E tests, 653 Playground E2E
+tests and 5 performance/resource tests. Desktop Chrome Computer Use also checked
+7 drag/copy scenarios and moving a card before selecting, copying and pasting its
+body text. Touch emulation is separate from physical-device verification.
+
+npm latest and the candidate manifest remain **0.1.5** (checked 2026-10-12).
+These fixes are local candidate changes; 0.1.6 has not been merged or published.
+See [candidate changes and verification](./docs/verification/0.1.6-local-validation.md)
+for the current scope, evidence and remaining release steps.
 
 ## Browser support and limits
 
