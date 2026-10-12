@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { basename, isAbsolute, join } from 'node:path';
 
 import { peerRanges } from '../package-boundary.mjs';
@@ -373,11 +373,65 @@ function useSurface(metadata) {
   return 'runtime';
 }
 
-function checkLockLicenses(packages) {
+function parseApprovals(root, packages, paths) {
+  const filename = 'LICENSE_APPROVALS.json';
+  const approved = new Map();
+  if (!existsSync(join(root, filename))) return approved;
+  if (!paths.includes(filename)) throw new Error('untracked approval');
+  const record = readJson(root, filename);
+  if (!hasExactKeys(record, ['schemaVersion', 'approvals'])
+    || record.schemaVersion !== 1 || !Array.isArray(record.approvals)) {
+    throw new Error('invalid approval record');
+  }
+  const ids = new Set();
+  for (const approval of record.approvals) {
+    if (!hasExactKeys(approval, [
+      'id', 'status', 'approverRole', 'reviewDate', 'useSurface',
+      'conditions', 'rationale', 'invalidation', 'components',
+    ]) || typeof approval.id !== 'string' || approval.id.trim() === ''
+      || ids.has(approval.id) || approval.status !== 'approved'
+      || approval.approverRole !== 'maintainer' || approval.useSurface !== 'development'
+      || typeof approval.reviewDate !== 'string'
+      || !/^\d{4}-\d{2}-\d{2}$/.test(approval.reviewDate)
+      || !['rationale', 'invalidation'].every(key => (
+        typeof approval[key] === 'string' && approval[key].trim() !== ''
+      )) || !sameJson(approval.conditions, {
+        modified: false, copied: false, bundled: false, distributed: false,
+      }) || !Array.isArray(approval.components) || approval.components.length === 0) {
+      throw new Error('unapproved scope');
+    }
+    ids.add(approval.id);
+    for (const component of approval.components) {
+      if (!hasExactKeys(component, ['path', 'version', 'license', 'integrity', 'resolved', 'dev'])
+        || typeof component.path !== 'string' || !component.path.startsWith('node_modules/')
+        || !isSafeRelativePath(component.path)
+        || !SAFE_PACKAGE_NAME.test(component.path.slice('node_modules/'.length))
+        || typeof component.version !== 'string' || !EXACT_SEMVER.test(component.version)
+        || typeof component.license !== 'string' || !SAFE_LICENSE.test(component.license)
+        || ROUTINE_LICENSES.has(component.license)
+        || typeof component.integrity !== 'string'
+        || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(component.integrity)
+        || typeof component.resolved !== 'string'
+        || !component.resolved.startsWith('https://registry.npmjs.org/')
+        || component.dev !== true || approved.has(component.path)) {
+        throw new Error('invalid approved component');
+      }
+      const metadata = packages[component.path];
+      if (!isObject(metadata) || metadata.peer === true
+        || !['version', 'license', 'integrity', 'resolved', 'dev'].every(key => (
+          metadata[key] === component[key]
+        ))) throw new Error('approved component drift');
+      approved.set(component.path, component);
+    }
+  }
+  return approved;
+}
+
+function checkLockLicenses(packages, approved) {
   for (const [path, metadata] of Object.entries(packages)) {
     if (!isObject(metadata)) throw new Error('invalid lock package');
     const license = typeof metadata.license === 'string' ? metadata.license : 'UNKNOWN';
-    if (ROUTINE_LICENSES.has(license)) continue;
+    if (ROUTINE_LICENSES.has(license) || approved.has(path)) continue;
     throw new ReviewRequired(packageName(path), license, useSurface(metadata));
   }
 }
@@ -415,7 +469,7 @@ try {
       || (isCopiedOrGenerated(path) && !reviewedAssetPaths.has(path))
       || (isAsset(path) && !reviewedAssetPaths.has(path))
     ))) throw new Error('tracked material requires review');
-    checkLockLicenses(packages);
+    checkLockLicenses(packages, parseApprovals(root, packages, paths));
   } else if (args.length === 2 && args[0] === '--artifact') {
     checkArtifact(root, args[1]);
   } else {

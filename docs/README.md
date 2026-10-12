@@ -11,6 +11,26 @@ repository Playground to try multi-drag, thresholds, grid, and swap.
 사용자 가이드는 Comins Sortable의 공개 API 사용법을 설명합니다.
 저장소 Playground에서 다중 드래그, threshold, grid, swap을 확인할 수 있습니다.
 
+## 0.1.6 candidate status
+
+The 0.1.6 candidate fixes transformed feedback coordinates, placeholder
+relocation, detached-preview sizing and off-center grid insertion. Development
+updates include patched source-map-js and the reviewed Vite 8/license scope.
+Public APIs and runtime dependencies remain unchanged. Grid candidate ba3fca1
+passed 72 policy, 293 unit, 301 Core and 701 Playground tests; direct Chrome
+input confirmed 16 grid drags across the four adapters. Resource checks and the
+Svelte sampling failure/recheck are recorded in the linked evidence.
+
+The candidate manifest is 0.1.6. Canonical staging, maintainer approval and
+registry closure are separate release stages. Read [changes and current evidence](./verification/0.1.6-local-validation.md)
+and the [open PR snapshot](./verification/0.1.6-pr-status.md) for integration state.
+
+0.1.6은 그리드 삽입 판정·드래그 좌표·placeholder 이동 직후 표시·복제 미리보기 크기와 개발
+의존성을 보완한 버전입니다. Vite 8과 한정 라이선스 승인을 포함한 후보가 전체
+자동 검증을 통과했습니다. Chrome에서 이동·복제 및 이동 후 본문 선택·복사·
+붙여넣기도 확인했습니다. 최종 공개 파일 검증·staging·배포 마감은 별도 단계이며,
+현재 상태는 아래 검증 기록에서 확인할 수 있습니다.
+
 ## User guides
 
 | English | 한국어 | Playground examples |
@@ -67,15 +87,22 @@ React·Vue·Svelte의 **목록별 상태 제어**(`nested-controlled`)에서는 
 
 ## Known limitation
 
-Native Safari 26.6.2 leaves body-text selection after title-origin dragging in
-the React Playground. The [handle guide](./user/09-handle-acceptance.md) describes
+A previous native Safari 26.6.2 check recorded retained body-text selection
+after title-origin dragging in the React Playground. Native Safari has not
+been revalidated for this candidate. The [handle guide](./user/09-handle-acceptance.md) describes
 the open issue and the default dedicated-handle mode.
 
-실제 Safari 26.6.2의 React Playground에서 제목 드래그 후 본문 선택이 남는 결함이
-확인되었습니다. [핸들 가이드](./ko/09-handle-acceptance.md)에 미해결 상태와
+이전 실제 Safari 26.6.2 검사에서 React Playground 제목 드래그 후 본문 선택이
+남는 결함을 기록했습니다. 이번 후보에서 실제 Safari를 다시 검증하지는 않았습니다. [핸들 가이드](./ko/09-handle-acceptance.md)에 미해결 상태와
 기본 전용 핸들 방식을 안내합니다.
 
 ## Verification records
+
+- [0.1.6 candidate changes and local validation](./verification/0.1.6-local-validation.md)
+- [0.1.6 grid correction and current verification](../reports/2026-10-12-0.1.6-grid-collision.md)
+- [0.1.6 earlier feedback follow-up and verification](../reports/2026-10-12-0.1.6-feedback-relocation.md)
+- [0.1.6 open PR snapshot](./verification/0.1.6-pr-status.md)
+- [0.1.6 initial implementation and earlier measurements](../reports/2026-10-12-0.1.6-implementation.md)
 
 - [0.1.5 publication and post-publication verification](../reports/2026-10-04-0.1.5-publication.md)
 - [0.1.5 release preparation](../reports/2026-10-04-0.1.5-release-preparation.md)
@@ -93,7 +120,7 @@ the open issue and the default dedicated-handle mode.
 - [0.1.2 test gap audit](./verification/0.1.2-test-gap-audit.md)
 - [Playground GIF source and capture details](./playground-preview.md)
 
-Version 0.1.5 was published on 2026-10-04 and is the npm latest release.
+Version 0.1.5 was published on 2026-10-04.
 The public tarball matches the workflow artifact; integrity, registry signature,
 provenance, and consumer installation checks passed. See its publication record above.
 The 0.1.3 local validation index separates each follow-up and its verified source.
@@ -104,7 +131,7 @@ capture do not establish publication status.
 Version 0.1.3 was published on 2026-09-22; the publication record above documents
 the exact public artifact, signatures, provenance, consumer checks, and closure.
 
-0.1.5는 2026-10-04에 공개됐으며 npm latest 버전입니다.
+0.1.5는 2026-10-04에 공개됐습니다.
 공개 파일과 워크플로 파일의 일치, 무결성·레지스트리 서명·출처·소비자 설치
 검증을 통과했습니다. 세부 근거는 위 0.1.5 배포 기록에서 확인할 수 있습니다.
 0.1.3 로컬 검증 색인은 후속 작업별 검증 소스와 범위를 구분합니다. 이전

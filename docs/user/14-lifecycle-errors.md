@@ -64,3 +64,11 @@ placeholders, and retained rollback state.
 
 Do not treat `onChange` as proof of success. A successful controlled render and
 `onAfterDrag({ status: 'dropped' })` close the transaction.
+
+## Capture-loss regression coverage (0.1.6 candidate)
+
+The sensor also listens on the document. Releasing pointer capture alone is
+not a `pointer-cancel` result: subsequent document pointerup or cancellation
+still terminates the active gesture and clears feedback. The 0.1.6 candidate
+adds real-browser regression coverage for this existing behavior across all
+four adapters; it does not add a new after-drag reason or lifecycle callback.
