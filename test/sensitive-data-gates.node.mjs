@@ -197,7 +197,7 @@ test('pins shared Gitleaks, hooks, and the credential-free workflow', () => {
   assert.match(prePush, /--log-opts="\$base_sha\.\.\$local_sha"/);
 
   assert.match(verify, /actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/);
-  assert.match(verify, /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/);
+  assert.match(verify, /actions\/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1/);
   assert.match(verify, /fetch-depth: 0/);
   assert.match(verify, /persist-credentials: false/);
   assert.match(verify, /check-public-identities\.mjs "\$BASE_SHA" "\$HEAD_SHA"/);
