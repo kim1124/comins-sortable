@@ -142,9 +142,9 @@ The development server uses port 4003.
 Use **Reset** to restore the example and clear multi-selection, including its
 Shift-range anchor, in all four adapters.
 
-## 0.1.6 candidate — not yet published
+## 0.1.6
 
-The 0.1.6 candidate keeps the existing public APIs and zero runtime dependencies.
+Version 0.1.6 keeps the existing public APIs and zero runtime dependencies.
 It fixes:
 
 - Drag feedback offsets inside tested transformed, filtered or contained ancestors,
@@ -157,16 +157,13 @@ Development tooling now uses Vite 8.3.4, Playwright 1.64.0 and Svelte 5.57.2.
 Lightning CSS has an exact maintainer-approved development-only license scope;
 its code/binaries are not shipped in the Sortable npm package.
 
-The earlier candidate passed 292 unit tests, 301 Core E2E tests, 653 Playground
-E2E tests and 5 performance/resource tests. The integrated tooling candidate
-requires fresh release verification. Desktop Chrome Computer Use also checked
-7 drag/copy scenarios and moving a card before selecting, copying and pasting its
-body text. Touch emulation is separate from physical-device verification.
+Fresh verification of the integrated Vite 8 build passed 72 policy tests,
+292 unit tests, 301 Core E2E tests, 653 Playground E2E tests and 5
+performance/resource tests. Desktop Chrome Computer Use checked drag/copy geometry and moving a card
+before selecting, copying and pasting its body text. Touch emulation is separate from physical-device verification.
 
-The candidate manifest is **0.1.6**; npm latest was **0.1.5** at the last
-registry check (2026-10-12). Version 0.1.6 has not yet been published.
-See [candidate changes and verification](./docs/verification/0.1.6-local-validation.md)
-for the current scope, evidence and remaining release steps.
+See [changes and verification](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.6-local-validation.md)
+for the scope, evidence and release status.
 
 ## Browser support and limits
 
