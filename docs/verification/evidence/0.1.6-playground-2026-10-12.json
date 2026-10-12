@@ -1,0 +1,1716 @@
+{
+  "dateKST": "2026-10-12",
+  "source": "4cc4761a71d5e236afdaf1e3ce602d0cbdde6978",
+  "version": "0.1.6",
+  "environment": {
+    "vite": "8.3.4",
+    "install": "npm ci --ignore-scripts in disposable source checkout",
+    "interaction": "native input through verification browser",
+    "grid": "ordinary Playground",
+    "feedback": "actual Playground iframe with consumer CSS applied by diagnostic wrapper"
+  },
+  "summary": {
+    "gridCases": 16,
+    "feedbackCases": 28,
+    "allPassed": true,
+    "maxPositionErrorPx": 0.006165,
+    "maxSizeErrorPx": 0.004639,
+    "ordinaryPlaygroundConsoleErrors": 0
+  },
+  "gridCases": [
+    {
+      "adapter": "React",
+      "direction": "right",
+      "expectedIndex": 1,
+      "actualIndex": 1,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-2",
+        "grid-1",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "React",
+      "direction": "left",
+      "expectedIndex": 0,
+      "actualIndex": 0,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-1",
+        "grid-2",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "React",
+      "direction": "down",
+      "expectedIndex": 2,
+      "actualIndex": 2,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-2",
+        "grid-3",
+        "grid-1",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "React",
+      "direction": "up",
+      "expectedIndex": 0,
+      "actualIndex": 0,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-1",
+        "grid-2",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Vanilla",
+      "direction": "right",
+      "expectedIndex": 1,
+      "actualIndex": 1,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-2",
+        "grid-1",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Vanilla",
+      "direction": "left",
+      "expectedIndex": 0,
+      "actualIndex": 0,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-1",
+        "grid-2",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Vanilla",
+      "direction": "down",
+      "expectedIndex": 2,
+      "actualIndex": 2,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-2",
+        "grid-3",
+        "grid-1",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Vanilla",
+      "direction": "up",
+      "expectedIndex": 0,
+      "actualIndex": 0,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-1",
+        "grid-2",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Vue",
+      "direction": "right",
+      "expectedIndex": 1,
+      "actualIndex": 1,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-2",
+        "grid-1",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Vue",
+      "direction": "left",
+      "expectedIndex": 0,
+      "actualIndex": 0,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-1",
+        "grid-2",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Vue",
+      "direction": "down",
+      "expectedIndex": 2,
+      "actualIndex": 2,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-2",
+        "grid-3",
+        "grid-1",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Vue",
+      "direction": "up",
+      "expectedIndex": 0,
+      "actualIndex": 0,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-1",
+        "grid-2",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Svelte",
+      "direction": "right",
+      "expectedIndex": 1,
+      "actualIndex": 1,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-2",
+        "grid-1",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Svelte",
+      "direction": "left",
+      "expectedIndex": 0,
+      "actualIndex": 0,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-1",
+        "grid-2",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Svelte",
+      "direction": "down",
+      "expectedIndex": 2,
+      "actualIndex": 2,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-2",
+        "grid-3",
+        "grid-1",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    },
+    {
+      "adapter": "Svelte",
+      "direction": "up",
+      "expectedIndex": 0,
+      "actualIndex": 0,
+      "pass": true,
+      "columns": 2,
+      "modelMatchesDom": true,
+      "finalOrder": [
+        "grid-1",
+        "grid-2",
+        "grid-3",
+        "grid-4",
+        "grid-5",
+        "grid-6",
+        "grid-7",
+        "grid-8",
+        "grid-9",
+        "grid-10",
+        "grid-11",
+        "grid-12",
+        "grid-13",
+        "grid-14",
+        "grid-15",
+        "grid-16",
+        "grid-17",
+        "grid-18",
+        "grid-19",
+        "grid-20"
+      ],
+      "remainingFeedback": 0,
+      "termination": "drop",
+      "targetArea": "todo"
+    }
+  ],
+  "feedbackCases": [
+    {
+      "adapter": "react",
+      "scenario": "move-scale",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.006104,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "react",
+      "scenario": "copy",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002319,
+      "sizeErrorPx": 0.004639,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "design",
+          "build"
+        ],
+        "done": [
+          "design-copy-1",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "design",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design-copy-1",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "react",
+      "scenario": "nested",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.005615,
+      "sizeErrorPx": 0.004211,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "design",
+          "build"
+        ],
+        "done": [
+          "design-copy-1",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "design",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design-copy-1",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "react",
+      "scenario": "contain",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002869,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "react",
+      "scenario": "filter",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002869,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "react",
+      "scenario": "normal",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0,
+      "sizeErrorPx": 0,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "react",
+      "scenario": "move",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.00473,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vanilla",
+      "scenario": "move",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.00473,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vanilla",
+      "scenario": "copy",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002319,
+      "sizeErrorPx": 0.004639,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "design",
+          "build"
+        ],
+        "done": [
+          "design-copy-1",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "design",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design-copy-1",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vanilla",
+      "scenario": "nested",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.005615,
+      "sizeErrorPx": 0.004211,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "design",
+          "build"
+        ],
+        "done": [
+          "design-copy-1",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "design",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design-copy-1",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vanilla",
+      "scenario": "contain",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002869,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vanilla",
+      "scenario": "filter",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002869,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vanilla",
+      "scenario": "normal",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0,
+      "sizeErrorPx": 0,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vanilla",
+      "scenario": "move-scale",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.006165,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vue",
+      "scenario": "move",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.00473,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vue",
+      "scenario": "copy",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002319,
+      "sizeErrorPx": 0.004639,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "design",
+          "build"
+        ],
+        "done": [
+          "design-copy-1",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "design",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design-copy-1",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vue",
+      "scenario": "nested",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.005615,
+      "sizeErrorPx": 0.004211,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "design",
+          "build"
+        ],
+        "done": [
+          "design-copy-1",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "design",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design-copy-1",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vue",
+      "scenario": "contain",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002869,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vue",
+      "scenario": "filter",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002869,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vue",
+      "scenario": "normal",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0,
+      "sizeErrorPx": 0,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "vue",
+      "scenario": "move-scale",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.006104,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "svelte",
+      "scenario": "move",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.00473,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "svelte",
+      "scenario": "copy",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002319,
+      "sizeErrorPx": 0.004639,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "design",
+          "build"
+        ],
+        "done": [
+          "design-copy-1",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "design",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design-copy-1",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "svelte",
+      "scenario": "nested",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.005615,
+      "sizeErrorPx": 0.004211,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "design",
+          "build"
+        ],
+        "done": [
+          "design-copy-1",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "design",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design-copy-1",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "svelte",
+      "scenario": "contain",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002869,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "svelte",
+      "scenario": "filter",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.002869,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "svelte",
+      "scenario": "normal",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0,
+      "sizeErrorPx": 0,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    },
+    {
+      "adapter": "svelte",
+      "scenario": "move-scale",
+      "sourceArea": "todo",
+      "sourceItem": "design",
+      "liveHitArea": "done",
+      "samples": 6,
+      "positionErrorPx": 0.006165,
+      "sizeErrorPx": 6.1e-05,
+      "remainingFeedback": 0,
+      "pass": true,
+      "model": {
+        "todo": [
+          "research",
+          "build"
+        ],
+        "done": [
+          "design",
+          "review"
+        ]
+      },
+      "domOrders": [
+        {
+          "area": "todo",
+          "items": [
+            "research",
+            "build"
+          ]
+        },
+        {
+          "area": "done",
+          "items": [
+            "design",
+            "review"
+          ]
+        }
+      ],
+      "termination": "drop"
+    }
+  ],
+  "observerError": {
+    "classification": "verification-tool environment; excluded from product issues",
+    "message": "Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.",
+    "controls": [
+      {
+        "case": "ordinary Playground",
+        "errors": 0
+      },
+      {
+        "case": "static HTML without iframe",
+        "errors": 0
+      },
+      {
+        "case": "static child HTML standalone",
+        "errors": 0
+      },
+      {
+        "case": "static iframe, independent first tab",
+        "errors": 1,
+        "applicationScripts": 0
+      },
+      {
+        "case": "static iframe, independent second tab",
+        "errors": 1,
+        "applicationScripts": 0
+      }
+    ],
+    "parentScripts": 0,
+    "childScripts": 0,
+    "internalStack": "not exposed; exact internal caller and timing not established"
+  },
+  "notVerified": [
+    "physical devices",
+    "keyboard sorting",
+    "nonlinear 3D",
+    "active gesture transform changes",
+    "fixture-only table item",
+    "new performance or memory measurements"
+  ],
+  "precision": "Published pixel measurements rounded to six decimal places; full precision preserved in local source observations."
+}
