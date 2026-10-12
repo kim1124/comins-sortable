@@ -13,17 +13,19 @@ repository Playground to try multi-drag, thresholds, grid, and swap.
 
 ## 0.1.6 candidate status
 
-The 0.1.6 candidate fixes transformed feedback coordinates, same-frame alignment
-when placeholders resize a list, detached-preview dimensions and the
-source-map-js development dependency. Public APIs and runtime dependencies
-remain unchanged. The Vite 8 integrated gates passed 72 policy, 292 unit, 301 Core E2E,
-653 Playground E2E and 5 resource tests, followed by desktop Chrome Computer Use.
+The 0.1.6 candidate fixes transformed feedback coordinates, placeholder
+relocation, detached-preview sizing and off-center grid insertion. Development
+updates include patched source-map-js and the reviewed Vite 8/license scope.
+Public APIs and runtime dependencies remain unchanged. Grid candidate ba3fca1
+passed 72 policy, 293 unit, 301 Core and 701 Playground tests; direct Chrome
+input confirmed 16 grid drags across the four adapters. Resource checks and the
+Svelte sampling failure/recheck are recorded in the linked evidence.
 
 The candidate manifest is 0.1.6. Canonical staging, maintainer approval and
 registry closure are separate release stages. Read [changes and current evidence](./verification/0.1.6-local-validation.md)
 and the [open PR snapshot](./verification/0.1.6-pr-status.md) for integration state.
 
-0.1.6은 드래그 좌표·placeholder 이동 직후 표시·복제 미리보기 크기와 개발
+0.1.6은 그리드 삽입 판정·드래그 좌표·placeholder 이동 직후 표시·복제 미리보기 크기와 개발
 의존성을 보완한 버전입니다. Vite 8과 한정 라이선스 승인을 포함한 후보가 전체
 자동 검증을 통과했습니다. Chrome에서 이동·복제 및 이동 후 본문 선택·복사·
 붙여넣기도 확인했습니다. 최종 공개 파일 검증·staging·배포 마감은 별도 단계이며,
@@ -97,7 +99,8 @@ the open issue and the default dedicated-handle mode.
 ## Verification records
 
 - [0.1.6 candidate changes and local validation](./verification/0.1.6-local-validation.md)
-- [0.1.6 latest human-review fix and full verification](../reports/2026-10-12-0.1.6-feedback-relocation.md)
+- [0.1.6 grid correction and current verification](../reports/2026-10-12-0.1.6-grid-collision.md)
+- [0.1.6 earlier feedback follow-up and verification](../reports/2026-10-12-0.1.6-feedback-relocation.md)
 - [0.1.6 open PR snapshot](./verification/0.1.6-pr-status.md)
 - [0.1.6 initial implementation and earlier measurements](../reports/2026-10-12-0.1.6-implementation.md)
 

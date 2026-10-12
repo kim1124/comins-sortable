@@ -151,16 +151,20 @@ It fixes:
   including scrolling and list-size changes after placeholder relocation.
 - Detached copy/table preview sizing when source and body containers use different
   scales or inherited CSS min/max dimensions.
+- Off-center grid handle drags that needed extra travel or inserted in the previous row.
 - The development-only `source-map-js` dependency, updated to patched 1.2.2.
 
 Development tooling now uses Vite 8.3.4, Playwright 1.64.0 and Svelte 5.57.2.
 Lightning CSS has an exact maintainer-approved development-only license scope;
 its code/binaries are not shipped in the Sortable npm package.
 
-Fresh verification of the integrated Vite 8 build passed 72 policy tests,
-292 unit tests, 301 Core E2E tests, 653 Playground E2E tests and 5
-performance/resource tests. Desktop Chrome Computer Use checked drag/copy geometry and moving a card
-before selecting, copying and pasting its body text. Touch emulation is separate from physical-device verification.
+Fresh verification passed 72 policy tests, 293 unit tests, 301 Core E2E tests
+and 701 Playground E2E tests, including 48 adjacent-cell/row grid regressions.
+Desktop Chrome Computer Use confirmed 16 grid drags across all four adapters.
+Feedback/copy geometry and native text copying have separate recorded checks.
+Resource results, including a Svelte GC-sample failure and unchanged-source
+recheck, are recorded in the verification guidance. Touch emulation is separate
+from physical-device verification.
 
 See [changes and verification](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.6-local-validation.md)
 for the scope, evidence and release status.
