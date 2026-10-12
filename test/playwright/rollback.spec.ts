@@ -122,3 +122,28 @@ for (const adapter of adapters) {
     });
   });
 }
+
+for (const adapter of adapters) {
+  test(`${adapter} document listeners finish a drag after pointer capture is lost`, async ({ page }) => {
+    await page.goto(`/${adapter}/`); await waitForFixture(page);
+    const source = page.locator('[data-comins-sortable-area="todo"] > [data-sortable-id="b"]');
+    await source.evaluate((el) => el.addEventListener('pointerdown', (event) => {
+      el.setAttribute('data-test-pointer-id', String((event as PointerEvent).pointerId));
+    }, { once: true }));
+    const drag = await beginDrag(page, 'todo', 'b');
+    const captured = await source.evaluate((el) => {
+      const id = Number(el.getAttribute('data-test-pointer-id'));
+      const hadCapture = el.hasPointerCapture(id);
+      el.releasePointerCapture(id);
+      el.removeAttribute('data-test-pointer-id');
+      return hadCapture;
+    });
+    expect(captured).toBe(true);
+    await drag.moveBefore('todo', 'a'); await drag.drop();
+    await expectIds(page, 'todo', ['b', 'a']);
+    await expect.poll(async () => {
+      const events = (await fixtureState(page)).events; return events[events.length - 1];
+    }).toBe('after:dropped:drop');
+    await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder]')).toHaveCount(0);
+  });
+}

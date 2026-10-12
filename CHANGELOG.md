@@ -2,6 +2,24 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
+## Unreleased — 0.1.6 candidate
+
+### Fixed
+
+- Keep move feedback aligned with viewport pointer coordinates inside
+  two-dimensional transformed or fixed-containing-block ancestors, including
+  ancestor scrolling. Preserve framework-owned source nodes and restore their
+  original styles on completion or cancellation.
+- Prevent detached copy/table previews from being resized by inherited CSS
+  minimum or maximum dimensions after taking a scaled viewport snapshot.
+
+### Changed
+
+- Update the development-only source-map-js dependency to 1.2.2 for
+  GHSA-68fv-2mgg-jv7q. Runtime dependencies and public exports are unchanged.
+- Add cross-adapter geometry, capture-loss termination and repeated
+  cancel/drop/nested-remount resource checks.
+
 ## 0.1.5 - 2026-10-04
 
 ### Fixed

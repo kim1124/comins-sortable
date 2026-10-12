@@ -313,3 +313,51 @@ test('all Playground features stabilize heap, DOM nodes, and listeners after war
   expect(repeated.domNodes - warm.domNodes).toBeLessThanOrEqual(10);
   expect(repeated.jsHeapMb - warm.jsHeapMb).toBeLessThanOrEqual(1);
 });
+
+for (const adapter of ['vanilla', 'react', 'vue', 'svelte'] as const) {
+  test(`${adapter} repeated drags and nested runtime remounts retain bounded resources`, async ({ page, context }, testInfo) => {
+    test.setTimeout(240_000);
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Performance.enable');
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.goto(`/examples/simple/${adapter}`); await waitForRuntime(page);
+    const initial = ['research', 'design', 'build', 'review'];
+    const exercise = async (count: number): Promise<void> => {
+      for (let cycle = 0; cycle < count; cycle += 1) {
+        const drag = await beginDrag(page, 'todo', 'design');
+        if (cycle % 2 === 0) await page.keyboard.press('Escape');
+        else await drag.moveBefore('todo', 'research');
+        await drag.drop();
+        await expectModel(page, 'todo', cycle % 2 === 0 ? initial : ['design', 'research', 'build', 'review']);
+        await page.getByRole('button', { name: '데이터 초기화' }).click();
+        if (cycle % 5 === 4) {
+          await page.getByRole('tab', { name: '하위 트리 이동', exact: true }).click();
+          await expect(page.locator('[data-playground-runtime]')).toHaveAttribute('data-playground-mounted', `tree/${adapter}`);
+          await waitForRuntime(page);
+          await dragItem(page, 'todo', 'build', { areaId: 'child', beforeId: 'review' });
+          await expectModel(page, 'child', ['build', 'review', 'release']);
+          await page.getByRole('tab', { name: '기본 정렬', exact: true }).click();
+          await expect(page.locator('[data-playground-runtime]')).toHaveAttribute('data-playground-mounted', `simple/${adapter}`);
+          await waitForRuntime(page);
+        }
+        await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder],[data-comins-sortable-over]')).toHaveCount(0);
+      }
+    };
+    await exercise(20);
+    const warm = await sampleResources(page, cdp, `${adapter}-warm-20`);
+    const samples = [warm];
+    for (let batch = 1; batch <= 4; batch += 1) {
+      await exercise(25);
+      const sample = await sampleResources(page, cdp, `${adapter}-cycle-${batch * 25}`);
+      samples.push(sample);
+      expect(sample.documents).toBe(warm.documents);
+      expect(sample.liveNodes).toBe(warm.liveNodes);
+      expect(sample.eventListeners - warm.eventListeners).toBeLessThanOrEqual(5);
+      expect(sample.domNodes - warm.domNodes).toBeLessThanOrEqual(10);
+      expect(sample.jsHeapMb - warm.jsHeapMb).toBeLessThanOrEqual(1);
+    }
+    await testInfo.attach(`${adapter}-resources`, { body: JSON.stringify(samples, null, 2), contentType: 'application/json' });
+    console.log(JSON.stringify({ adapter, samples }));
+    await cdp.detach();
+  });
+}

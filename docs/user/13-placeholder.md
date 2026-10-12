@@ -77,3 +77,16 @@ Playground:
 
 - <http://127.0.0.1:4003/examples/custom-placeholder/react>
 - <http://127.0.0.1:4003/examples/skeleton-placeholder/react>
+
+## Feedback coordinates
+
+Move feedback uses viewport coordinates even when a two-dimensional CSS `transform`,
+filter or containment rule creates a fixed-position containing block. The
+original item remains in its consumer-owned parent. Pointer movement and
+ancestor scrolling must not add the parent's offset a second time. Detached
+copy/table previews use the measured viewport size without CSS min/max clamps.
+
+Ancestor overflow/paint clipping continues to follow consumer CSS; this does
+not introduce a portal or promise support for nonlinear 3D perspective or
+transforms changed during an active drag. Cancellation restores source styles,
+focus and placeholder cleanup. See the 0.1.6 candidate validation report.

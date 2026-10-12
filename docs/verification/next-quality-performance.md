@@ -109,3 +109,15 @@ Every intermediate 50-cycle sample met the same bounds. Heap grew by 0.445 MiB o
 A separate final-source 5,000-item / 4× trace contains scripting, style/layout and paint work: `FunctionCall` 271.06 ms, `Layout` 78.30 ms, and `Paint` 44.87 ms summed within their respective event categories over the recorded drag. Trace events can nest/overlap and must not be added into an end-to-end latency value. Trace instrumentation is excluded from the comparison table.
 
 Raw evidence: `.local/next-quality/baseline-{1,2,3}.json`, `final-{1,2,3}.json`, `comparison.json`, `memory.json`, and `trace.json`. Timing runs completed without concurrent builds or browser suites. The baseline/final bundle SHA-256 values are respectively `1aa60a0bedbdd62fada26e39040a90ca5108da64c2e05284f7f23787363b040b` and `b0bbf42f0cd98b695e5fa7e3acf79c8253e70c1f11245a5ec42cec6961f88c3e`.
+
+## 0.1.6 adapter resource scenarios
+
+`npm run verify:performance` also measures each of Vanilla, React, Vue and
+Svelte after 20 warm-up cycles and 100 measured cycles, in four 25-cycle batches.
+Each cycle cancels or commits a real pointer drag and resets the model. Every
+five cycles, the test moves an item into a nested tree and returns to the simple
+route, destroying/remounting the previous adapter runtime. All samples are taken
+on the same simple route after forced GC. The existing document/live-node,
+listener, retained-node and heap limits above remain unchanged. JSON samples are
+attached to each Playwright test. This is Chromium fixture evidence, separate
+from native-device certification and the existing 500-cycle Vanilla benchmark.
