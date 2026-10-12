@@ -11,6 +11,19 @@ repository Playground to try multi-drag, thresholds, grid, and swap.
 사용자 가이드는 Comins Sortable의 공개 API 사용법을 설명합니다.
 저장소 Playground에서 다중 드래그, threshold, grid, swap을 확인할 수 있습니다.
 
+## 0.1.6 candidate status
+
+The 0.1.6 code changes and selected local verification are complete. This is an
+unpublished candidate; npm latest remains 0.1.5 (checked 2026-10-12). Candidate
+notes do not describe the currently installed npm package. See
+[changes and verification](./verification/0.1.6-local-validation.md) for the
+fix/verification distinction and implementation source.
+
+0.1.6 코드 수정과 선정한 로컬 검증은 완료했습니다. 아직 배포하지 않은 후보이며,
+2026-10-12 확인한 npm latest는 0.1.5입니다. 후보 버전 설명을 현재 설치되는 npm
+패키지의 동작으로 해석하지 않습니다. [변경·검증 정리](./verification/0.1.6-local-validation.md)에서
+실제 결함 수정과 검증 확대, 구현 소스를 구분합니다.
+
 ## User guides
 
 | English | 한국어 | Playground examples |
@@ -67,15 +80,19 @@ React·Vue·Svelte의 **목록별 상태 제어**(`nested-controlled`)에서는 
 
 ## Known limitation
 
-Native Safari 26.6.2 leaves body-text selection after title-origin dragging in
-the React Playground. The [handle guide](./user/09-handle-acceptance.md) describes
+A previous native Safari 26.6.2 check recorded retained body-text selection
+after title-origin dragging in the React Playground. Native Safari has not
+been revalidated for this candidate. The [handle guide](./user/09-handle-acceptance.md) describes
 the open issue and the default dedicated-handle mode.
 
-실제 Safari 26.6.2의 React Playground에서 제목 드래그 후 본문 선택이 남는 결함이
-확인되었습니다. [핸들 가이드](./ko/09-handle-acceptance.md)에 미해결 상태와
+이전 실제 Safari 26.6.2 검사에서 React Playground 제목 드래그 후 본문 선택이
+남는 결함을 기록했습니다. 이번 후보에서 실제 Safari를 다시 검증하지는 않았습니다. [핸들 가이드](./ko/09-handle-acceptance.md)에 미해결 상태와
 기본 전용 핸들 방식을 안내합니다.
 
 ## Verification records
+
+- [0.1.6 candidate changes and local validation](./verification/0.1.6-local-validation.md)
+- [0.1.6 implementation and measured results](../reports/2026-10-12-0.1.6-implementation.md)
 
 - [0.1.5 publication and post-publication verification](../reports/2026-10-04-0.1.5-publication.md)
 - [0.1.5 release preparation](../reports/2026-10-04-0.1.5-release-preparation.md)

@@ -68,3 +68,11 @@ pointer snapshot에서 Alt/Option을 확인해 `copy`, 일반 drag는 `move`를 
 
 Playground: <http://127.0.0.1:4003/examples/clone/react> 아래의 `clone`,
 `custom-clone`, `modifier-copy` 경로를 확인합니다.
+
+## 복제 표시 크기 (0.1.6 후보)
+
+분리된 drag preview는 시각적 피드백이며, `copyItem`/`copyElement`가 반환하는
+새 항목과 구분합니다. 0.1.6 후보에서는 검증한 source/body scale 조합과 CSS
+최소·최대 크기 제한에 따른 preview 크기를 수정했습니다. callback 계약은
+변경하지 않습니다. [피드백 좌표](./13-placeholder.md)와
+[후보 검증](../verification/0.1.6-local-validation.md)을 참고합니다.

@@ -63,3 +63,11 @@ animation, placeholder, rollback 상태를 모두 해제합니다.
 
 `onChange` 호출만 성공 증거로 사용하지 않습니다. 제어 렌더가 검증되고
 `onAfterDrag({ status: 'dropped' })`가 호출되어야 transaction이 완료됩니다.
+
+## 포인터 캡처 상실 검증 (0.1.6 후보)
+
+센서는 document에서도 입력을 받습니다. 포인터 캡처 해제 자체를
+`pointer-cancel`로 처리하지 않으며, 이후 document pointerup이나 취소 입력으로
+활성 드래그를 종료하고 표시를 정리합니다. 0.1.6 후보에서는 이 기존 동작을
+네 어댑터의 실제 브라우저 회귀 검사로 보강했습니다. 종료 사유나 callback을
+새로 추가한 변경은 아닙니다.

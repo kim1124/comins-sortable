@@ -10,8 +10,9 @@ All notable behavior and public API changes to this project are recorded here.
   two-dimensional transformed or fixed-containing-block ancestors, including
   ancestor scrolling. Preserve framework-owned source nodes and restore their
   original styles on completion or cancellation.
-- Prevent detached copy/table previews from being resized by inherited CSS
-  minimum or maximum dimensions after taking a scaled viewport snapshot.
+- Fit detached copy/table previews to their actual parent coordinate basis
+  when body and source containers use different scales. Prevent inherited CSS
+  minimum or maximum dimensions from resizing the viewport snapshot.
 
 ### Changed
 

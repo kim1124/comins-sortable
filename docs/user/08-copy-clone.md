@@ -68,3 +68,11 @@ snapshot and returns `copy` for Alt/Option, otherwise `move`.
 
 Playground: `clone`, `custom-clone`, and `modifier-copy` under
 <http://127.0.0.1:4003/examples/clone/react>.
+
+## Preview geometry (0.1.6 candidate)
+
+The detached drag preview is visual feedback, separate from the new item
+returned by `copyItem`/`copyElement`. The 0.1.6 candidate fixes preview sizing
+for tested scaled source/body containers and CSS min/max constraints without
+changing those callbacks. See [feedback coordinates](./13-placeholder.md#feedback-coordinates-016-candidate)
+and [candidate validation](../verification/0.1.6-local-validation.md).

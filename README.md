@@ -142,6 +142,17 @@ The development server uses port 4003.
 Use **Reset** to restore the example and clear multi-selection, including its
 Shift-range anchor, in all four adapters.
 
+## 0.1.6 candidate — not yet published
+
+The local 0.1.6 implementation fixes drag offsets inside transformed containers
+and incorrect copy-preview sizing, and updates the development-only
+`source-map-js` dependency to 1.2.2. It also expands lifecycle and per-adapter
+resource verification. Public APIs and runtime dependencies are unchanged.
+
+The npm installation above currently provides 0.1.5; these candidate changes
+have not been published. See the [0.1.6 changes and verification](./docs/verification/0.1.6-local-validation.md)
+for the exact fixes, test coverage and remaining release steps.
+
 ## Browser support and limits
 
 Automated tests cover Chromium, Firefox, and WebKit. Sorting uses pointer input;
