@@ -153,13 +153,18 @@ It fixes:
   scales or inherited CSS min/max dimensions.
 - The development-only `source-map-js` dependency, updated to patched 1.2.2.
 
-Local verification passed 292 unit tests, 301 Core E2E tests, 653 Playground E2E
-tests and 5 performance/resource tests. Desktop Chrome Computer Use also checked
+Development tooling now uses Vite 8.3.4, Playwright 1.64.0 and Svelte 5.57.2.
+Lightning CSS has an exact maintainer-approved development-only license scope;
+its code/binaries are not shipped in the Sortable npm package.
+
+The earlier candidate passed 292 unit tests, 301 Core E2E tests, 653 Playground
+E2E tests and 5 performance/resource tests. The integrated tooling candidate
+requires fresh release verification. Desktop Chrome Computer Use also checked
 7 drag/copy scenarios and moving a card before selecting, copying and pasting its
 body text. Touch emulation is separate from physical-device verification.
 
-npm latest and the candidate manifest remain **0.1.5** (checked 2026-10-12).
-These fixes are local candidate changes; 0.1.6 has not been merged or published.
+The candidate manifest is **0.1.6**; npm latest was **0.1.5** at the last
+registry check (2026-10-12). Version 0.1.6 has not yet been published.
 See [candidate changes and verification](./docs/verification/0.1.6-local-validation.md)
 for the current scope, evidence and remaining release steps.
 

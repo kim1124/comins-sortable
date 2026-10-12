@@ -77,6 +77,8 @@ function packageFixture({
   dependencies,
   lockPackages = {},
   lockRoot = {},
+  approvals,
+  approvalsTracked = true,
 } = {}) {
   const cwd = mkdtempSync(join(tmpdir(), 'comins-sortable-license-'));
   git(cwd, 'init', '--quiet');
@@ -106,6 +108,9 @@ function packageFixture({
   if (includeScope) track(cwd, 'LICENSE_SCOPE.json', json(scope));
   track(cwd, 'package.json', json(packageJson));
   track(cwd, 'package-lock.json', json(lock));
+  if (approvals !== undefined) {
+    (approvalsTracked ? track : write)(cwd, 'LICENSE_APPROVALS.json', json(approvals));
+  }
   return cwd;
 }
 
@@ -348,4 +353,82 @@ test('rejects incomplete or non-first-party asset evidence', (t) => {
 
     constantFailure(run(cwd));
   }
+});
+
+const reviewedTool = {
+  version: '1.33.0', license: 'MPL-2.0', dev: true,
+  integrity: `sha512-${Buffer.alloc(64).toString('base64')}`,
+  resolved: 'https://registry.npmjs.org/reviewed-tool/-/reviewed-tool-1.33.0.tgz',
+};
+function approvedTool() {
+  return {
+    schemaVersion: 1,
+    approvals: [{
+      id: 'reviewed-css-tool', status: 'approved', approverRole: 'maintainer',
+      reviewDate: '2026-10-12', useSurface: 'development',
+      conditions: { modified: false, copied: false, bundled: false, distributed: false },
+      rationale: 'Unmodified build-only tool; absent from the public artifact.',
+      invalidation: 'Re-review component, version, integrity, license, use or distribution changes.',
+      components: [{ path: 'node_modules/reviewed-tool', ...reviewedTool }],
+    }],
+  };
+}
+
+test('accepts an exact approved unmodified development-only nonroutine tool', (t) => {
+  const cwd = packageFixture({
+    approvals: approvedTool(), lockPackages: { 'node_modules/reviewed-tool': reviewedTool },
+  });
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  assert.equal(run(cwd).status, 0);
+});
+
+test('does not approve another nonroutine component by license alone', (t) => {
+  const cwd = packageFixture({ approvals: approvedTool(), lockPackages: {
+    'node_modules/reviewed-tool': reviewedTool,
+    'node_modules/unreviewed-tool': { ...reviewedTool },
+  } });
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  reviewRequired(run(cwd), 'unreviewed-tool', 'MPL-2.0', 'development');
+});
+
+for (const [field, value] of [
+  ['version', '1.33.1'], ['license', 'MIT'], ['dev', false],
+  ['integrity', `sha512-${Buffer.alloc(64, 1).toString('base64')}`],
+  ['resolved', 'https://example.invalid/reviewed-tool.tgz'], ['peer', true],
+]) {
+  test(`rejects approved tool lock drift: ${field}`, (t) => {
+    const cwd = packageFixture({ approvals: approvedTool(), lockPackages: {
+      'node_modules/reviewed-tool': { ...reviewedTool, [field]: value },
+    } });
+    t.after(() => rmSync(cwd, { recursive: true, force: true }));
+    constantFailure(run(cwd));
+  });
+}
+
+for (const [name, change] of [
+  ['pending approval', a => { a.approvals[0].status = 'pending'; }],
+  ['non-maintainer approval', a => { a.approvals[0].approverRole = 'automation'; }],
+  ['distribution expansion', a => { a.approvals[0].conditions.distributed = true; }],
+  ['missing rationale', a => { a.approvals[0].rationale = ''; }],
+  ['duplicate component', a => { a.approvals[0].components.push(a.approvals[0].components[0]); }],
+]) {
+  test(`rejects ${name}`, (t) => {
+    const approvals = approvedTool(); change(approvals);
+    const cwd = packageFixture({ approvals, lockPackages: { 'node_modules/reviewed-tool': reviewedTool } });
+    t.after(() => rmSync(cwd, { recursive: true, force: true }));
+    constantFailure(run(cwd));
+  });
+}
+
+test('rejects a stale approval whose component was removed', (t) => {
+  const cwd = packageFixture({ approvals: approvedTool() });
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  constantFailure(run(cwd));
+});
+
+test('rejects untracked approval records', (t) => {
+  const cwd = packageFixture({ approvals: approvedTool(), approvalsTracked: false,
+    lockPackages: { 'node_modules/reviewed-tool': reviewedTool } });
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  constantFailure(run(cwd));
 });

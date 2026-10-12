@@ -2,7 +2,7 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
-## Unreleased — 0.1.6 candidate
+## 0.1.6 - 2026-10-12
 
 ### Fixed
 
@@ -20,6 +20,11 @@ All notable behavior and public API changes to this project are recorded here.
 
 - Update the development-only source-map-js dependency to 1.2.2 for
   GHSA-68fv-2mgg-jv7q. Runtime dependencies and public exports are unchanged.
+- Adopt Vite 8.3.4 with unchanged es2020 Playground target and separate
+  TypeScript package build. Lightning CSS 1.33.0 and its eleven platform
+  packages have a scoped development-only maintainer approval with exact
+  version/source/integrity/license checks; tool code is not distributed.
+- Update Playwright to 1.64.0, Svelte to 5.57.2 and reviewed GitHub Actions pins.
 - Add cross-adapter geometry, capture-loss termination and repeated
   cancel/drop/nested-remount resource checks.
 

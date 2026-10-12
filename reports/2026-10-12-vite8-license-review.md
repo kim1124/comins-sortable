@@ -1,6 +1,6 @@
 # Vite 8 / Lightning CSS license review for 0.1.6
 
-## Proposed scope — approval pending
+## Approved scope — 2026-10-12 (KST)
 
 - Component: Lightning CSS 1.33.0 and 11 platform-specific optional binary packages,
   each locked at 1.33.0 with exact npm integrity values.
@@ -11,8 +11,8 @@
   comins-sortable. Retain upstream files in development installations.
 - Invalidation: any component/version/integrity/license/use/distribution change
   requires another scoped maintainer review. Other MPL components are not covered.
-- Approver role: maintainer; approval is pending and must not be inferred from
-  the earlier authorization to investigate Vite 8.
+- Approver role: maintainer. Explicit scoped approval was received in the
+  current chat on 2026-10-12; it covers the conditions above only.
 
 ## Evidence
 
@@ -48,7 +48,7 @@ No general MPL routine-license allowance is proposed.
 
 ## Exact reviewed package records
 
-The following proposed records are **not approved yet**. Each is development-only.
+The following component records were explicitly approved on 2026-10-12. Each is development-only.
 An integrity value identifies the reviewed registry artifact; it is not a credential.
 
 ```json
@@ -139,3 +139,12 @@ An integrity value identifies the reviewed registry artifact; it is not a creden
   }
 ]
 ```
+
+## Approval enforcement
+
+`LICENSE_APPROVALS.json` is the tracked machine-readable approval. The checker
+requires an approved maintainer record, exact components/version/license/npm
+source/integrity/dev metadata, and unchanged non-copying/non-distribution
+conditions. Pending, untracked, duplicate, stale or expanded records fail.
+The routine SPDX allowlist is unchanged. Existing tracked-material and artifact
+checks remain required; this record does not authorize tool redistribution.
