@@ -51,12 +51,12 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts the approved public package boundary under Contract v1.10', () => {
+test('adopts the approved public package boundary under Contract v1.11', () => {
   const agents = read('AGENTS.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /managed-start contract=v1\.10/);
+  assert.match(agents, /managed-start contract=v1\.11/);
   assert.match(agents, /comins-governance\/blob\/main\/COMINS_CONTRACT\.md/);
   assert.match(agents, /Governance is the only\s+common-policy owner/i);
   assert.match(agents, /module owns their CI implementation/i);
