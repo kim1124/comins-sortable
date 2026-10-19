@@ -49,7 +49,8 @@ headless Tree model.
   `SortableSwapChange` and `swapItemId`.
 - Presentation types: `SortableDirection`, `SortableAnimation`,
   `SortableAnimationOptions`, `SortablePlaceholderOptions`,
-  `SortablePlaceholderPreset`.
+  `SortablePlaceholderPreset`, `SortableDragOverlayOptions`, `SortableFeedbackContext`,
+  `SortableFeedbackHandle`, `SortableFeedbackRenderer`, `SortableFeedbackRejection`.
 - Tree types: `SortableTree`, `SortableTreeArea`, `SortableTreeOptions`.
 
 See [Core Concepts](./02-core-concepts.md), [Reorder and Transfer](./07-reorder-transfer.md),

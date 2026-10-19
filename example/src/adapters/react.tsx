@@ -35,6 +35,7 @@ import {
   isCopyExample,
   isNestedExample,
   placeholderForExample,
+  overlayForExample,
   playgroundOperation,
   updateDemoTreeArea,
   type DemoItem,
@@ -90,6 +91,7 @@ function Demo({
   const [state, setState] = useState<DemoState>(() => createDemoState(input.exampleId));
   const [allowed, setAllowed] = useState(true);
   const [dragMode, setDragMode] = useState<DemoDragMode>('handle');
+  const [renderContent, setRenderContent] = useState(false);
   const [customFeedback, setCustomFeedback] = useState(true);
   const [swapThreshold, setSwapThreshold] = useState(0.5);
   const [invertSwap, setInvertSwap] = useState(false);
@@ -127,6 +129,7 @@ function Demo({
       setLocale,
       dispatch(controlId, value) {
         if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) setDragMode(value);
+        if (controlId === 'render-content' && typeof value === 'boolean') setRenderContent(value);
         if (controlId === 'custom-feedback' && typeof value === 'boolean') setCustomFeedback(value);
         if (controlId === 'accept-destination' && typeof value === 'boolean') setAllowed(value);
         if (controlId === 'reverse-items') setState((current) => ({ ...current, todo: [...current.todo].reverse() }));
@@ -139,6 +142,7 @@ function Demo({
         setAllowed(true);
         setDragMode('handle');
         setCustomFeedback(true);
+        setRenderContent(false);
         setSwapThreshold(0.5);
         setInvertSwap(false);
         setState(createDemoState(input.exampleId));
@@ -208,7 +212,8 @@ function Demo({
           itemKey="id" handle={dragHandle(dragMode)}
           autoScroll={input.exampleId === 'auto-scroll'}
           animation={animation}
-          placeholder={placeholderForExample(input.exampleId)}
+          placeholder={placeholderForExample(input.exampleId, renderContent)}
+          dragOverlay={overlayForExample(input.exampleId, renderContent)}
           header={input.exampleId === 'header-slot' || input.exampleId === 'two-list-slots'
             ? <div className="cs-demo-slot" data-demo-slot="header">Pinned header</div>
             : undefined}

@@ -58,7 +58,7 @@ jobs:
                 ;;
             esac
             case "$path" in
-              package.json|package-lock.json|scripts/benchmark-sortable.mjs|test/performance/*|src/core/*|example/src/playground/*|test/playground/performance.spec.ts|playwright.performance.config.ts)
+              package.json|package-lock.json|scripts/benchmark-sortable.mjs|test/performance/*|src/core/*|src/vanilla/*|example/src/playground/*|test/playground/performance.spec.ts|test/playground/memory-retention.spec.ts|test/playground/helpers/*|playwright.performance.config.ts)
                 performance=true
                 ;;
             esac
@@ -206,4 +206,6 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sortable-performance
-          path: test-results/benchmark-sortable.json
+          path: |
+            test-results/benchmark-sortable.json
+            playwright-report/memory-retention/

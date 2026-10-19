@@ -343,3 +343,81 @@ test('externally emptying a registered list retains its footer before the first 
   assert.deepEqual([...done.children], [header, source, footer]);
   sortable.destroy();
 });
+
+
+test('Vanilla old unregister preserves same-ID replacement and transaction registration', async () => {
+  const { createSortable } = await import('../../../src/index.js');
+  const platform = fakePlatform();
+  const todo = area(platform.document, 0, ['a', 'b']);
+  const done = area(platform.document, 200, ['c']);
+  const sortable = createSortable(todo, options());
+  const old = sortable.registerArea(done, { areaId: 'done', item: '[data-sortable-id]' });
+  old();
+  const current = sortable.registerArea(done, { areaId: 'done', item: '[data-sortable-id]' });
+  old();
+  transfer(platform, todo, done);
+  assert.deepEqual(ids(todo), ['a']);
+  assert.deepEqual(ids(done), ['b', 'c']);
+  assert.equal(done.getAttribute('data-comins-sortable-area'), 'done');
+  sortable.destroy();
+  current();
+  current();
+  assert.equal(done.hasAttribute('data-comins-sortable-area'), false);
+});
+
+test('Vanilla destroy releases all wrappers after a Core cleanup failure', async () => {
+  const { createSortable } = await import('../../../src/index.js');
+  const platform = fakePlatform();
+  const todo = area(platform.document, 0, ['a', 'b']);
+  const done = area(platform.document, 200, ['c']);
+  const sortable = createSortable(todo, options());
+  const unregister = sortable.registerArea(done, { areaId: 'done', item: '[data-sortable-id]' });
+  const failure = new Error('remove listener');
+  const remove = todo.removeEventListener.bind(todo);
+  todo.removeEventListener = (
+    type: string, listener: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ) => {
+    if (listener !== null) remove(type, listener, options);
+    if (type === 'pointerdown') throw failure;
+  };
+  assert.throws(() => sortable.destroy(), (error) => error === failure);
+  assert.equal(todo.hasAttribute('data-comins-sortable-area'), false);
+  assert.equal(done.hasAttribute('data-comins-sortable-area'), false);
+  assert.doesNotThrow(unregister);
+  assert.doesNotThrow(() => sortable.destroy());
+});
+
+test('Vanilla onAfterDrag can reenter unregister and destroy once', async () => {
+  const { createSortable } = await import('../../../src/index.js');
+  const platform = fakePlatform();
+  const todo = area(platform.document, 0, ['a', 'b']);
+  const done = area(platform.document, 200, ['c']);
+  const reasons: string[] = [];
+  const errors: unknown[] = [];
+  const failure = new Error('callback');
+  let unregister = () => {};
+  const sortable = createSortable(todo, {
+    ...options(),
+    onAfterDrag(result) {
+      reasons.push(result.reason);
+      unregister();
+      sortable.destroy();
+      throw failure;
+    },
+    onError: (error) => errors.push(error),
+  });
+  unregister = sortable.registerArea(done, { areaId: 'done', item: '[data-sortable-id]' });
+  const source = todo.fixtureChildren[0]!;
+  const start = pointer({ clientX: 10, clientY: 10, target: source });
+  platform.setHits([source, todo]);
+  todo.dispatch('pointerdown', start);
+  platform.dispatchDocument('pointermove', pointer({ ...start, clientX: 16 }));
+  platform.flushFrame();
+  sortable.destroy();
+  unregister();
+  assert.deepEqual(reasons, ['destroyed']);
+  assert.deepEqual(errors, [failure]);
+  assert.equal(platform.listenerCount(), 0);
+  assert.equal(platform.frameCount(), 0);
+});

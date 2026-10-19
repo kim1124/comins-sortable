@@ -2,6 +2,27 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
+## Unreleased
+
+### Added
+
+- Optional synchronous `placeholder.render` and `dragOverlay.render` content
+  renderers across Vanilla, React, Vue and Svelte. Preserve default feedback,
+  keep original source ownership, and clean up custom handles on completion,
+  cancellation, callback failure and reentrant cancellation.
+
+### Fixed
+
+- Remove unbounded internal session history retained by long-lived sortable scopes.
+- Release completed Core and Vanilla area disposer references, including during scope
+  destruction. Complete remaining cleanup after synchronous failures while preserving
+  renderer error reporting, termination reasons and idempotent disposal.
+
+- Suppress incidental text-selection initiation during accepted explicit mouse
+  handle attempts, including the activation threshold. Preserve ordinary body
+  selection and existing selection ranges; remove the temporary listener on every
+  attempt termination. Native Safari validation remains separate from WebKit.
+
 ## 0.1.6 - 2026-10-12
 
 ### Fixed

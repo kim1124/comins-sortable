@@ -31,6 +31,7 @@ import {
   isCopyExample,
   isNestedExample,
   placeholderForExample,
+  overlayForExample,
   playgroundOperation,
   updateDemoTreeArea,
   type DemoItem,
@@ -78,6 +79,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
         const allowed = ref(true);
         const dragMode = ref<DemoDragMode>('handle');
         const customFeedback = ref(true);
+        const renderContent = ref(false);
         const swapThreshold = ref(0.5);
         const invertSwap = ref(false);
         const resetRevision = ref(0);
@@ -107,6 +109,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
           setLocale(value) { locale.value = value; },
           dispatch(controlId, value) {
             if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) dragMode.value = value;
+            if (controlId === 'render-content' && typeof value === 'boolean') renderContent.value = value;
             if (controlId === 'custom-feedback' && typeof value === 'boolean') customFeedback.value = value;
             if (controlId === 'accept-destination' && typeof value === 'boolean') allowed.value = value;
             if (controlId === 'reverse-items') state.value = { ...state.value, todo: [...state.value.todo].reverse() };
@@ -119,6 +122,7 @@ export const vueDemoModule: PlaygroundDemoModule = {
             allowed.value = true;
             dragMode.value = 'handle';
             customFeedback.value = true;
+            renderContent.value = false;
             swapThreshold.value = 0.5;
             invertSwap.value = false;
             state.value = createDemoState(input.exampleId);
@@ -189,7 +193,8 @@ export const vueDemoModule: PlaygroundDemoModule = {
                 itemKey: 'id', handle: dragHandle(dragMode.value),
                 autoScroll: input.exampleId === 'auto-scroll',
                 animation,
-                placeholder: placeholderForExample(input.exampleId),
+                placeholder: placeholderForExample(input.exampleId, renderContent.value),
+                dragOverlay: overlayForExample(input.exampleId, renderContent.value),
                 emptyInsertThreshold: areaId === 'done' && input.exampleId === 'empty' ? 42 : undefined,
                 direction: (input.exampleId === 'grid' || input.exampleId === 'swap-grid') ? 'grid' : undefined,
                 swapThreshold: input.exampleId === 'thresholds' ? swapThreshold.value : undefined,

@@ -2,6 +2,8 @@ import { createSortableTree } from '../../../src/core.js';
 import type {
   SortableChange,
   SortablePlaceholderOptions,
+  SortableDragOverlayOptions,
+  SortableFeedbackRenderer,
   SortableTreeArea,
 } from '../../../src/core.js';
 import type { PlaygroundExampleId } from '../app/navigation.js';
@@ -227,14 +229,37 @@ export function isNestedExample(exampleId: PlaygroundExampleId): boolean {
 
 export function placeholderForExample(
   exampleId: PlaygroundExampleId,
+  renderContent = false,
 ): SortablePlaceholderOptions | undefined {
   if (exampleId === 'custom-placeholder') {
-    return { className: 'cs-demo-placeholder--custom' };
+    return { className: 'cs-demo-placeholder--custom', ...(renderContent ? { render: renderPlaceholderContent } : {}) };
   }
   if (exampleId === 'skeleton-placeholder') {
     return { className: 'cs-demo-placeholder--skeleton', preset: 'skeleton' };
   }
   return undefined;
+}
+
+const renderPlaceholderContent: SortableFeedbackRenderer = ({ container, itemId }) => {
+  container.className = 'cs-demo-rendered-placeholder';
+  container.textContent = `Drop ${itemId}`;
+};
+
+const renderOverlayContent: SortableFeedbackRenderer = (context) => {
+  const { container } = context;
+  container.className = 'cs-demo-rendered-overlay';
+  const update = (next: typeof context): void => {
+    container.textContent = `${next.itemId} · ${next.rejection ?? next.destination?.areaId ?? 'outside'}`;
+  };
+  update(context);
+  return { update, destroy: () => { container.textContent = ''; } };
+};
+
+export function overlayForExample(
+  exampleId: PlaygroundExampleId,
+  renderContent: boolean,
+): SortableDragOverlayOptions | undefined {
+  return exampleId === 'custom-placeholder' && renderContent ? { render: renderOverlayContent } : undefined;
 }
 
 export function demoTreeAreas(state: DemoState): readonly SortableTreeArea<DemoTreeNode>[] {

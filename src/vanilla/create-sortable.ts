@@ -5,6 +5,7 @@ import type {
   SortableChange,
   SortableId,
 } from '../core.js';
+import { disposeOnce, runCleanups } from '../core/dispose-once.js';
 import { createDomTransaction } from './dom-transaction.js';
 import type { DomTransactionArea } from './dom-transaction.js';
 import type {
@@ -19,6 +20,7 @@ export function createSortable(
   options: VanillaSortableOptions,
 ): Sortable {
   const areas = new Map<string, DomTransactionArea>();
+  const disposers = new Map<DomTransactionArea, () => void>();
   const transaction = createDomTransaction(areas);
   const scope = createSortableScope({
     onBeforeDragStart: options.onBeforeDragStart,
@@ -48,12 +50,19 @@ export function createSortable(
     );
     areas.set(areaOptions.areaId, registered);
     transaction.rememberArea(areaOptions.areaId);
-    return () => {
-      unregisterScope();
-      if (areas.get(areaOptions.areaId) === registered) {
-        areas.delete(areaOptions.areaId);
+    const dispose = disposeOnce(() => {
+      // callback이 destroy에 재진입해도 같은 등록을 다시 정리하지 않는다.
+      disposers.delete(registered);
+      try {
+        unregisterScope();
+      } finally {
+        if (areas.get(areaOptions.areaId) === registered) {
+          areas.delete(areaOptions.areaId);
+        }
       }
-    };
+    });
+    disposers.set(registered, dispose);
+    return dispose;
   };
 
   registerArea(element, options);
@@ -86,8 +95,13 @@ export function createSortable(
         return;
       }
       destroyed = true;
-      scope.destroy();
-      areas.clear();
+      runCleanups([
+        () => scope.destroy(),
+        () => runCleanups([...disposers.values()]),
+        () => disposers.clear(),
+        () => areas.clear(),
+        () => transaction.release(),
+      ]);
     },
   };
 

@@ -224,8 +224,9 @@ export const playgroundScenarios: readonly PlaygroundScenario[] = [
       ko: '두 목록 사이를 드래그하며 기본·사용자 스타일과 대상 이동 허용을 전환합니다. 허용 위치는 삽입 표시, 거부 위치는 대상과 드래그 요소의 테두리로 구분합니다.',
       en: 'Drag between lists and compare default/custom styles and destination acceptance. Accepted positions show an insertion marker; rejected positions outline the target and dragged item.',
     },
-    api: ['placeholder.className', '--comins-sortable-placeholder-*', '--comins-sortable-rejection-outline', 'accept'],
+    api: ['placeholder.render', 'dragOverlay.render', 'placeholder.className', '--comins-sortable-placeholder-*', '--comins-sortable-rejection-outline', 'accept'],
     controls: [
+      { id: 'render-content', kind: 'toggle', label: { ko: '사용자 콘텐츠 렌더링', en: 'Render custom content' } },
       { id: 'custom-feedback', kind: 'toggle', label: { ko: '사용자 스타일', en: 'Custom styles' } },
       { id: 'accept-destination', kind: 'toggle', label: { ko: '대상 이동 허용', en: 'Accept destination' } },
       resetControl,

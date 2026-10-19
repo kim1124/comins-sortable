@@ -48,7 +48,9 @@ Core는 framework 중립 operation, lifecycle 소유권, 오류와 headless Tree
   다중 드래그 change는 `itemIds`도 노출하며 swap change는
   `SortableSwapChange`와 `swapItemId`를 사용합니다.
 - 표현: `SortableDirection`, `SortableAnimation`, `SortableAnimationOptions`,
-  `SortablePlaceholderOptions`, `SortablePlaceholderPreset`.
+  `SortablePlaceholderOptions`, `SortablePlaceholderPreset`,
+  `SortableDragOverlayOptions`, `SortableFeedbackContext`, `SortableFeedbackHandle`,
+  `SortableFeedbackRenderer`, `SortableFeedbackRejection`.
 - Tree: `SortableTree`, `SortableTreeArea`, `SortableTreeOptions`.
 
 [핵심 개념](./02-core-concepts.md), [정렬과 이동](./07-reorder-transfer.md),

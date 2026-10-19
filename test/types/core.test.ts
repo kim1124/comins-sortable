@@ -157,3 +157,25 @@ void [
   areaPatch,
   scope,
 ];
+
+const feedbackRenderer: import('../../src/core.js').SortableFeedbackRenderer = (context) => {
+  const container: HTMLElement = context.container;
+  const ids: readonly SortableId[] = context.itemIds;
+  const mode: SortableTransferMode = context.mode;
+  const rejection: import('../../src/core.js').SortableFeedbackRejection | null = context.rejection;
+  container.textContent = `${ids.join(',')}:${mode}:${rejection}`;
+  // @ts-expect-error drag metadata is immutable
+  context.source.index = 3;
+  // @ts-expect-error selected IDs are immutable
+  context.itemIds.push('other');
+  return { update: (next) => { container.textContent = String(next.destination?.index); }, destroy() {} };
+};
+const overlayOptions: import('../../src/core.js').SortableDragOverlayOptions = { render: feedbackRenderer };
+const renderingOptions: SortableAreaPatch = { placeholder: { render: feedbackRenderer }, dragOverlay: overlayOptions };
+void renderingOptions;
+// @ts-expect-error asynchronous renderers are unsupported
+const asyncRenderer: import('../../src/core.js').SortableFeedbackRenderer = async () => undefined;
+// @ts-expect-error handles require synchronous cleanup
+const missingDestroy: import('../../src/core.js').SortableFeedbackRenderer = () => ({ update() {} });
+void asyncRenderer;
+void missingDestroy;

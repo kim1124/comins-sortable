@@ -16,6 +16,7 @@ import {
   isCopyExample,
   isNestedExample,
   placeholderForExample,
+  overlayForExample,
   playgroundOperation,
   type DemoItem,
 } from './demo-data.js';
@@ -80,6 +81,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
     let allowed = true;
     let dragMode: DemoDragMode = 'handle';
     let customFeedback = true;
+    let renderContent = false;
     let destroyed = false;
     let copySequence = 0;
     let swapThreshold = 0.5;
@@ -176,6 +178,7 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
       allowed = true;
       dragMode = 'handle';
       customFeedback = true;
+      renderContent = false;
       swapThreshold = 0.5;
       invertSwap = false;
       container.replaceChildren();
@@ -264,7 +267,8 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
         swap: (input.exampleId === 'swap' || input.exampleId === 'swap-grid'),
         multiDrag: input.exampleId === 'transitions',
         selectedClass: input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined,
-        placeholder: placeholderForExample(input.exampleId),
+        placeholder: placeholderForExample(input.exampleId, renderContent),
+        dragOverlay: overlayForExample(input.exampleId, renderContent),
         onBeforeDragStart: () => event('beforeDragStart'),
         onDragStart: ({ source, itemId }) => bridge.publishEvent({ name: 'dragStart', areaId: source.areaId, itemId: String(itemId) }),
         onInsertDragArea: ({ destination }) => bridge.publishEvent({ name: 'insertDragArea', areaId: destination.areaId }),
@@ -277,7 +281,8 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           group: 'playground',
           item: '.cs-demo-card', handle: '.cs-demo-handle',
           emptyInsertThreshold: input.exampleId === 'empty' ? 42 : undefined,
-          placeholder: placeholderForExample(input.exampleId),
+          placeholder: placeholderForExample(input.exampleId, renderContent),
+          dragOverlay: overlayForExample(input.exampleId, renderContent),
           accept: (input.exampleId === 'accept' || input.exampleId === 'custom-placeholder') ? () => allowed : undefined,
         });
       }
@@ -302,6 +307,13 @@ export const vanillaDemoModule: PlaygroundDemoModule = {
           dragMode = value;
           sortable?.updateArea('todo', { handle: dragHandle(dragMode) });
           container.querySelector<HTMLElement>('.cs-demo-board')!.dataset.dragMode = dragMode;
+        }
+        if (controlId === 'render-content' && typeof value === 'boolean') {
+          renderContent = value;
+          for (const areaId of ['todo', 'done']) sortable?.updateArea(areaId, {
+            placeholder: placeholderForExample(input.exampleId, renderContent),
+            dragOverlay: overlayForExample(input.exampleId, renderContent),
+          });
         }
         if (controlId === 'custom-feedback' && typeof value === 'boolean') {
           customFeedback = value;

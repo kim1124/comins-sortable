@@ -594,3 +594,24 @@ function coreScope(platform: ReturnType<typeof fakePlatform>) {
     (scopeOptions) => createSortableScopeInternal(scopeOptions, platform),
   );
 }
+
+test('Svelte action compares and forwards renderer functions without registration churn', () => {
+  const harness = svelteActionHarness<Task>();
+  const action = harness.action();
+  const first = () => undefined;
+  const second = () => undefined;
+  const next = { ...harness.options(), placeholder: { render: first }, dragOverlay: { render: first } };
+  action.update(next);
+  assert.equal(harness.area('todo')?.placeholder?.render, first);
+  assert.equal(harness.area('todo')?.dragOverlay?.render, first);
+  assert.equal(harness.updateCount('todo'), 1);
+  action.update({ ...next, placeholder: { render: first }, dragOverlay: { render: first } });
+  assert.equal(harness.updateCount('todo'), 1);
+  action.update({ ...next, placeholder: { render: second } });
+  assert.equal(harness.updateCount('todo'), 2);
+  action.update({ ...next, placeholder: { render: second }, dragOverlay: { render: second } });
+  assert.equal(harness.updateCount('todo'), 3);
+  assert.equal(harness.area('todo')?.dragOverlay?.render, second);
+  assert.equal(harness.registrationCount('todo'), 1);
+  action.destroy();
+});

@@ -470,3 +470,32 @@ function structuralActivationFailure(
   platform.flushFrame();
   return { reports: platform.reports, setterCalls, changeCalls };
 }
+
+test('Vue lifecycle compares and forwards renderer functions without registration churn', () => {
+  const updates: import('../../../src/core.js').SortableAreaOptions[] = [];
+  let registered: import('../../../src/core.js').SortableAreaOptions | undefined;
+  const controller = {
+    registerArea(_element: Element, _binding: unknown, options: import('../../../src/core.js').SortableAreaOptions) {
+      registered = options;
+      return () => undefined;
+    },
+    updateArea(_id: string, options: import('../../../src/core.js').SortableAreaOptions) { updates.push(options); },
+    destroy() {},
+  };
+  const first = () => undefined;
+  const second = () => undefined;
+  const props = { ...vueTodoProps(), placeholder: { render: first }, dragOverlay: { render: first } };
+  const lifecycle = createVueAreaLifecycle({ controller, props: () => props, emitModelValue() {} });
+  lifecycle.setElement({ children: [] } as unknown as HTMLElement);
+  assert.equal(registered?.placeholder?.render, first);
+  assert.equal(registered?.dragOverlay?.render, first);
+  lifecycle.update({ ...props, placeholder: { render: first }, dragOverlay: { render: first } });
+  assert.equal(updates.length, 0);
+  lifecycle.update({ ...props, placeholder: { render: second } });
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0]?.placeholder?.render, second);
+  lifecycle.update({ ...props, placeholder: { render: second }, dragOverlay: { render: second } });
+  assert.equal(updates.length, 2);
+  assert.equal(updates[1]?.dragOverlay?.render, second);
+  lifecycle.dispose();
+});

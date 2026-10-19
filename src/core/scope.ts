@@ -8,6 +8,7 @@ import {
   thresholdInsertionIndex,
 } from './collision.js';
 import { SortableError } from './errors.js';
+import { disposeOnce, runCleanups } from './dispose-once.js';
 import { createFeedback } from './feedback.js';
 import { itemBoundary } from './item-boundary.js';
 import {
@@ -67,6 +68,7 @@ import type {
   SortableLocation,
   SortableParentLocation,
   SortablePlaceholderOptions,
+  SortableDragOverlayOptions,
   SortableScope,
   SortableScopeOptions,
   SortableTransferMode,
@@ -92,6 +94,7 @@ interface NormalizedAreaOptions {
   autoScroll: boolean;
   animation: SortableAnimation;
   placeholder: SortablePlaceholderOptions;
+  dragOverlay?: SortableDragOverlayOptions;
   parent?: SortableParentLocation;
   accept(context: DragContext): boolean;
   pull(context: DragContext): false | SortableTransferMode;
@@ -106,6 +109,7 @@ interface ScopeArea {
   rawOptions: SortableAreaOptions;
   registered: RegisteredArea;
   disposeRegistry(): void;
+  dispose(): void;
   pointerDown: EventListener;
   contextMenu: EventListener;
   hadAreaAttribute: boolean;
@@ -211,8 +215,11 @@ function createScopeWithVerificationFrames(
         return;
       }
       destroyed = true;
-      internal?.destroy();
-      internal = null;
+      try {
+        internal?.destroy();
+      } finally {
+        internal = null;
+      }
     },
   };
 }
@@ -335,9 +342,13 @@ export function createSortableScopeInternal(
   };
 
   const stopObservingScroll = (): void => {
-    if (observingScroll) platform.window.removeEventListener('scroll', onScroll, true);
+    const wasObserving = observingScroll;
     observingScroll = false;
-    scrollPositions.clear();
+    try {
+      if (wasObserving) platform.window.removeEventListener('scroll', onScroll, true);
+    } finally {
+      scrollPositions.clear();
+    }
   };
 
   const report = (error: unknown): void => {
@@ -356,8 +367,9 @@ export function createSortableScopeInternal(
     if (autoScrollFrame === null) {
       return;
     }
-    platform.cancelFrame(autoScrollFrame);
+    const frame = autoScrollFrame;
     autoScrollFrame = null;
+    platform.cancelFrame(frame);
   };
 
   const sensorPlatform: SortablePlatform = {
@@ -381,64 +393,81 @@ export function createSortableScopeInternal(
       }
       return;
     }
-    stopAutoScroll();
-    autoScroller.reset();
-    stopObservingScroll();
+    // 사용자 callback보다 먼저 종료를 표시하고, 일부 정리가 실패해도 나머지를 실행한다.
     active = null;
-    geometry.clear();
-    if (verificationFrame !== null) {
-      platform.cancelFrame(verificationFrame);
-      verificationFrame = null;
-    }
-    if (finishing.overArea !== null) {
-      finishing.overArea.element.removeAttribute('data-comins-sortable-over');
-    }
-    if (finishing.rejectionTarget !== null) {
-      finishing.rejectionTarget.removeAttribute('data-comins-sortable-rejection');
-    }
-    finishing.swapTarget?.removeAttribute('data-comins-sortable-swap-target');
-    finishing.feedback?.setRejection(null);
     const animatedAreas = new Set<ScopeArea>([
       finishing.sourceArea,
       ...(finishing.overArea === null ? [] : [finishing.overArea]),
     ]);
-    if (reason === 'drop') {
-      finishing.feedback?.destroy();
-      for (const area of animatedAreas) area.animator.play();
-    } else {
-      // An external owner can reorder, replace or remove the source during a
-      // drag. In that case only release our feedback; never reinsert stale DOM.
-      if (session.state.status === 'dragging' && !areaUnchanged(finishing, finishing.sourceArea)) {
-        finishing.feedback?.destroy();
-      } else {
-        finishing.feedback?.rollback();
-      }
-      for (const area of animatedAreas) area.animator.cancel(true);
-    }
-
-    if (session.state.status === 'dragging') {
-      session.cancel(reason);
-      session.finish();
-    } else if (
-      session.state.status === 'committing'
-      || session.state.status === 'cancelling'
-    ) {
-      session.finish();
-    }
-
-    const result: AfterDragResult = {
-      status: resultStatus(reason),
-      reason,
-      ...(reason === 'drop' && change !== undefined ? { change } : {}),
-    };
-    try {
-      options.onAfterDrag?.(result);
-    } catch (afterError) {
-      report(afterError);
-    }
-    if (error !== undefined) {
-      report(error);
-    }
+    let feedbackFailed = false;
+    let feedbackError: unknown;
+    runCleanups([
+      stopAutoScroll,
+      () => autoScroller.reset(),
+      stopObservingScroll,
+      () => geometry.clear(),
+      () => {
+        const frame = verificationFrame;
+        verificationFrame = null;
+        if (frame !== null) platform.cancelFrame(frame);
+      },
+      () => finishing.overArea?.element.removeAttribute('data-comins-sortable-over'),
+      () => finishing.rejectionTarget?.removeAttribute('data-comins-sortable-rejection'),
+      () => finishing.swapTarget?.removeAttribute('data-comins-sortable-swap-target'),
+      () => finishing.feedback?.setRejection(null),
+      () => {
+        try {
+          if (reason === 'drop'
+            || (session.state.status === 'dragging' && !areaUnchanged(finishing, finishing.sourceArea))) {
+            finishing.feedback?.destroy();
+          } else {
+            // 외부 소유자가 교체한 DOM을 재삽입하지 않고 기존 복원 계약을 유지한다.
+            finishing.feedback?.rollback();
+          }
+        } catch (caught) {
+          // renderer 해제 오류는 기존 소비자 callback 계약에 따라 onError로 보고한다.
+          feedbackFailed = true;
+          feedbackError = caught;
+          reason = 'error';
+        }
+      },
+      () => {
+        try {
+          runCleanups([...animatedAreas].map((area) => () => {
+            if (reason === 'drop') area.animator.play();
+            else area.animator.cancel(true);
+          }));
+        } catch (caught) {
+          reason = 'error';
+          runCleanups([
+            () => { throw caught; },
+            ...[...animatedAreas].map((area) => () => area.animator.cancel(true)),
+          ]);
+        }
+      },
+      () => {
+        if (session.state.status === 'dragging') {
+          session.cancel(reason);
+          session.finish();
+        } else if (session.state.status === 'committing' || session.state.status === 'cancelling') {
+          session.finish();
+        }
+      },
+      () => {
+        const result: AfterDragResult = {
+          status: resultStatus(reason),
+          reason,
+          ...(reason === 'drop' && change !== undefined ? { change } : {}),
+        };
+        try {
+          options.onAfterDrag?.(result);
+        } catch (afterError) {
+          report(afterError);
+        }
+      },
+      () => { if (feedbackFailed) report(feedbackError); },
+      () => { if (error !== undefined) report(error); },
+    ]);
   };
 
   const verifyCommit = (change: SortableChange): void => {
@@ -577,7 +606,7 @@ export function createSortableScopeInternal(
       }
       session.commit(change);
       options.onChange?.(change);
-      verifyCommit(change);
+      if (active === dragging) verifyCommit(change);
     } catch (error) {
       finish('error', undefined, error);
     }
@@ -669,8 +698,18 @@ export function createSortableScopeInternal(
       destination: located.destination?.location ?? null,
     };
     dragging.feedback?.setVisible(located.destination !== undefined);
+    dragging.feedback?.update?.({
+      itemId: dragging.itemId,
+      itemIds: dragging.itemIds,
+      source: dragging.context.source,
+      mode: dragging.transferMode === 'copy' ? 'copy' : 'move',
+      destination: dragging.context.destination,
+      rejection: dragging.lastRejection,
+    });
+    if (active !== dragging) return;
 
     options.onDrag?.(dragging.context);
+    if (active !== dragging) return;
     if (!locationsEqual(previousDestination, dragging.context.destination)) {
       if (dragging.overArea !== null) {
         dragging.overArea.element.removeAttribute('data-comins-sortable-over');
@@ -801,6 +840,7 @@ export function createSortableScopeInternal(
         afterSensor(() => report(error));
         return false;
       }
+      if (destroyed || area.disposed || session.state.status !== 'pending') return false;
       if (beforeResult === false) {
         session.abandon();
         return false;
@@ -833,6 +873,17 @@ export function createSortableScopeInternal(
         platform,
         area.options.placeholder,
         feedbackMode,
+        {
+          overlay: area.options.dragOverlay,
+          context: {
+            itemId,
+            itemIds: selectedIds,
+            source: context.source,
+            mode: feedbackMode,
+            destination: context.destination,
+            rejection: null,
+          },
+        },
       );
       if (feedbackMode === 'move') {
         feedback.place(parent, sourceElement);
@@ -857,8 +908,12 @@ export function createSortableScopeInternal(
       area.element.setAttribute('data-comins-sortable-over', '');
       session.activate(activeSession);
       observeScroll();
+      const activating = active;
       try {
+        feedback.render();
+        if (active !== activating) return false;
         options.onDragStart?.(context);
+        if (active !== activating) return false;
       } catch (error) {
         afterSensor(() => finish('error', undefined, error));
         return false;
@@ -981,6 +1036,7 @@ export function createSortableScopeInternal(
       rawOptions: areaOptions,
       registered,
       disposeRegistry,
+      dispose: () => {},
       pointerDown: (() => {}) as EventListener,
       contextMenu: (() => {}) as EventListener,
       hadAreaAttribute,
@@ -1015,37 +1071,38 @@ export function createSortableScopeInternal(
     areas.set(normalized.areaId, area);
     if (observingScroll) trackScrollParents(element);
 
-    return () => {
-      if (area.disposed) {
-        return;
-      }
+    area.dispose = disposeOnce(() => {
       area.disposed = true;
-      const endsDrag = (
-        attempt?.area === area
-        || active?.sourceArea === area
-        || active?.context.destination?.areaId === normalized.areaId
-      );
-      if (endsDrag) {
-        if (attempt !== null) {
-          attempt.sensor.unmount();
-        } else {
-          finish('unmounted');
-        }
-      }
-      element.removeEventListener('pointerdown', area.pointerDown);
-      element.removeEventListener('contextmenu', area.contextMenu);
-      area.animator.destroy();
-      disposeSelection(area);
-      area.disposeRegistry();
-      if (areas.get(normalized.areaId) === area) {
-        areas.delete(normalized.areaId);
-      }
-      if (hadAreaAttribute) {
-        element.setAttribute('data-comins-sortable-area', areaAttribute ?? '');
-      } else {
-        element.removeAttribute('data-comins-sortable-area');
-      }
-    };
+      runCleanups([
+        () => {
+          const endsDrag = (
+            attempt?.area === area
+            || active?.sourceArea === area
+            || active?.context.destination?.areaId === normalized.areaId
+          );
+          if (endsDrag) {
+            if (attempt !== null) attempt.sensor.unmount();
+            else finish('unmounted');
+          }
+        },
+        () => element.removeEventListener('pointerdown', area.pointerDown),
+        () => element.removeEventListener('contextmenu', area.contextMenu),
+        () => area.animator.destroy(),
+        () => disposeSelection(area),
+        () => area.disposeRegistry(),
+        () => {
+          if (areas.get(normalized.areaId) === area) areas.delete(normalized.areaId);
+        },
+        () => {
+          if (hadAreaAttribute) {
+            element.setAttribute('data-comins-sortable-area', areaAttribute ?? '');
+          } else {
+            element.removeAttribute('data-comins-sortable-area');
+          }
+        },
+      ]);
+    });
+    return area.dispose;
   };
 
   return {
@@ -1115,37 +1172,16 @@ export function createSortableScopeInternal(
         return;
       }
       destroyed = true;
-      if (attempt !== null) {
-        attempt.sensor.destroy();
-      } else if (active !== null) {
-        finish('destroyed');
-      }
-      for (const area of [...areas.values()]) {
-        elementDispose(area);
-      }
-      areas.clear();
+      runCleanups([
+        () => {
+          if (attempt !== null) attempt.sensor.destroy();
+          else if (active !== null) finish('destroyed');
+        },
+        () => runCleanups([...areas.values()].map((area) => area.dispose)),
+        () => areas.clear(),
+      ]);
     },
   };
-
-  function elementDispose(area: ScopeArea): void {
-    if (area.disposed) {
-      return;
-    }
-    area.disposed = true;
-    area.element.removeEventListener('pointerdown', area.pointerDown);
-    area.element.removeEventListener('contextmenu', area.contextMenu);
-    area.animator.destroy();
-    disposeSelection(area);
-    area.disposeRegistry();
-    if (area.hadAreaAttribute) {
-      area.element.setAttribute(
-        'data-comins-sortable-area',
-        area.areaAttribute ?? '',
-      );
-    } else {
-      area.element.removeAttribute('data-comins-sortable-area');
-    }
-  }
 
   function clearSelectionMarkers(area: ScopeArea): void {
     for (const element of directItems(area)) {
@@ -1168,9 +1204,11 @@ export function createSortableScopeInternal(
   }
 
   function disposeSelection(area: ScopeArea): void {
-    clearSelectionMarkers(area);
-    selections.delete(area.options.areaId);
-    selectionAnchors.delete(area.options.areaId);
+    runCleanups([
+      () => clearSelectionMarkers(area),
+      () => { selections.delete(area.options.areaId); },
+      () => { selectionAnchors.delete(area.options.areaId); },
+    ]);
   }
 
   function clearSelections(exceptAreaId?: string): void {
@@ -1303,6 +1341,7 @@ function normalizeAreaOptions(
     autoScroll: options.autoScroll ?? true,
     animation,
     placeholder,
+    dragOverlay: normalizeDragOverlay(options.dragOverlay),
     ...(options.parent === undefined ? {} : { parent: normalizeParent(options.parent) }),
     accept: options.accept ?? (() => true),
     pull: group.pull,
@@ -1330,12 +1369,24 @@ function normalizePlaceholder(
   ) {
     throw new SortableError('INVALID_OPTION');
   }
+  if (placeholder.render !== undefined && typeof placeholder.render !== 'function') {
+    throw new SortableError('INVALID_OPTION');
+  }
   return {
     preset,
+    ...(placeholder.render === undefined ? {} : { render: placeholder.render }),
     ...(placeholder.className === undefined
       ? {}
       : { className: placeholder.className.trim().replace(/\s+/g, ' ') }),
   };
+}
+
+function normalizeDragOverlay(overlay: SortableAreaOptions['dragOverlay']): SortableDragOverlayOptions | undefined {
+  if (overlay === undefined) return undefined;
+  if (typeof overlay !== 'object' || overlay === null || typeof overlay.render !== 'function') {
+    throw new SortableError('INVALID_OPTION');
+  }
+  return { render: overlay.render };
 }
 
 function normalizeParent(parent: SortableParentLocation): SortableParentLocation {

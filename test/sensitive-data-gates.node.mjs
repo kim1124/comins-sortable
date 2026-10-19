@@ -51,12 +51,12 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts the approved public package boundary under Contract v1.11', () => {
+test('adopts the approved public package boundary under Contract v1.12', () => {
   const agents = read('AGENTS.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /managed-start contract=v1\.11/);
+  assert.match(agents, /managed-start contract=v1\.12/);
   assert.match(agents, /comins-governance\/blob\/main\/COMINS_CONTRACT\.md/);
   assert.match(agents, /Governance is the only\s+common-policy owner/i);
   assert.match(agents, /module owns their CI implementation/i);
@@ -127,7 +127,7 @@ test('selects browser and performance gates by changed surface', () => {
   assert.match(changesJob, /browser: \$\{\{ steps\.scope\.outputs\.browser \}\}/);
   assert.match(changesJob, /performance: \$\{\{ steps\.scope\.outputs\.performance \}\}/);
   assert.match(changesJob, /src\/\*\|example\/\*\|test\/playwright\/\*/);
-  assert.match(changesJob, /test\/playground\/performance\.spec\.ts\|playwright\.performance\.config\.ts/);
+  assert.match(changesJob, /test\/playground\/performance\.spec\.ts\|test\/playground\/memory-retention\.spec\.ts\|test\/playground\/helpers\/\*\|playwright\.performance\.config\.ts/);
   assert.match(browserJob, /needs:\n\s+- changes\n\s+- security\n\s+- verify/);
   assert.match(browserJob, /if: \$\{\{ needs\.changes\.outputs\.browser == 'true' \}\}/);
   assert.equal((browserJob.match(/playwright install/g) ?? []).length, 1);

@@ -31,7 +31,6 @@ export type SessionStatus = SessionState['status'];
 
 export class SessionMachine {
   private current: SessionState = { status: 'idle' };
-  readonly history: SessionStatus[] = ['idle'];
 
   get state(): SessionState {
     return this.current;
@@ -83,6 +82,5 @@ export class SessionMachine {
 
   private transition(state: SessionState): void {
     this.current = state;
-    this.history.push(state.status);
   }
 }

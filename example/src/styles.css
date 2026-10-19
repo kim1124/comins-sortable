@@ -199,3 +199,13 @@ button:focus-visible, a:focus-visible { outline: 3px solid #68d8a7; outline-offs
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation-duration: 0s !important; }
 }
+
+.cs-demo-rendered-placeholder, .cs-demo-rendered-overlay {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+.cs-demo-rendered-placeholder { color: #176343; background: #e4f4eb; }
+.cs-demo-rendered-overlay { color: #fff; background: #176343; box-shadow: 0 8px 24px #1234; }

@@ -375,3 +375,66 @@ test('pointerdown on a nested item descendant activates its direct sortable item
   assert.deepEqual(starts, ['a']);
   scope.destroy();
 });
+
+
+test('unregister completes area cleanup before propagating the first synchronous error', () => {
+  const fixture = scopeFixture();
+  const area = fixture.area('todo');
+  const first = new Error('pointer listener cleanup');
+  const remove = area.removeEventListener.bind(area);
+  area.removeEventListener = (
+    type: string, listener: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ) => {
+    if (listener !== null) remove(type, listener, options);
+    if (type === 'pointerdown') throw first;
+    if (type === 'contextmenu') throw new Error('later cleanup');
+  };
+
+  assert.throws(fixture.unregister.todo, (error) => error === first);
+  assert.equal(area.hasAttribute('data-comins-sortable-area'), false);
+  fixture.unregister.todo();
+  area.removeEventListener = remove;
+  const replacement = fixture.scope.registerArea(area, {
+    areaId: 'todo', item: '[data-sortable-item]',
+  });
+  replacement();
+  fixture.scope.destroy();
+});
+
+test('destroy cleans all areas even when the first area cleanup throws', () => {
+  const fixture = scopeFixture();
+  const first = new Error('first area cleanup');
+  const area = fixture.area('todo');
+  const remove = area.removeEventListener.bind(area);
+  area.removeEventListener = (
+    type: string, listener: EventListenerOrEventListenerObject | null,
+    options?: EventListenerOptions | boolean,
+  ) => {
+    if (listener !== null) remove(type, listener, options);
+    if (type === 'pointerdown') throw first;
+  };
+
+  assert.throws(() => fixture.scope.destroy(), (error) => error === first);
+  assert.equal(area.hasAttribute('data-comins-sortable-area'), false);
+  assert.equal(fixture.area('done').hasAttribute('data-comins-sortable-area'), false);
+  fixture.unregister.todo();
+  fixture.unregister.done();
+  fixture.scope.destroy();
+});
+
+
+test('an old unregister cannot remove a replacement with the same area ID', () => {
+  const fixture = scopeFixture();
+  fixture.unregister.todo();
+  const replacement = fixture.scope.registerArea(fixture.area('todo'), {
+    areaId: 'todo', item: '[data-sortable-item]',
+  });
+  fixture.unregister.todo();
+  assert.equal(fixture.area('todo').getAttribute('data-comins-sortable-area'), 'todo');
+  fixture.begin('todo', 0);
+  fixture.scope.cancel();
+  assert.deepEqual(fixture.results, [{ status: 'cancelled', reason: 'escape' }]);
+  replacement();
+  fixture.scope.destroy();
+});

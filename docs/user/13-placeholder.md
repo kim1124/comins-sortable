@@ -96,3 +96,45 @@ min/max clamps. Ancestor overflow/paint clipping still follows consumer CSS.
 Nonlinear 3D perspective and transforms changed during a gesture are outside
 the recorded support evidence. See [current candidate validation](../verification/0.1.6-local-validation.md)
 for tested cases, desktop Computer Use and remaining release steps.
+
+## Custom content renderers
+
+Use optional `placeholder.render` for insertion content and `dragOverlay.render`
+for a separate pointer-following preview. All four adapters accept the same
+synchronous DOM renderer. Omitting these options preserves existing feedback.
+
+```ts
+import type { SortableFeedbackRenderer } from 'comins-sortable/core';
+
+const render: SortableFeedbackRenderer = ({ container, itemId }) => {
+  container.textContent = `Moving: ${itemId}`;
+  return {
+    update(next) {
+      container.textContent = `${next.itemId}: ${next.rejection ?? next.destination?.areaId ?? 'outside'}`;
+    },
+    destroy() { container.replaceChildren(); },
+  };
+};
+const feedbackOptions = { placeholder: { render }, dragOverlay: { render } };
+```
+
+The context provides the Core-owned `container`, `itemId`, `itemIds`, `source`,
+`mode`, `destination`, and `rejection`. Location objects and IDs are read-only.
+A returned handle must provide `destroy`; returning no handle is also supported.
+`update` runs only when destination or rejection changes, never for pointer
+movement alone. Renderer option changes apply to the next activation.
+
+Core owns placement, dimensions, visibility, and host removal. Render only inside
+the supplied container. Release listeners and framework mounts in `destroy`.
+If creation throws before returning a handle, clean up externally created
+resources yourself. There is no string-HTML or asynchronous rendering protocol.
+
+An overlay mounts under the source document's body. Move sources remain under
+their original parent and are hidden; copy sources remain visible. Hosts use
+`inert`, `aria-hidden`, and `pointer-events: none`. Existing table previews are
+unchanged; custom rendering on `TR`, `TH`, or `TD` is rejected with
+`INVALID_OPTION`. Arbitrary portal roots, automatic sizing, drop animations, and
+framework-specific render components are outside this extension.
+
+Enable **Render custom content** in the drop-feedback-style Playground example.
+Keep the existing class/preset API for CSS-only appearance changes.

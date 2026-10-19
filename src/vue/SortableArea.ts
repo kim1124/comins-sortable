@@ -12,6 +12,7 @@ import type {
   SortableGroup,
   SortableParentLocation,
   SortablePlaceholderOptions,
+  SortableDragOverlayOptions,
 } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
 import { deferredElementRef } from '../framework/element-ref.js';
@@ -43,6 +44,7 @@ export interface VueSortableAreaProps<T> {
   copyItem?: CopyItem<T>;
   animation?: SortableAnimation;
   placeholder?: SortablePlaceholderOptions;
+  dragOverlay?: SortableDragOverlayOptions;
   parent?: SortableParentLocation;
   tag?: string | Component;
   componentProps?: Readonly<Record<string, unknown>>;
@@ -77,6 +79,7 @@ const SortableAreaComponent = defineComponent({
     copyItem: Function as PropType<(item: unknown, context: CopyItemContext) => unknown>,
     animation: [Boolean, Number, Object] as PropType<SortableAnimation>,
     placeholder: Object as PropType<SortablePlaceholderOptions>,
+    dragOverlay: Object as PropType<SortableDragOverlayOptions>,
     parent: Object as PropType<SortableParentLocation>,
     tag: { type: [String, Object, Function] as PropType<string | Component>, default: 'div' },
     componentProps: Object as PropType<Readonly<Record<string, unknown>>>,

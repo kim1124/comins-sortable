@@ -3,6 +3,9 @@ import { expect, test, type Page } from '@playwright/test';
 import { exampleIds } from '../../example/src/app/navigation.js';
 import { beginDrag, domIds, dragItem, movePointerToDropTarget, waitForFrameworkRender } from './helpers/drag.js';
 import { bundleDisplayedExample } from './helpers/source-bundle.js';
+import { registerRendererChecks } from './helpers/feedback-renderer-checks.js';
+
+registerRendererChecks();
 
 type Adapter = 'vanilla' | 'react' | 'vue' | 'svelte';
 const adapters: readonly Adapter[] = ['vanilla', 'react', 'vue', 'svelte'];
@@ -1365,5 +1368,23 @@ for (const bodyTransform of ['translateZ(0)', 'scale(0.9)']) {
     expect(await source.evaluate((el) => (el as HTMLElement).style.display)).toBe('block');
     expect(await domIds(page, 'todo')).toEqual(['research', 'design', 'build', 'review']);
     await expect(page.locator('[data-comins-sortable-dragging],[data-comins-sortable-placeholder]')).toHaveCount(0);
+  });
+}
+
+for (const adapter of adapters) {
+  test(`${adapter} title drag leaves no incidental text selection after drop @safari-selection`, async ({ page }) => {
+    await page.goto(`/examples/handle/${adapter}`);
+    await waitForRuntime(page);
+    const choice = page.getByLabel('드래그 시작 영역', { exact: true });
+    await choice.selectOption('title');
+    const drag = await beginDrag(page, 'todo', 'build', { handle: '.cs-demo-card__copy strong' });
+    await drag.moveBefore('todo', 'research');
+    await drag.drop();
+    await expectModelAndDom(page, { todo: ['build', 'research', 'design', 'review'] });
+    expect(await page.evaluate(() => window.getSelection()?.toString() ?? '')).toBe('');
+    await expect(page.locator('[data-comins-sortable-placeholder],[data-comins-sortable-dragging]')).toHaveCount(0);
+    await expect(page.getByLabel('이벤트 타임라인')).toContainText('drop');
+    await choice.selectOption('handle');
+    await selectCardText(page, 'research', 'small');
   });
 }
