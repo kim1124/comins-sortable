@@ -82,4 +82,3 @@ async function dropPoint(page: Page): Promise<{ x: number; y: number }> {
   if (!target) throw new Error('Missing dynamic transform destination');
   return { x: target.x + target.width / 2, y: target.y + 2 };
 }
-

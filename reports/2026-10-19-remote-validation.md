@@ -17,15 +17,22 @@ Contract·managed guidance/config가 일치하며 정식 역할 문서·receipt�
 - 기존 acceptance manifest의 source 42개·검증기 4개·관련 179파일 해시를 대조하여
   변경 없는 성공 증거를 재사용한다. 이후 변경은 Governance 문서/receipt와
   후속 보고서 및 검토 문서이며 런타임·브라우저 fixture·lockfile은 유지한다.
-- 대기: 고정 커밋을 생성물 없는 독립 checkout에서 npm ci --ignore-scripts 후 verify.
+- PASS: 코드 커밋 `676df18`을 생성물 없는 독립 checkout에서 npm ci --ignore-scripts
+  후 verify 실행. 정책 77·unit 331 및 라이선스·타입·빌드·Vue SFC 양성/음성 타입 통과.
 - 대기: 고정 커밋의 전체 benchmark 및 패키지/소비자 보완 검사.
-- 대기: 현재 전체 변경의 민감정보·공개 Git identity·diff 검사.
+- PASS: 전체 공개 후보 파일 민감정보·공개 Git identity 검사.
+- 첫 원격 diff 검사는 새 진단 파일의 EOF 빈 줄 1개로 실패했다. 로컬에서 unstaged
+  diff만 검사하여 신규 파일의 커밋 diff를 놓쳤다. 빈 줄을 제거하고 main..HEAD 범위
+  검사를 다시 수행한다. 동작·허용치 변경이 아닌 검증 범위 누락의 보완이다.
 
 ## 원격 검증
 
 - 기존 main ruleset은 PR과 Sensitive data CI 성공을 요구한다.
-- 대기: 기능 브랜치 push, PR 생성, 마지막 커밋의 Package·Browser·Performance·
-  Sensitive data CI 확인.
+- [PR #46](https://github.com/kim1124/comins-sortable/pull/46) 생성 및 기능 브랜치 push 완료.
+- 첫 CI `39196165647`: Sensitive data의 스캔·identity·license·계약 검사는 통과했으며
+  마지막 diff 단계에서 EOF 빈 줄로 실패했다. 후속 Browser/Performance는 실행되지
+  않은 상태로 성공으로 계산하지 않는다.
+- 대기: 형식 수정 후 마지막 커밋의 Package·Browser·Performance·Sensitive data CI.
 
 ## 잔여 범위
 
