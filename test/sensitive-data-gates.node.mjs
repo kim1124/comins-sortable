@@ -117,7 +117,7 @@ test('adopts the approved public package boundary under Contract v1.12', () => {
 test('selects browser and performance gates by changed surface', () => {
   const verify = read('.github/workflows/verify.yml');
   const changesJob = verify.match(/\n  changes:\n[\s\S]*?\n  security:\n/)?.[0];
-  const browserJob = verify.match(/\n  browser:\n[\s\S]*?\n  performance:\n/)?.[0];
+  const browserJob = verify.match(/\n  browser_suites:\n[\s\S]*?\n  browser:\n/)?.[0];
   const performanceJob = verify.match(/\n  performance:\n[\s\S]*$/)?.[0];
 
   assert.ok(changesJob);
