@@ -40,7 +40,7 @@ injected to manufacture the animation. All GIF frames are decoded to validate
 size and duration; scene starts, interactions and results are visually reviewed.
 Frame holds are edited for readability, so the GIF is not a timing benchmark.
 
-**Known limitation:** native Safari 26.6.2 can leave body text selected after a
+**Historical observation (0.1.3 capture):** native Safari 26.6.2 can leave body text selected after a
 title-only drag in the React Playground. The Chromium title scene does not
 establish a Safari fix. See [Handle and Acceptance](./user/09-handle-acceptance.md)
 and [current verification](./verification/0.1.3-local-validation.md).
@@ -48,7 +48,8 @@ and [current verification](./verification/0.1.3-local-validation.md).
 현재 GIF는 슬롯 목록 복귀, 드래그 시작 영역, 허용·거부 CSS, 목록별 상태 갱신,
 하위 트리 이동을 실제 React·Chromium에서 촬영했습니다. 모든 어댑터·브라우저·터치
 기기를 대표하지 않으며 배포 완료를 의미하지 않습니다. Safari 제목 드래그 후
-본문 선택 잔류는 미해결 상태입니다. 선택 초기화와 스크롤 경계 장면은 이전 GIF에
+본문 선택 잔류는 당시 관측 기록입니다. 0.1.7의 핸들 선택 억제 수정과 native 검증 범위는
+[현재 상태](./verification/0.1.7-local-validation.md)를 따릅니다. 선택 초기화와 스크롤 경계 장면은 이전 GIF에
 포함되었으며 현재 GIF에는 없습니다. 해당 동작은 `transitions`, `auto-scroll`에서
 직접 확인합니다.
 

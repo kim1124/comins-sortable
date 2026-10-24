@@ -25,7 +25,10 @@ test('declares the approved public package boundary', () => {
   const manifest = readJson('package.json');
 
   assert.equal(manifest.name, 'comins-sortable');
-  assert.equal(manifest.version, '0.1.6');
+  assert.match(manifest.version, /^\d+\.\d+\.\d+(?:-[\da-zA-Z.-]+)?$/);
+  const lock = readJson('package-lock.json');
+  assert.equal(manifest.version, lock.version);
+  assert.equal(manifest.version, lock.packages[''].version);
   assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(manifest.type, 'module');
   assert.equal(manifest.license, 'MIT');

@@ -1,5 +1,22 @@
 # Comins Sortable Documentation
 
+<!-- release-summary:start -->
+## 0.1.7 changes / 주요 변경
+
+- Add custom placeholder and drag-overlay content renderers for all four adapters.
+- Fix long-lived session history and completed disposer reference retention.
+- Suppress incidental text selection during accepted mouse-handle attempts.
+- Synchronize README and release documentation automatically on version changes.
+
+- 네 어댑터에서 placeholder·드래그 오버레이 내부 콘텐츠를 직접 렌더링할 수 있습니다.
+- 장기 세션의 이력 누적과 종료된 disposer의 참조 보유를 수정했습니다.
+- 수락한 마우스 핸들 입력 중 의도하지 않은 텍스트 선택 시작을 억제합니다.
+- 버전 변경 시 README 상단과 릴리스 문서를 자동으로 동기화합니다.
+
+[Release notes](./releases/latest.md) · [검증·배포 상태](./verification/0.1.7-local-validation.md)
+
+<!-- release-summary:end -->
+
 This directory separates current user guidance from historical implementation
 plans and design records.
 
@@ -11,25 +28,7 @@ repository Playground to try multi-drag, thresholds, grid, and swap.
 사용자 가이드는 Comins Sortable의 공개 API 사용법을 설명합니다.
 저장소 Playground에서 다중 드래그, threshold, grid, swap을 확인할 수 있습니다.
 
-## 0.1.6 candidate status
-
-The 0.1.6 candidate fixes transformed feedback coordinates, placeholder
-relocation, detached-preview sizing and off-center grid insertion. Development
-updates include patched source-map-js and the reviewed Vite 8/license scope.
-Public APIs and runtime dependencies remain unchanged. Grid candidate ba3fca1
-passed 72 policy, 293 unit, 301 Core and 701 Playground tests; direct Chrome
-input confirmed 16 grid drags across the four adapters. Resource checks and the
-Svelte sampling failure/recheck are recorded in the linked evidence.
-
-The candidate manifest is 0.1.6. Canonical staging, maintainer approval and
-registry closure are separate release stages. Read [changes and current evidence](./verification/0.1.6-local-validation.md)
-and the [open PR snapshot](./verification/0.1.6-pr-status.md) for integration state.
-
-0.1.6은 그리드 삽입 판정·드래그 좌표·placeholder 이동 직후 표시·복제 미리보기 크기와 개발
-의존성을 보완한 버전입니다. Vite 8과 한정 라이선스 승인을 포함한 후보가 전체
-자동 검증을 통과했습니다. Chrome에서 이동·복제 및 이동 후 본문 선택·복사·
-붙여넣기도 확인했습니다. 최종 공개 파일 검증·staging·배포 마감은 별도 단계이며,
-현재 상태는 아래 검증 기록에서 확인할 수 있습니다.
+See [versioning and documentation automation](./verification/release-docs.md) for future releases.
 
 ## User guides
 

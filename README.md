@@ -1,5 +1,17 @@
 # Comins Sortable
 
+<!-- release-summary:start -->
+## 0.1.7 changes
+
+- Add custom placeholder and drag-overlay content renderers for all four adapters.
+- Fix long-lived session history and completed disposer reference retention.
+- Suppress incidental text selection during accepted mouse-handle attempts.
+- Synchronize README and release documentation automatically on version changes.
+
+[Full changelog](https://github.com/kim1124/comins-sortable/blob/main/CHANGELOG.md) · [Release status](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.7-local-validation.md)
+
+<!-- release-summary:end -->
+
 <a href="https://comins-website.vercel.app/ko/"><img src="https://raw.githubusercontent.com/kim1124/comins-sortable/main/example/public/comins-symbol.svg" width="64" height="64" alt="Comins brand website" /></a>
 
 [Comins Brand](https://comins-website.vercel.app/ko/)
@@ -142,33 +154,6 @@ The development server uses port 4003.
 Use **Reset** to restore the example and clear multi-selection, including its
 Shift-range anchor, in all four adapters.
 
-## 0.1.6
-
-Version 0.1.6 keeps the existing public APIs and zero runtime dependencies.
-It fixes:
-
-- Drag feedback offsets inside tested transformed, filtered or contained ancestors,
-  including scrolling and list-size changes after placeholder relocation.
-- Detached copy/table preview sizing when source and body containers use different
-  scales or inherited CSS min/max dimensions.
-- Off-center grid handle drags that needed extra travel or inserted in the previous row.
-- The development-only `source-map-js` dependency, updated to patched 1.2.2.
-
-Development tooling now uses Vite 8.3.4, Playwright 1.64.0 and Svelte 5.57.2.
-Lightning CSS has an exact maintainer-approved development-only license scope;
-its code/binaries are not shipped in the Sortable npm package.
-
-Fresh verification passed 72 policy tests, 293 unit tests, 301 Core E2E tests
-and 701 Playground E2E tests, including 48 adjacent-cell/row grid regressions.
-Desktop Chrome Computer Use confirmed 16 grid drags across all four adapters.
-Feedback/copy geometry and native text copying have separate recorded checks.
-Resource results, including a Svelte GC-sample failure and unchanged-source
-recheck, are recorded in the verification guidance. Touch emulation is separate
-from physical-device verification.
-
-See [changes and verification](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.6-local-validation.md)
-for the scope, evidence and release status.
-
 ## Browser support and limits
 
 Automated tests cover Chromium, Firefox, and WebKit. Sorting uses pointer input;
@@ -177,7 +162,8 @@ from physical-device testing. See the [changelog](https://github.com/kim1124/com
 for published changes and the [performance verification guide](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/next-quality-performance.md)
 for reproducible large-list and resource measurements.
 
-A previously recorded native Safari title-only drag can leave body text selected.
+Native Safari title-only selection remains a separately recorded limitation.
+Version 0.1.7 suppresses selection initiation during accepted explicit mouse-handle attempts.
 Use a dedicated handle when selecting and copying body text matters; see the
 [handle guide](https://github.com/kim1124/comins-sortable/blob/main/docs/user/09-handle-acceptance.md).
 Automated WebKit results do not establish native Safari or Galaxy coverage.

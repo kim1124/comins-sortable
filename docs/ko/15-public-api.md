@@ -101,3 +101,5 @@ import합니다. 선언된 유일한 side-effect entry입니다.
 Svelte는 optional peer dependency이고 package의 runtime dependency는 0개입니다.
 브라우저 증거와 인증 범위는 저장소 [README](../../README.md#browser-support)에서
 관리합니다.
+
+0.1.7의 선택형 피드백 렌더러 계약과 제한은 [placeholder 가이드](./13-placeholder.md)를 따릅니다.

@@ -101,3 +101,5 @@ All entry points are ESM and target ES2020. React, React DOM, Vue, and Svelte ar
 optional peer dependencies; the package has zero runtime dependencies. The
 browser evidence and certification boundary are maintained in the repository
 [README](../../README.md#browser-support).
+
+The optional feedback renderer contracts are available in 0.1.7; see [content renderer lifecycle and restrictions](./13-placeholder.md#custom-content-renderers).

@@ -85,6 +85,8 @@ content are protected. A `contenteditable="false"` descendant is not excluded
 solely because its parent is editable. A custom `ignore` replaces the default
 exclusions, and an explicit matching `handle` still takes precedence.
 
+**0.1.7 update:** Core suppresses `selectstart` during an accepted explicit mouse-handle attempt, including the pending activation threshold. Existing selection ranges and ordinary body selection are preserved. The following Safari observation is historical; native title-only coverage remains separate from this fix. See [0.1.7 evidence](../verification/0.1.7-local-validation.md).
+
 **Known Safari limitation (2026-09-22):** In native Safari 26.6.2, the React
 Playground title-only mode can leave body text selected after reordering. It
 reproduces from a fresh page and is not fixed by switching back to handle mode.
