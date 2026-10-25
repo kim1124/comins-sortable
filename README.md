@@ -12,6 +12,8 @@
 
 <!-- release-summary:end -->
 
+**Release status (2026-10-25):** 0.1.7 completed canonical staging. The public registry now resolves 0.1.7; post-publication closure has not been verified in this record. See [status and evidence](https://github.com/kim1124/comins-sortable/blob/main/docs/verification/0.1.7-local-validation.md).
+
 <a href="https://comins-website.vercel.app/ko/"><img src="https://raw.githubusercontent.com/kim1124/comins-sortable/main/example/public/comins-symbol.svg" width="64" height="64" alt="Comins brand website" /></a>
 
 [Comins Brand](https://comins-website.vercel.app/ko/)

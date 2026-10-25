@@ -42,7 +42,8 @@
 - Mid-gesture transform changes remain a known failing diagnostic outside the
   supported static 2D transform cases. 3D, keyboard sorting, framework-specific
   rendering APIs and physical mobile certification remain deferred or excluded.
-- Version 0.1.7 is a local candidate, not an npm publication. See its validation
-  document for recorded versus fresh evidence and remaining release gates.
+- Version 0.1.7 completed canonical staging. A subsequent registry check resolves
+  0.1.7 as latest; post-publication closure remains unverified. Further publishing
+  actions are stopped. See its validation document for evidence and scope.
 
 Publication and verification are separate: see [release status](../verification/0.1.7-local-validation.md).
