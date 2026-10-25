@@ -17,6 +17,8 @@
 
 <!-- release-summary:end -->
 
+**0.1.7 상태 (2026-10-25):** canonical staging 완료. 현재 공개 registry는 0.1.7을 조회하며 공개 후 마감은 미수행입니다. [상태·검증 기록](./verification/0.1.7-local-validation.md)과 [작업 종료 기록](../reports/2026-10-25-0.1.7-staging-stop.md)을 참고합니다.
+
 This directory separates current user guidance from historical implementation
 plans and design records.
 
@@ -96,6 +98,9 @@ the open issue and the default dedicated-handle mode.
 기본 전용 핸들 방식을 안내합니다.
 
 ## Verification records
+
+- [0.1.7 staging completion and current registry status](./verification/0.1.7-local-validation.md)
+- [0.1.7 staging work stop and documentation record](../reports/2026-10-25-0.1.7-staging-stop.md)
 
 - [0.1.6 candidate changes and local validation](./verification/0.1.6-local-validation.md)
 - [0.1.6 grid correction and current verification](../reports/2026-10-12-0.1.6-grid-collision.md)
