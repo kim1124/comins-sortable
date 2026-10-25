@@ -48,7 +48,9 @@ Core는 framework 중립 operation, lifecycle 소유권, 오류와 headless Tree
   다중 드래그 change는 `itemIds`도 노출하며 swap change는
   `SortableSwapChange`와 `swapItemId`를 사용합니다.
 - 표현: `SortableDirection`, `SortableAnimation`, `SortableAnimationOptions`,
-  `SortablePlaceholderOptions`, `SortablePlaceholderPreset`.
+  `SortablePlaceholderOptions`, `SortablePlaceholderPreset`,
+  `SortableDragOverlayOptions`, `SortableFeedbackContext`, `SortableFeedbackHandle`,
+  `SortableFeedbackRenderer`, `SortableFeedbackRejection`.
 - Tree: `SortableTree`, `SortableTreeArea`, `SortableTreeOptions`.
 
 [핵심 개념](./02-core-concepts.md), [정렬과 이동](./07-reorder-transfer.md),
@@ -99,3 +101,5 @@ import합니다. 선언된 유일한 side-effect entry입니다.
 Svelte는 optional peer dependency이고 package의 runtime dependency는 0개입니다.
 브라우저 증거와 인증 범위는 저장소 [README](../../README.md#browser-support)에서
 관리합니다.
+
+0.1.7의 선택형 피드백 렌더러 계약과 제한은 [placeholder 가이드](./13-placeholder.md)를 따릅니다.

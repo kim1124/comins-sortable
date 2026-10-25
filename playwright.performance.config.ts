@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: 'test/playground',
-  testMatch: 'performance.spec.ts',
+  testMatch: ['performance.spec.ts', 'memory-retention.spec.ts'],
   fullyParallel: false,
   retries: 0,
   workers: 1,

@@ -69,7 +69,7 @@ pointer snapshot에서 Alt/Option을 확인해 `copy`, 일반 drag는 `move`를 
 Playground: <http://127.0.0.1:4003/examples/clone/react> 아래의 `clone`,
 `custom-clone`, `modifier-copy` 경로를 확인합니다.
 
-## 복제 표시 크기 (0.1.6 후보)
+## 복제 표시 크기 (0.1.6부터 지원)
 
 시각적인 drag preview와 `copyItem`/`copyElement`가 만드는 새 데이터·요소는
 역할이 다릅니다. callback 계약과 새 ID 요구사항은 유지합니다. source와 body의

@@ -75,10 +75,12 @@ export async function movePointerToDropTarget(
 ): Promise<void> {
   const placeholder = page.locator('[data-comins-sortable-placeholder]');
   let lastState: unknown = null;
+  let livePoint = point;
   await page.mouse.move(point.x, point.y, { steps: 2 });
   await waitForPointerFrame(page);
   try {
     await expect.poll(async () => {
+      await waitForPointerFrame(page);
       const location = await placeholder.count() === 1
         ? await placeholder.evaluate((element) => ({
             areaId: element.parentElement?.getAttribute('data-comins-sortable-area') ?? null,
@@ -93,6 +95,11 @@ export async function movePointerToDropTarget(
           .map((element) => element.closest('[data-comins-sortable-area]')
             ?.getAttribute('data-comins-sortable-area'))
           .filter((areaId): areaId is string => areaId !== undefined && areaId !== null))],
+        overAreaIds: Array.from(document.querySelectorAll('[data-comins-sortable-over]'))
+          .map((element) => element.getAttribute('data-comins-sortable-area')),
+        areaRect: document.querySelector(`[data-comins-sortable-area="${destinationAreaId}"]`)
+          ?.getBoundingClientRect().toJSON(),
+        itemCount: document.querySelectorAll(`[data-comins-sortable-area="${destinationAreaId}"] > [data-sortable-id]`).length,
         hitItemIds: document.elementsFromPoint(clientX, clientY)
           .map((element) => element.closest('[data-sortable-id]')?.getAttribute('data-sortable-id')),
         destinationRect: document.querySelector(beforeId === undefined
@@ -102,9 +109,30 @@ export async function movePointerToDropTarget(
         placeholderRect: document.querySelector('[data-comins-sortable-placeholder]')?.getBoundingClientRect().toJSON(),
         transform: (document.querySelector('[data-comins-sortable-dragging]') as HTMLElement | null)
           ?.style.transform ?? null,
-      }), { clientX: point.x, clientY: point.y, destinationAreaId, beforeId });
+      }), { clientX: livePoint.x, clientY: livePoint.y, destinationAreaId, beforeId });
       lastState = { location, diagnostics };
-      return location?.areaId === destinationAreaId
+      const rect = diagnostics.areaRect;
+      // A truly empty zero-size area has no DOM hit box. Its documented 8px
+      // insertion threshold still needs current coordinates and the Core over marker.
+      const liveEmptyThreshold = beforeId === undefined && diagnostics.itemCount === 0
+        && diagnostics.overAreaIds.includes(destinationAreaId) && rect !== undefined
+        && ((rect.width === 0 && rect.height > 0
+          && Math.abs(livePoint.x - rect.left) <= 8
+          && livePoint.y >= rect.top && livePoint.y <= rect.bottom)
+        || (rect.height === 0 && rect.width > 0
+          && Math.abs(livePoint.y - rect.top) <= 8
+          && livePoint.x >= rect.left && livePoint.x <= rect.right));
+      const liveHit = diagnostics.hitAreaIds.includes(destinationAreaId) || liveEmptyThreshold;
+      if (!liveHit && diagnostics.destinationRect !== undefined) {
+        // Placeholder insertion can move the live target after the initial aim.
+        // Re-aim only from current DOM geometry; stale placeholder ownership is insufficient.
+        livePoint = {
+          x: diagnostics.destinationRect.x + Math.min(8, diagnostics.destinationRect.width / 2),
+          y: diagnostics.destinationRect.y + Math.min(8, diagnostics.destinationRect.height / 2),
+        };
+        await page.mouse.move(livePoint.x, livePoint.y, { steps: 2 });
+      }
+      return liveHit && location?.areaId === destinationAreaId
         && (beforeId === undefined || location.beforeId === beforeId);
     }).toBe(true);
   } catch (error) {
@@ -174,7 +202,13 @@ export async function beginDrag(
       await expect(source).toHaveAttribute('data-comins-sortable-dragging', '');
     } else {
       await expect(page.locator('[data-comins-sortable-dragging]')).toHaveAttribute('inert', '');
-      await expect(source).toBeVisible();
+      if (await page.locator('[data-comins-sortable-overlay]').count() === 1) {
+        // Custom move hides its source; custom copy preserves it. Scenario tests own that distinction.
+        expect(await source.evaluate((element) => element.parentElement
+          ?.getAttribute('data-comins-sortable-area'))).toBe(areaId);
+      } else {
+        await expect(source).toBeVisible();
+      }
     }
   } catch (error) {
     await page.keyboard.press('Escape');

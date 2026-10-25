@@ -26,7 +26,8 @@ const tasks: readonly Task[] = [{ id: 'a', title: 'A' }];
       id: `${item.id}-${String(context.destination.areaId)}`,
     })}
     animation={{ duration: 180, easing: 'ease-out' }}
-    placeholder={{ className: 'project-placeholder', preset: 'skeleton' }}
+    placeholder={{ className: 'project-placeholder', preset: 'skeleton', render: ({ container, itemId }) => { container.textContent = String(itemId); } }}
+    dragOverlay={{ render: ({ container }) => { container.textContent = 'Overlay'; return { destroy() {} }; } }}
     parent={{ areaId: 'root', itemId: 'parent' }}
     onItemsChange={(next) => {
       const task: Task | undefined = next[0];

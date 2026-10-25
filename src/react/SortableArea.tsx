@@ -21,6 +21,7 @@ import type {
   SortableGroup,
   SortableParentLocation,
   SortablePlaceholderOptions,
+  SortableDragOverlayOptions,
 } from '../core/model.js';
 import { resolveItemId } from '../framework/item-key.js';
 import { deferredElementRef } from '../framework/element-ref.js';
@@ -54,6 +55,7 @@ export interface SortableAreaProps<T> {
   copyItem?: CopyItem<T>;
   animation?: SortableAnimation;
   placeholder?: SortablePlaceholderOptions;
+  dragOverlay?: SortableDragOverlayOptions;
   parent?: SortableParentLocation;
   as?: ElementType;
   areaProps?: HTMLAttributes<HTMLElement>;

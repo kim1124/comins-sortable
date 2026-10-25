@@ -296,6 +296,15 @@ export function createPointerSensor(options: PointerSensorOptions): PointerSenso
         (event) => event.preventDefault(),
         listenerOptions,
       );
+      if (options.handle !== undefined) {
+        // 명시한 핸들의 선택 시작은 활성화 대기 중에도 막는다. 본문 입력은
+        // pointerDown에서 제외되므로 일반 선택과 기존 Selection은 유지된다.
+        options.platform.document.addEventListener(
+          'selectstart',
+          (event) => event.preventDefault(),
+          listenerOptions,
+        );
+      }
     }
     options.platform.document.addEventListener(
       'pointermove',

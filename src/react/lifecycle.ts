@@ -10,6 +10,7 @@ import type {
   SortableId,
   SortableParentLocation,
   SortablePlaceholderOptions,
+  SortableDragOverlayOptions,
 } from '../core/model.js';
 import type { FrameworkAreaBinding } from '../framework/bindings.js';
 import { resolveItemId } from '../framework/item-key.js';
@@ -37,6 +38,7 @@ export interface ReactAreaLifecycleProps<T> {
   copyItem?: CopyItem<T>;
   animation?: SortableAnimation;
   placeholder?: SortablePlaceholderOptions;
+  dragOverlay?: SortableDragOverlayOptions;
   parent?: SortableParentLocation;
 }
 
@@ -208,6 +210,7 @@ function areaOptions<T>(
     autoScroll: props.autoScroll,
     animation: props.animation,
     placeholder: props.placeholder,
+    dragOverlay: props.dragOverlay,
     parent: props.parent,
     accept: props.accept,
   };
@@ -231,6 +234,8 @@ function sameOptions(left: SortableAreaOptions, right: SortableAreaOptions): boo
     && sameAnimation(left.animation, right.animation)
     && left.placeholder?.preset === right.placeholder?.preset
     && left.placeholder?.className === right.placeholder?.className
+    && left.placeholder?.render === right.placeholder?.render
+    && left.dragOverlay?.render === right.dragOverlay?.render
     && left.parent?.areaId === right.parent?.areaId
     && left.parent?.itemId === right.parent?.itemId
     && left.accept === right.accept;

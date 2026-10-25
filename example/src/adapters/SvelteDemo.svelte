@@ -4,7 +4,7 @@
   import { createSortableScope, sortable } from '../../../src/svelte.js';
   import type { AfterDragResult, FrameworkSortableChange } from '../../../src/core.js';
   import type { PlaygroundBridge, PlaygroundDemoInput } from '../playground/types.js';
-  import { dragHandle, type DemoDragMode, copyDemoItem, createDemoState, demoModel, demoTreeArea, reverseDemoChildren, hasSecondArea, isCopyExample, isNestedExample, placeholderForExample, playgroundOperation, updateDemoTreeArea, type DemoItem } from './demo-data.js';
+  import { dragHandle, type DemoDragMode, copyDemoItem, createDemoState, demoModel, demoTreeArea, reverseDemoChildren, hasSecondArea, isCopyExample, isNestedExample, placeholderForExample, overlayForExample, playgroundOperation, updateDemoTreeArea, type DemoItem } from './demo-data.js';
 
   interface DemoCommands {
     setLocale(locale: 'ko' | 'en'): void;
@@ -22,6 +22,7 @@
   let allowed = true;
   let dragMode: DemoDragMode = 'handle';
   let customFeedback = true;
+  let renderContent = false;
   let copySequence = 0;
   let swapThreshold = 0.5;
   let invertSwap = false;
@@ -61,6 +62,7 @@
     allowed = true;
     dragMode = 'handle';
     customFeedback = true;
+    renderContent = false;
     swapThreshold = 0.5;
     invertSwap = false;
     state = createDemoState(input.exampleId);
@@ -72,6 +74,7 @@
     setLocale(value) { locale = value; },
     dispatch(controlId, value) {
       if (controlId === 'drag-start' && (value === 'handle' || value === 'title' || value === 'card')) dragMode = value;
+      if (controlId === 'render-content' && typeof value === 'boolean') renderContent = value;
       if (controlId === 'custom-feedback' && typeof value === 'boolean') customFeedback = value;
       if (controlId === 'accept-destination' && typeof value === 'boolean') allowed = value;
       if (controlId === 'reverse-items') state = { ...state, todo: [...state.todo].reverse() };
@@ -99,7 +102,8 @@
     swap: (input.exampleId === 'swap' || input.exampleId === 'swap-grid'),
     multiDrag: input.exampleId === 'transitions',
     selectedClass: input.exampleId === 'transitions' ? 'cs-demo-card--selected' : undefined,
-    placeholder: placeholderForExample(input.exampleId),
+    placeholder: placeholderForExample(input.exampleId, renderContent),
+    dragOverlay: overlayForExample(input.exampleId, renderContent),
     item: '.cs-demo-card',
     copyItem: isCopyExample(input.exampleId)
       ? (item: DemoItem) => copyDemoItem(item, input.exampleId, ++copySequence)
@@ -114,7 +118,8 @@
     itemKey: 'id' as const, handle: dragHandle(dragMode),
     item: '.cs-demo-card',
     emptyInsertThreshold: input.exampleId === 'empty' ? 42 : undefined,
-    placeholder: placeholderForExample(input.exampleId),
+    placeholder: placeholderForExample(input.exampleId, renderContent),
+    dragOverlay: overlayForExample(input.exampleId, renderContent),
     accept: (input.exampleId === 'accept' || input.exampleId === 'custom-placeholder') ? () => allowed : undefined,
     onItemsChange: (items: readonly DemoItem[]) => setItems('done', items),
   };

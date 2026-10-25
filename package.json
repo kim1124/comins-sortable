@@ -1,6 +1,6 @@
 {
   "name": "comins-sortable",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Zero-dependency drag-and-drop sorting for Vanilla JavaScript, React, Vue, and Svelte. Sortable lists, grids, nested trees, multi-drag, and swap with a TypeScript core.",
   "keywords": [
     "sortable",
@@ -92,8 +92,11 @@
     "verify:performance": "npm run build && npm run playground:build && npm run test:performance",
     "verify:package-artifact": "node scripts/verify-package-artifact.mjs",
     "verify:full": "npm run verify && npm run verify:e2e",
-    "verify": "npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types",
-    "benchmark:sortable": "npm run build && node scripts/benchmark-sortable.mjs"
+    "verify": "npm run check:docs && npm run check:licenses && npm run test:policy && npm run typecheck && npm run test:run && npm run build && npm run test:types",
+    "benchmark:sortable": "npm run build && node scripts/benchmark-sortable.mjs",
+    "docs:sync": "node scripts/sync-release-docs.mjs --write",
+    "check:docs": "node scripts/sync-release-docs.mjs --check",
+    "version": "npm run docs:sync"
   },
   "peerDependencies": {
     "react": ">=18.2 <20",

@@ -64,10 +64,14 @@ animation, placeholder, rollback 상태를 모두 해제합니다.
 `onChange` 호출만 성공 증거로 사용하지 않습니다. 제어 렌더가 검증되고
 `onAfterDrag({ status: 'dropped' })`가 호출되어야 transaction이 완료됩니다.
 
-## 포인터 캡처 상실 검증 (0.1.6 후보)
+## 포인터 캡처 상실 검증 (0.1.6부터 지원)
 
 센서는 document에서도 입력을 받습니다. 포인터 캡처 해제 자체를
 `pointer-cancel`로 처리하지 않으며, 이후 document pointerup이나 취소 입력으로
-활성 드래그를 종료하고 표시를 정리합니다. 0.1.6 후보에서는 이 기존 동작을
+활성 드래그를 종료하고 표시를 정리합니다. 0.1.6에서는 이 기존 동작을
 네 어댑터의 실제 브라우저 회귀 검사로 보강했습니다. 종료 사유나 callback을
 새로 추가한 변경은 아닙니다.
+
+## 장기 scope와 메모리 (0.1.7)
+
+완료된 세션의 상태 이력 누적을 제거하고 Core/Vanilla area disposer의 캡처 참조를 해제합니다. 동기 정리 오류 후에도 나머지 자원을 정리하며 중복 해제는 안전합니다. 소비자는 소유한 disposer와 사용자 렌더러 자원을 해제해야 합니다. Safari Inspector/Reader가 측정 중 DOM을 보유할 수 있으므로 힙 총량과 객체 소유·회수를 구분합니다. [Safari 조사와 한계](../verification/0.1.7-local-validation.md)를 참고합니다.

@@ -65,10 +65,13 @@ placeholders, and retained rollback state.
 Do not treat `onChange` as proof of success. A successful controlled render and
 `onAfterDrag({ status: 'dropped' })` close the transaction.
 
-## Capture-loss regression coverage (0.1.6 candidate)
+## Capture-loss regression coverage (since 0.1.6)
 
 The sensor also listens on the document. Releasing pointer capture alone is
 not a `pointer-cancel` result: subsequent document pointerup or cancellation
-still terminates the active gesture and clears feedback. The 0.1.6 candidate
-adds real-browser regression coverage for this existing behavior across all
+still terminates the active gesture and clears feedback. Version 0.1.6 added real-browser regression coverage for this existing behavior across all
 four adapters; it does not add a new after-drag reason or lifecycle callback.
+
+## Long-lived scopes and memory (0.1.7)
+
+Completed sessions no longer accumulate a state history; disposed Core/Vanilla area handles release their captured references. Cleanup continues after synchronous errors and remains idempotent. Call every owned disposer and release resources created by custom renderers. Safari Inspector/Reader can retain DOM during profiling; object ownership and recovery must be checked separately from heap totals. See [Safari findings and limits](../verification/0.1.7-local-validation.md).

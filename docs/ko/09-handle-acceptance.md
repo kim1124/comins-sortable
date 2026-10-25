@@ -83,6 +83,8 @@ export function HandleExample() {
 이유만으로 제외하지 않습니다. 사용자 `ignore`는 기본 제외 규칙을 대체하며,
 명시적으로 일치하는 `handle`은 계속 우선합니다.
 
+**0.1.7 변경:** 수락한 명시적 mouse handle 입력은 활성화 대기 임계값 구간을 포함해 `selectstart`를 억제합니다. 기존 선택 범위와 일반 본문 선택은 유지합니다. 아래 Safari 관측은 과거 기록이며 native 제목 전용 모드의 전체 검증은 별도입니다. [0.1.7 근거](../verification/0.1.7-local-validation.md)를 참고합니다.
+
 **확인된 Safari 제한(2026-09-22):** 실제 Safari 26.6.2의 React Playground에서
 제목 모드로 정렬한 뒤 여러 카드의 본문 선택이 남습니다. 새로고침 직후에도 재현되며
 핸들 모드로 돌아가는 것만으로 기존 선택이 지워지지는 않습니다. 본문 선택·복사가

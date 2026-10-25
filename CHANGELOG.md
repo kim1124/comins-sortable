@@ -2,6 +2,54 @@
 
 All notable behavior and public API changes to this project are recorded here.
 
+## Unreleased
+
+## 0.1.7
+
+### Highlights
+
+- Add custom placeholder and drag-overlay content renderers for all four adapters.
+- Fix long-lived session history and completed disposer reference retention.
+- Suppress incidental text selection during accepted mouse-handle attempts.
+- Synchronize README and release documentation automatically on version changes.
+
+### 주요 변경
+
+- 네 어댑터에서 placeholder·드래그 오버레이 내부 콘텐츠를 직접 렌더링할 수 있습니다.
+- 장기 세션의 이력 누적과 종료된 disposer의 참조 보유를 수정했습니다.
+- 수락한 마우스 핸들 입력 중 의도하지 않은 텍스트 선택 시작을 억제합니다.
+- 버전 변경 시 README 상단과 릴리스 문서를 자동으로 동기화합니다.
+
+### Added
+
+- Optional synchronous `placeholder.render` and `dragOverlay.render` content
+  renderers across Vanilla, React, Vue and Svelte. Preserve default feedback,
+  keep original source ownership, and clean up custom handles on completion,
+  cancellation, callback failure and reentrant cancellation.
+
+### Fixed
+
+- Remove unbounded internal session history retained by long-lived sortable scopes.
+- Release completed Core and Vanilla area disposer references, including during scope
+  destruction. Complete remaining cleanup after synchronous failures while preserving
+  renderer error reporting, termination reasons and idempotent disposal.
+
+- Suppress incidental text-selection initiation during accepted explicit mouse
+  handle attempts, including the activation threshold. Preserve ordinary body
+  selection and existing selection ranges; remove the temporary listener on every
+  attempt termination. Native Safari validation remains separate from WebKit.
+
+### Verification and limits
+
+- Native Safari Vue lifecycle investigation attributed the reproduced retained DOM
+  to Inspector/Reader ownership; those nodes were collected after disconnection
+  and GC. This is not a new Vue adapter fix or a guarantee for every memory path.
+- Mid-gesture transform changes remain a known failing diagnostic outside the
+  supported static 2D transform cases. 3D, keyboard sorting, framework-specific
+  rendering APIs and physical mobile certification remain deferred or excluded.
+- Version 0.1.7 is a local candidate, not an npm publication. See its validation
+  document for recorded versus fresh evidence and remaining release gates.
+
 ## 0.1.6 - 2026-10-12
 
 ### Fixed

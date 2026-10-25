@@ -1,6 +1,13 @@
 import { SortableError } from './errors.js';
 import { fixedFeedbackLayout, fixedFeedbackMover } from './feedback-position.js';
-import type { PointerSnapshot, SortablePlaceholderOptions } from './model.js';
+import type {
+  PointerSnapshot,
+  SortablePlaceholderOptions,
+  SortableDragOverlayOptions,
+  SortableFeedbackContext,
+  SortableFeedbackHandle,
+  SortableFeedbackRenderer,
+} from './model.js';
 import type { SortablePlatform } from './platform.js';
 
 const FEEDBACK_PROPERTIES = [
@@ -22,6 +29,8 @@ type FeedbackProperty = (typeof FEEDBACK_PROPERTIES)[number];
 
 export interface SortableFeedback {
   readonly placeholder: Element;
+  render(): void;
+  update?(context: Omit<SortableFeedbackContext, 'container'>): void;
   move(pointer: PointerSnapshot): void;
   place(parent: Element, before: Element | null): void;
   clear(): void;
@@ -40,10 +49,17 @@ export function createFeedback(
   platform: SortablePlatform,
   options: SortablePlaceholderOptions = {},
   mode: 'move' | 'copy' = 'move',
+  rendering?: { overlay?: SortableDragOverlayOptions; context: Omit<SortableFeedbackContext, 'container'> },
 ): SortableFeedback {
   const styledSource = asStyledElement(source);
-  const detachedPreview = mode === 'copy' || isTableLayoutItem(source);
-  const dragElement = detachedPreview ? createDragPreview(source) : source;
+  const overlayRenderer = rendering?.overlay?.render;
+  if (isTableLayoutItem(source) && (options.render !== undefined || overlayRenderer !== undefined)) {
+    throw new SortableError('INVALID_OPTION');
+  }
+  const detachedPreview = overlayRenderer !== undefined || mode === 'copy' || isTableLayoutItem(source);
+  const dragElement = overlayRenderer !== undefined
+    ? source.ownerDocument.createElement('div')
+    : detachedPreview ? createDragPreview(source) : source;
   const previewParent = detachedPreview ? source.ownerDocument.body : null;
   if (detachedPreview && previewParent === null) {
     throw new SortableError('INVALID_ELEMENT');
@@ -80,6 +96,8 @@ export function createFeedback(
     options.preset ?? 'default',
   );
   placeholder.setAttribute('aria-hidden', 'true');
+  placeholder.setAttribute('inert', '');
+  styledPlaceholder.style.pointerEvents = 'none';
   styledPlaceholder.style.boxSizing = 'border-box';
   styledPlaceholder.style.width = `${width}px`;
   styledPlaceholder.style.height = `${height}px`;
@@ -88,6 +106,11 @@ export function createFeedback(
     styledSource.style.display = 'none';
   }
 
+  if (overlayRenderer !== undefined) {
+    dragElement.setAttribute('data-comins-sortable-overlay', '');
+    dragElement.setAttribute('aria-hidden', 'true');
+    dragElement.setAttribute('inert', '');
+  }
   dragElement.setAttribute('data-comins-sortable-dragging', '');
   styledDragElement.style.boxSizing = 'border-box';
   styledDragElement.style.width = `${detachedPreview ? rect.width : width}px`;
@@ -112,11 +135,39 @@ export function createFeedback(
 
   const moveFixed = fixedLayout === null ? null : fixedFeedbackMover(styledDragElement, rect, detachedPreview);
 
+  const renderers: Array<{ render: SortableFeedbackRenderer; container: HTMLElement; handle?: SortableFeedbackHandle }> = [];
+  const addRenderer = (host: Element, render: SortableFeedbackRenderer | undefined): void => {
+    if (render === undefined) return;
+    const container = source.ownerDocument.createElement('div');
+    host.appendChild(container);
+    renderers.push({ render, container });
+  };
+  addRenderer(placeholder, options.render);
+  addRenderer(dragElement, overlayRenderer);
+  let currentContext = rendering?.context;
+  let rendered = false;
+  const contextFor = (container: HTMLElement): SortableFeedbackContext => {
+    if (currentContext === undefined) throw new SortableError('INVALID_OPTION');
+    return Object.freeze({
+      ...currentContext,
+      container,
+      itemIds: Object.freeze([...currentContext.itemIds]),
+      source: Object.freeze({ ...currentContext.source }),
+      destination: currentContext.destination === null ? null : Object.freeze({ ...currentContext.destination }),
+    });
+  };
+
   const destroy = (): void => {
     if (disposed) {
       return;
     }
     disposed = true;
+    const errors: unknown[] = [];
+    // Mark disposed before consumer callbacks so cancel/destroy can safely reenter.
+    for (const renderer of renderers) {
+      try { renderer.handle?.destroy(); } catch (error) { errors.push(error); }
+      renderer.handle = undefined;
+    }
     placeholder.remove();
     if (detachedPreview) {
       dragElement.remove();
@@ -139,10 +190,39 @@ export function createFeedback(
     if (isFocusable(focusTarget)) {
       focusTarget.focus();
     }
+    if (errors.length > 0) throw errors[0];
   };
 
   return {
     placeholder,
+    render() {
+      if (disposed || rendered) return;
+      rendered = true;
+      for (const renderer of renderers) {
+        if (disposed) break;
+        const handle = renderer.render(contextFor(renderer.container));
+        if (handle !== undefined && (
+          typeof handle !== 'object' || handle === null || 'then' in handle
+          || typeof handle.destroy !== 'function'
+          || (handle.update !== undefined && typeof handle.update !== 'function')
+        )) throw new SortableError('INVALID_OPTION');
+        // A renderer may cancel synchronously before its handle is returned.
+        if (disposed) handle?.destroy();
+        else renderer.handle = handle || undefined;
+      }
+    },
+    update: renderers.length === 0 ? undefined : (context) => {
+      if (disposed) return;
+      const previous = currentContext;
+      currentContext = context;
+      if (previous?.destination?.areaId === context.destination?.areaId
+        && previous?.destination?.index === context.destination?.index
+        && previous?.rejection === context.rejection) return;
+      for (const renderer of renderers) {
+        if (disposed) break;
+        renderer.handle?.update?.(contextFor(renderer.container));
+      }
+    },
     move(pointer) {
       if (moveFixed !== null) moveFixed(pointer.deltaX, pointer.deltaY);
       else styledDragElement.style.transform = `translate(${pointer.deltaX}px, ${pointer.deltaY}px)`;

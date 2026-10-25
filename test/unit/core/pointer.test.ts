@@ -452,3 +452,24 @@ test('callback failure is reported after active cleanup without retaining resour
   assert.equal(platform.listenerCount(), 0);
   assert.equal(platform.frameCount(), 0);
 });
+
+// 명시한 핸들 입력만 예약 시점부터 선택 시작을 억제하고, 본문 입력은 그대로 둔다.
+test('an explicit mouse handle suppresses incidental selection only for its pointer attempt', () => {
+  const { platform, sensor } = sensorFixture({ handle: '.handle' });
+  const item = fakeElement('LI');
+  const handle = fakeElement('STRONG', { parentElement: item, selectors: ['.handle'] });
+  const body = fakeElement('SMALL', { parentElement: item });
+  item.fixtureChildren.push(handle, body);
+  let blocked = 0;
+  const selection = { preventDefault: () => { blocked += 1; } };
+  assert.equal(sensor.pointerDown(pointer({ target: body }), item), false);
+  platform.dispatchDocument('selectstart', selection);
+  assert.equal(blocked, 0);
+  assert.equal(sensor.pointerDown(pointer({ target: handle }), item), true);
+  platform.dispatchDocument('selectstart', selection);
+  assert.equal(blocked, 1);
+  sensor.pointerUp(pointer({ target: handle }));
+  platform.dispatchDocument('selectstart', selection);
+  assert.equal(blocked, 1);
+  assert.equal(platform.listenerCount(), 0);
+});

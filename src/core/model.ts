@@ -22,11 +22,40 @@ export type SortableAnimation = false | number | SortableAnimationOptions;
 
 export type SortablePlaceholderPreset = 'default' | 'skeleton';
 
+export type SortableFeedbackRejection = 'disabled' | 'not-accepted' | 'nested-cycle';
+
+/** Immutable drag metadata; render only inside the Core-owned container. */
+export interface SortableFeedbackContext {
+  readonly container: HTMLElement;
+  readonly itemId: SortableId;
+  readonly itemIds: readonly SortableId[];
+  readonly source: Readonly<SortableLocation>;
+  readonly mode: SortableTransferMode;
+  readonly destination: Readonly<SortableLocation> | null;
+  readonly rejection: SortableFeedbackRejection | null;
+}
+
+export interface SortableFeedbackHandle {
+  /** Called only when destination or rejection changes, never for pointer movement alone. */
+  update?(context: SortableFeedbackContext): void;
+  destroy(): void;
+}
+
+/** Synchronous only. Core owns placement, dimensions, visibility and cleanup. */
+export type SortableFeedbackRenderer = (
+  context: SortableFeedbackContext,
+) => SortableFeedbackHandle | void;
+
+export interface SortableDragOverlayOptions {
+  render: SortableFeedbackRenderer;
+}
+
 export interface SortablePlaceholderOptions {
   /** Consumer classes added alongside the stable Comins placeholder class. */
   className?: string;
   /** Optional visual preset. Skeleton is drag feedback, not a loading state. */
   preset?: SortablePlaceholderPreset;
+  render?: SortableFeedbackRenderer;
 }
 
 export interface SortableOrder {
@@ -158,6 +187,7 @@ export interface SortableAreaOptions {
   autoScroll?: boolean;
   animation?: SortableAnimation;
   placeholder?: SortablePlaceholderOptions;
+  dragOverlay?: SortableDragOverlayOptions;
   parent?: SortableParentLocation;
   accept?: (context: DragContext) => boolean;
   prepareCopy?: (context: CopyItemContext) => SortableId;

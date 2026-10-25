@@ -51,12 +51,12 @@ function constantFailure(result) {
   assert.equal(result.stderr, failure);
 }
 
-test('adopts the approved public package boundary under Contract v1.11', () => {
+test('adopts the approved public package boundary under Contract v1.12', () => {
   const agents = read('AGENTS.md');
   const security = read('SECURITY.md');
   const verify = read('.github/workflows/verify.yml');
 
-  assert.match(agents, /managed-start contract=v1\.11/);
+  assert.match(agents, /managed-start contract=v1\.12/);
   assert.match(agents, /comins-governance\/blob\/main\/COMINS_CONTRACT\.md/);
   assert.match(agents, /Governance is the only\s+common-policy owner/i);
   assert.match(agents, /module owns their CI implementation/i);
@@ -107,7 +107,7 @@ test('adopts the approved public package boundary under Contract v1.11', () => {
   assert.equal(licenseResult.stdout, '');
   assert.equal(licenseResult.stderr, '');
   const manifest = JSON.parse(read('package.json'));
-  assert.equal(manifest.version, '0.1.6');
+  assert.equal(manifest.version, JSON.parse(read('package-lock.json')).version);
   assert.equal(Object.hasOwn(manifest, 'private'), false);
   assert.equal(Object.hasOwn(manifest, 'dependencies'), false);
   assert.equal(existsSync(join(root, 'package-lock.json')), true);
@@ -117,7 +117,7 @@ test('adopts the approved public package boundary under Contract v1.11', () => {
 test('selects browser and performance gates by changed surface', () => {
   const verify = read('.github/workflows/verify.yml');
   const changesJob = verify.match(/\n  changes:\n[\s\S]*?\n  security:\n/)?.[0];
-  const browserJob = verify.match(/\n  browser:\n[\s\S]*?\n  performance:\n/)?.[0];
+  const browserJob = verify.match(/\n  browser_suites:\n[\s\S]*?\n  browser:\n/)?.[0];
   const performanceJob = verify.match(/\n  performance:\n[\s\S]*$/)?.[0];
 
   assert.ok(changesJob);
@@ -127,7 +127,7 @@ test('selects browser and performance gates by changed surface', () => {
   assert.match(changesJob, /browser: \$\{\{ steps\.scope\.outputs\.browser \}\}/);
   assert.match(changesJob, /performance: \$\{\{ steps\.scope\.outputs\.performance \}\}/);
   assert.match(changesJob, /src\/\*\|example\/\*\|test\/playwright\/\*/);
-  assert.match(changesJob, /test\/playground\/performance\.spec\.ts\|playwright\.performance\.config\.ts/);
+  assert.match(changesJob, /test\/playground\/performance\.spec\.ts\|test\/playground\/memory-retention\.spec\.ts\|test\/playground\/helpers\/\*\|playwright\.performance\.config\.ts/);
   assert.match(browserJob, /needs:\n\s+- changes\n\s+- security\n\s+- verify/);
   assert.match(browserJob, /if: \$\{\{ needs\.changes\.outputs\.browser == 'true' \}\}/);
   assert.equal((browserJob.match(/playwright install/g) ?? []).length, 1);

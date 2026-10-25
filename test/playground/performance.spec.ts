@@ -39,6 +39,12 @@ async function sampleResources(
   label: string,
 ): Promise<ResourceSample> {
   await cdp.send('HeapProfiler.collectGarbage');
+  // 화면 교체 직후의 native DOM 보유는 다음 프레임 경계와 GC에서 해제된다.
+  // 동일 화면의 장기 보유량을 비교하되 heap·node·listener 허용치는 유지한다.
+  await page.evaluate(() => new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  }));
+  await cdp.send('HeapProfiler.collectGarbage');
   const [{ metrics }, counters] = await Promise.all([
     cdp.send('Performance.getMetrics') as Promise<{
       metrics: Array<{ name: string; value: number }>;
@@ -336,6 +342,22 @@ for (const adapter of ['vanilla', 'react', 'vue', 'svelte'] as const) {
           await waitForRuntime(page);
           await dragItem(page, 'todo', 'build', { areaId: 'child', beforeId: 'review' });
           await expectModel(page, 'child', ['build', 'review', 'release']);
+          await page.getByRole('tab', { name: '기본 정렬', exact: true }).click();
+          await expect(page.locator('[data-playground-runtime]')).toHaveAttribute('data-playground-mounted', `simple/${adapter}`);
+          await waitForRuntime(page);
+        }
+        if (cycle % 10 === 9) {
+          // 사용자 renderer도 실제 브라우저에서 mount/drag/unmount 후 같은 기준 화면으로 복귀한다.
+          await page.getByRole('tab', { name: '드롭 피드백 스타일', exact: true }).click();
+          await expect(page.locator('[data-playground-runtime]')).toHaveAttribute('data-playground-mounted', `custom-placeholder/${adapter}`);
+          await waitForRuntime(page);
+          await page.getByRole('button', { name: '사용자 콘텐츠 렌더링', exact: true }).click();
+          const rendered = await beginDrag(page, 'todo', 'build');
+          await expect(page.locator('[data-comins-sortable-overlay]')).toHaveCount(1);
+          await rendered.moveBefore('done', 'release');
+          if (cycle % 20 === 9) await page.keyboard.press('Escape');
+          await rendered.drop();
+          await expect(page.locator('[data-comins-sortable-overlay],[data-comins-sortable-placeholder]')).toHaveCount(0);
           await page.getByRole('tab', { name: '기본 정렬', exact: true }).click();
           await expect(page.locator('[data-playground-runtime]')).toHaveAttribute('data-playground-mounted', `simple/${adapter}`);
           await waitForRuntime(page);

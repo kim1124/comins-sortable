@@ -27,7 +27,8 @@ const options: SvelteSortableOptions<Task> = {
   group: { name: 'tasks', pull: 'copy', put: ['tasks'] },
   item: '.task',
   animation: { duration: 180, easing: 'ease-out' },
-  placeholder: { className: 'project-placeholder', preset: 'skeleton' },
+  placeholder: { className: 'project-placeholder', preset: 'skeleton', render: ({ container, itemId }) => { container.textContent = String(itemId); } },
+    dragOverlay: { render: ({ container }) => { container.textContent = 'Overlay'; return { destroy() {} }; } },
   parent: { areaId: 'root', itemId: 'parent' },
   copyItem: (item, context) => ({
     ...item,

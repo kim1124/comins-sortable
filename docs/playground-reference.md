@@ -50,7 +50,7 @@ Placeholder를 숨기고 대상·드래그 요소를 표시합니다. DOC 사이
 2026-09-22 [GIF](./playground-preview.md)는 슬롯 복귀, 드래그 시작 영역, 피드백 CSS,
 목록별 상태 갱신과 하위 트리 이동을 실제 Chromium에서 촬영했습니다. 모든 예제나
 Safari 결과를 대표하지 않습니다. Safari 제목 드래그의 선택 잔류는
-[핸들 가이드](./ko/09-handle-acceptance.md)의 미해결 제한으로 함께 안내합니다.
+[핸들 가이드](./ko/09-handle-acceptance.md)의 과거 관측과 0.1.7 수정·검증 범위를 함께 안내합니다.
 
 ## English
 
@@ -89,6 +89,9 @@ its placeholder and marks the target and dragged element separately. Do not
 present the library as handle-only or conflate rejection with its placeholder.
 The [2026-09-22 GIF](./playground-preview.md) captures slots, drag start modes,
 feedback CSS, per-list state updates, and subtree movement in Chromium. It does
-not cover every example or represent Safari behavior. Keep the open Safari
-title-drag selection issue from the [handle guide](./user/09-handle-acceptance.md)
-when adapting this material for a documentation site.
+not cover every example or represent Safari behavior. Keep historical Safari title-drag observations separate from the 0.1.7 handle fix
+and its native coverage in the [handle guide](./user/09-handle-acceptance.md).
+
+## 0.1.7 changes
+
+Custom feedback content is available through the render toggle in the drop-feedback-style example for all four adapters. Core owns hosts and cleanup. The retained-DOM Safari investigation is attributed to Inspector/Reader in the reproduced case; this does not certify every example or gesture mode. See [current changes and validation](./verification/0.1.7-local-validation.md).
